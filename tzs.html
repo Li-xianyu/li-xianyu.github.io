@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>江湖大学 | 录取通知书分发处</title>
+  <meta name="description" content="particles.js is a lightweight JavaScript library for creating particles.">
+  <meta name="author" content="Vincent Garreau">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" media="screen" href="css/tzs1.css">
+  <link rel="stylesheet" type="text/css" href="css/tzs2.css">
+  <link rel="icon" href="img/logo.ico" type="image/x-icon">
+  <style>
+    .logo{
+      width: 80px;
+      height: 80px;
+      background-image: url('img/logo.png');
+      background-size: 100%;
+      float: left;
+    }
+    .result-image {
+      max-width: 80%;
+      max-height: 80%;
+      display: block;
+      margin: 0 auto;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <form id="myForm" action="cs.php" method="POST">
+    <div class="login">
+      <div class="login-top">
+        <div class="logo"></div>入学登记
+      </div>
+      <div class="login-center clearfix">
+        <div class="login-center-img"></div>
+        <div class="login-center-input">
+          <input type="text" name="name" value="" placeholder="请输入您的姓名" onfocus="this.placeholder=''" onblur="this.placeholder='请输入您的用户名'">
+          <div class="login-center-input-text">姓名</div>
+        </div>
+      </div>
+      <div class="login-center clearfix">
+        <div class="login-center-img"></div>
+        <div class="login-center-input">
+          <input type="text" name="zy" value="" placeholder="请输入您的专业" onfocus="this.placeholder=''" onblur="this.placeholder='请输入您的密码'">
+          <div class="login-center-input-text">专业名称</div>
+        </div>
+      </div>
+       
+      <button type="submit" class="lbt" style="">提交</button>
+    </div>
+  </form>
+
+  <script>
+	function Tip(txt){
+		//为了用户界面美观，仅限20字,超出字数不弹出提示，直接返回
+		if(txt.length > 20){
+			return 0;
+		}else{
+			let tip = document.createElement("div");
+			tip.setAttribute("class","_tip");
+			let style = document.createAttribute("style");
+			tip.style.zIndex = "9999";
+			tip.style.padding = "8px 4px 8px 8px";
+			tip.style.borderRadius = "4px";
+			tip.style.width = "140px";
+			tip.style.height = "auto";
+			tip.style.color = "white";
+			tip.style.textAlign = "left";
+			tip.style.lineHeight = "auto";
+			tip.style.backgroundColor = "#2c2c2c";
+			tip.innerHTML = txt;
+			tip.style.position = "fixed";
+			tip.style.left = (window.innerWidth/2-70) + "px";
+			tip.style.bottom = "100px";
+			document.getElementsByTagName("body").item(0).appendChild(tip);
+			setTimeout(function(){
+				let body =document.getElementsByTagName("body").item(0);
+				let child = document.getElementsByClassName("_tip")[0];
+				body.removeChild(child);
+			},1500);
+		return true;
+		}
+	}
+
+    // 监听表单提交事件
+    document.getElementById("myForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // 阻止默认的表单提交行为
+	  Tip("正在生成中，稍等");
+      // 创建一个 XMLHttpRequest 对象
+      var xhr = new XMLHttpRequest();
+
+      // 监听请求完成事件
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          // 接收响应数据
+          var response = xhr.responseText;
+
+          // 创建一个图像元素
+          var image = new Image();
+          image.src = "data:image/png;base64," + response;
+          image.classList.add("result-image"); // 添加样式类
+
+          // 将图像元素添加到页面中
+          document.body.appendChild(image);
+        }
+      };
+
+      // 获取表单数据
+      var formData = new FormData(event.target);
+
+      // 发送 POST 请求
+      xhr.open("POST", event.target.action, true);
+      xhr.send(formData);
+    });
+  </script>
+</body>
+</html>
