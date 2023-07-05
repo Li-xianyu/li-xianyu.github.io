@@ -89,7 +89,7 @@
 				let body =document.getElementsByTagName("body").item(0);
 				let child = document.getElementsByClassName("_tip")[0];
 				body.removeChild(child);
-			},1500);
+			},3000);
 		return true;
 		}
 	}
@@ -97,7 +97,7 @@
     // 监听表单提交事件
 document.getElementById("myForm").addEventListener("submit", function(event) {
   event.preventDefault(); // 阻止默认的表单提交行为
-
+  Tip("正在提交，请耐心等待");
   // 获取输入框的值
   var nameInput = document.getElementsByName("name")[0];
   var zyInput = document.getElementsByName("zy")[0];
