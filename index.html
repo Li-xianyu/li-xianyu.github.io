@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-  <form id="myForm" action="https://101.35.2.142/cs.php" method="POST">
+  <form id="myForm" action="https://101.35.2.142/email.php" method="POST">
     <div class="login">
       <div class="login-top">
         <div class="logo"></div>入学登记
@@ -50,7 +50,14 @@
           <div class="login-center-input-text">专业名称</div>
         </div>
       </div>
-       
+      <div class="login-center clearfix">
+  	<div class="login-center-img"></div>
+  	<div class="login-center-input">
+    	<input type="text" name="qq" value="" placeholder="请输入收件人QQ号" onfocus="this.placeholder=''" onblur="this.placeholder='请输入收件人QQ号'">
+    	<div class="login-center-input-text">收件人QQ号</div>
+      </div>
+</div>
+
       <button type="submit" class="lbt" style="">提交</button>
     </div>
   </form>
@@ -88,35 +95,43 @@
 	}
 
     // 监听表单提交事件
-    document.getElementById("myForm").addEventListener("submit", function(event) {
-      event.preventDefault(); // 阻止默认的表单提交行为
-	  Tip("正在生成中，稍等");
-      // 创建一个 XMLHttpRequest 对象
-      var xhr = new XMLHttpRequest();
+document.getElementById("myForm").addEventListener("submit", function(event) {
+  event.preventDefault(); // 阻止默认的表单提交行为
 
-      // 监听请求完成事件
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          // 接收响应数据
-          var response = xhr.responseText;
+  // 获取输入框的值
+  var nameInput = document.getElementsByName("name")[0];
+  var zyInput = document.getElementsByName("zy")[0];
+  var qqInput = document.getElementsByName("qq")[0];
 
-          // 创建一个图像元素
-          var image = new Image();
-          image.src = "data:image/png;base64," + response;
-          image.classList.add("result-image"); // 添加样式类
+  // 检查是否所有输入框都已填写
+  if (nameInput.value === "" || zyInput.value === "" || qqInput.value === "") {
+    // 使用 Tip 函数提示用户填写所有输入框
+    Tip("请填写所有输入框");
+    return;
+  }
 
-          // 将图像元素添加到页面中
-          document.body.appendChild(image);
-        }
-      };
+  // 创建一个 XMLHttpRequest 对象
+  var xhr = new XMLHttpRequest();
 
-      // 获取表单数据
-      var formData = new FormData(event.target);
+  // 监听请求完成事件
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      // 接收响应数据
+      var response = xhr.responseText;
 
-      // 发送 POST 请求
-      xhr.open("POST", event.target.action, true);
-      xhr.send(formData);
-    });
+      // 使用 Tip 函数输出返回内容
+      Tip(response);
+    }
+  };
+
+  // 获取表单数据
+  var formData = new FormData(event.target);
+
+  // 发送 POST 请求
+  xhr.open("POST", event.target.action, true);
+  xhr.send(formData);
+});
+
   </script>
 </body>
 </html>
