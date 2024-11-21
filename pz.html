@@ -1,1 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喜好瓶</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container, .bottle-container {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .bottle-container {
+			display: none;
+			flex-wrap: wrap;
+			justify-content: center; /* 水平居中 */
+			align-content: center; /* 垂直居中 */
+			gap: 20px; /* 瓶子间间距 */
+			min-height: 100%; /* 防止间距过大 */
+			padding: 10px; /* 增加内边距避免瓶子贴边 */
+			box-sizing: border-box; /* 确保 padding 不影响高度 */
+		}
+
+
+        .bottle-wrapper {
+            
+            text-align: center;
+            width: 65px;
+        }
+
+        canvas {
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* white-space: nowrap; */
+            user-select: none;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-box {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #inputData {
+			width: 250px;
+			height: 150px; /* 强制设置高度 */
+			resize: none; /* 禁止调整大小 */
+			box-sizing: border-box; /* 确保内边距和宽高不冲突 */
+			outline: none; /* 去掉点击后的蓝色边框 */
+			padding: 10px; /* 添加内边距，使文本不贴边 */
+			font-size: 14px; /* 可选，调整字体大小 */
+			font-family: Arial, sans-serif; /* 可选，设置字体 */
+		}
+
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4dabf7;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3391e6;
+        }
+    </style>
+</head>
+<body>
+<div class="input-wrapper">
+    <div class="input-box">
+        <textarea type="text" id="inputData" placeholder="输入数据，用空格分隔"></textarea>
+    </div>
+    <button id="startButton">开始生成瓶子</button>
+</div>
+
+<div class="container bottle-container" id="bottleContainer"></div>
+
+<script>
+    const inputWrapper = document.querySelector('.input-wrapper');
+    const bottleContainer = document.getElementById('bottleContainer');
+    const startButton = document.getElementById('startButton');
+    const inputData = document.getElementById('inputData');
+
+    function createBottle(labelText) {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bottle-wrapper");
+
+        const canvas = document.createElement("canvas");
+        const scale = 0.3;
+        const padding = 10 * scale;
+        canvas.width = (60 + padding * 2) * scale;
+        canvas.height = (180 + padding * 2) * scale;
+        wrapper.appendChild(canvas);
+
+        const label = document.createElement("div");
+        label.classList.add("label");
+        label.textContent = labelText;
+        wrapper.appendChild(label);
+
+        bottleContainer.appendChild(wrapper);
+
+        const ctx = canvas.getContext("2d");
+        let fillLevel = 0;
+        const maxLevel = 8;
+        const waterHeightPerLevel = 17.5 * scale;
+        let currentWaterHeight = 0;
+
+        function drawBottle() {
+            const bottleWidth = 60 * scale;
+            const bottleHeight = 180 * scale;
+            const offset = 2 * scale;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 2 * scale;
+            ctx.beginPath();
+            ctx.moveTo(offset, offset);
+            ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
+            ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
+            ctx.lineTo(40 * scale + offset, bottleHeight + offset);
+            ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
+            ctx.lineTo(60 * scale + offset, offset);
+            ctx.stroke();
+
+            if (currentWaterHeight > 0) {
+                ctx.fillStyle = "#4dabf7";
+                ctx.beginPath();
+                ctx.moveTo(offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
+                ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
+                ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
+                ctx.lineTo(40 * scale + offset, bottleHeight + offset);
+                ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
+                ctx.lineTo(60 * scale + offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function animateFillLevel() {
+            const targetWaterHeight = fillLevel * waterHeightPerLevel;
+            const animationSpeed = 0.5;
+
+            function step() {
+                if (Math.abs(currentWaterHeight - targetWaterHeight) < animationSpeed) {
+                    currentWaterHeight = targetWaterHeight;
+                } else if (currentWaterHeight < targetWaterHeight) {
+                    currentWaterHeight += animationSpeed;
+                } else {
+                    currentWaterHeight -= animationSpeed * 10;
+                }
+
+                drawBottle();
+
+                if (currentWaterHeight !== targetWaterHeight) {
+                    requestAnimationFrame(step);
+                }
+            }
+
+            step();
+        }
+
+        canvas.addEventListener("click", function () {
+            if (fillLevel < maxLevel) {
+                fillLevel++;
+            } else {
+                fillLevel = 0;
+            }
+            animateFillLevel();
+        });
+
+        drawBottle();
+    }
+
+    startButton.addEventListener("click", () => {
+        const inputText = inputData.value.trim();
+        if (inputText) {
+            const labels = inputText.split(/\s+/);
+            bottleContainer.innerHTML = '';
+            labels.forEach(label => createBottle(label));
+
+            inputWrapper.style.display = 'none';
+            bottleContainer.style.display = 'flex';
+        } else {
+            alert("请输入有效的数据！");
+        }
+    });
+</script>
+</body>
+</html>
 
