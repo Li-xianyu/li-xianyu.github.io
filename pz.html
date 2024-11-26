@@ -8,57 +8,36 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
         }
 
-        .container, .bottle-container {
-            display: none;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            min-height: 100vh;
+        .buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: inline-block;
+            gap: 10px;
         }
 
-        .bottle-container {
-			display: none;
-			flex-wrap: wrap;
-			justify-content: center; /* 水平居中 */
-			align-content: center; /* 垂直居中 */
-			gap: 20px; /* 瓶子间间距 */
-			min-height: 100%; /* 防止间距过大 */
-			padding: 10px; /* 增加内边距避免瓶子贴边 */
-			box-sizing: border-box; /* 确保 padding 不影响高度 */
-		}
-
-
-        .bottle-wrapper {
-            
-            text-align: center;
-            width: 65px;
-        }
-
-        canvas {
+        .buttons svg {
             cursor: pointer;
-            display: block;
-            margin: 0 auto;
-            -webkit-tap-highlight-color: transparent;
+            width: 25px;
+            height: 25px;
+            fill: #555;
+            transition: fill 0.3s ease;
         }
 
-        .label {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            /* white-space: nowrap; */
-            user-select: none;
+        .buttons svg:hover {
+            fill: #000;
         }
 
         .input-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin-top: 150px;
+            width: 100%;
         }
 
         .input-box {
@@ -67,16 +46,15 @@
         }
 
         #inputData {
-			width: 250px;
-			height: 150px; /* 强制设置高度 */
-			resize: none; /* 禁止调整大小 */
-			box-sizing: border-box; /* 确保内边距和宽高不冲突 */
-			outline: none; /* 去掉点击后的蓝色边框 */
-			padding: 10px; /* 添加内边距，使文本不贴边 */
-			font-size: 14px; /* 可选，调整字体大小 */
-			font-family: Arial, sans-serif; /* 可选，设置字体 */
-		}
-
+            width: 250px;
+            height: 45px;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+            padding: 10px;
+            font-size: 14px;
+            transition: height 0.3s ease;
+        }
 
         button {
             padding: 10px 20px;
@@ -92,129 +70,163 @@
         button:hover {
             background-color: #3391e6;
         }
+
+        .container, .bottle-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 50px;
+        }
+
+        .bottle-wrapper {
+            text-align: center;
+            width: 90px;
+            min-width: 90px;
+            height: 80px;
+            margin-bottom: 20px;
+            margin-right: 10px;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #settingsModal {
+            display: none;
+            position: fixed;
+            top: -300px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            min-height: 200px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-radius: 15px;
+            opacity: 0;
+            transition: top 0.5s ease, opacity 0.5s ease;
+        }
+
+        #settingsModal .modal-header {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        #settingsModal .modal-content {
+            font-size: 14px;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
-<div class="input-wrapper">
-    <div class="input-box">
-        <textarea type="text" id="inputData" placeholder="输入数据，用空格分隔"></textarea>
+    <div id="overlay"></div>
+
+    <div id="settingsModal">
+        <div class="modal-header">Setting</div>
+        <div class="modal-content">
+            后期做一些设置项。
+        </div>
     </div>
-    <button id="startButton">开始生成瓶子</button>
-</div>
 
-<div class="container bottle-container" id="bottleContainer"></div>
+    <div class="buttons">
+        <svg id="settingsButton" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-sliders" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
+        </svg>
+        <svg id="editButton" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-pencil-square hidden" viewBox="0 0 16 16">
+            <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+            <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+        </svg>
+    </div>
 
-<script>
-    const inputWrapper = document.querySelector('.input-wrapper');
-    const bottleContainer = document.getElementById('bottleContainer');
-    const startButton = document.getElementById('startButton');
-    const inputData = document.getElementById('inputData');
+    <div class="input-wrapper">
+        <div class="input-box">
+            <textarea type="text" id="inputData" placeholder="输入数据，用空格分隔"></textarea>
+        </div>
+        <button id="startButton">开始生成瓶子</button>
+    </div>
 
-    function createBottle(labelText) {
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("bottle-wrapper");
+    <div class="container bottle-container" id="bottleContainer"></div>
 
-        const canvas = document.createElement("canvas");
-        const scale = 0.3;
-        const padding = 10 * scale;
-        canvas.width = (60 + padding * 2) * scale;
-        canvas.height = (180 + padding * 2) * scale;
-        wrapper.appendChild(canvas);
+    <script>
+        const inputWrapper = document.querySelector('.input-wrapper');
+        const bottleContainer = document.getElementById('bottleContainer');
+        const startButton = document.getElementById('startButton');
+        const inputData = document.getElementById('inputData');
+        const settingsButton = document.getElementById('settingsButton');
+        const editButton = document.getElementById('editButton');
+        const settingsModal = document.getElementById('settingsModal');
+        const overlay = document.getElementById('overlay');
 
-        const label = document.createElement("div");
-        label.classList.add("label");
-        label.textContent = labelText;
-        wrapper.appendChild(label);
+        settingsButton.addEventListener('click', () => {
+            settingsModal.style.display = 'block';
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
 
-        bottleContainer.appendChild(wrapper);
-
-        const ctx = canvas.getContext("2d");
-        let fillLevel = 0;
-        const maxLevel = 8;
-        const waterHeightPerLevel = 17.5 * scale;
-        let currentWaterHeight = 0;
-
-        function drawBottle() {
-            const bottleWidth = 60 * scale;
-            const bottleHeight = 180 * scale;
-            const offset = 2 * scale;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = "#333";
-            ctx.lineWidth = 2 * scale;
-            ctx.beginPath();
-            ctx.moveTo(offset, offset);
-            ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
-            ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
-            ctx.lineTo(40 * scale + offset, bottleHeight + offset);
-            ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
-            ctx.lineTo(60 * scale + offset, offset);
-            ctx.stroke();
-
-            if (currentWaterHeight > 0) {
-                ctx.fillStyle = "#4dabf7";
-                ctx.beginPath();
-                ctx.moveTo(offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
-                ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
-                ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
-                ctx.lineTo(40 * scale + offset, bottleHeight + offset);
-                ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
-                ctx.lineTo(60 * scale + offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
-                ctx.closePath();
-                ctx.fill();
-            }
-        }
-
-        function animateFillLevel() {
-            const targetWaterHeight = fillLevel * waterHeightPerLevel;
-            const animationSpeed = 0.5;
-
-            function step() {
-                if (Math.abs(currentWaterHeight - targetWaterHeight) < animationSpeed) {
-                    currentWaterHeight = targetWaterHeight;
-                } else if (currentWaterHeight < targetWaterHeight) {
-                    currentWaterHeight += animationSpeed;
-                } else {
-                    currentWaterHeight -= animationSpeed * 10;
-                }
-
-                drawBottle();
-
-                if (currentWaterHeight !== targetWaterHeight) {
-                    requestAnimationFrame(step);
-                }
-            }
-
-            step();
-        }
-
-        canvas.addEventListener("click", function () {
-            if (fillLevel < maxLevel) {
-                fillLevel++;
-            } else {
-                fillLevel = 0;
-            }
-            animateFillLevel();
+            setTimeout(() => {
+                settingsModal.style.top = '50px';
+                settingsModal.style.opacity = 1;
+            }, 10);
         });
 
-        drawBottle();
-    }
+        overlay.addEventListener('click', () => {
+            settingsModal.style.top = '-300px';
+            settingsModal.style.opacity = 0;
+            setTimeout(() => {
+                settingsModal.style.display = 'none';
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 500);
+        });
 
-    startButton.addEventListener("click", () => {
-        const inputText = inputData.value.trim();
-        if (inputText) {
-            const labels = inputText.split(/\s+/);
+        inputData.addEventListener('input', () => {
+            inputData.style.height = '45px';
+            inputData.style.height = `${Math.max(inputData.scrollHeight, 45)}px`;
+        });
+
+        startButton.addEventListener("click", () => {
+            const inputText = inputData.value.trim();
+            if (inputText) {
+                const labels = inputText.split(/\s+/);
+
+                bottleContainer.innerHTML = ''; 
+                labels.forEach((label, index) => {
+                    const bottleWrapper = document.createElement('div');
+                    bottleWrapper.classList.add('bottle-wrapper');
+
+                    const bottleLabel = document.createElement('div');
+                    bottleLabel.textContent = label;
+
+                    bottleWrapper.appendChild(bottleLabel);
+                    bottleContainer.appendChild(bottleWrapper);
+                });
+
+                inputWrapper.style.display = 'none';
+            }
+        });
+
+        editButton.addEventListener('click', () => {
+            inputWrapper.style.display = 'flex';
             bottleContainer.innerHTML = '';
-            labels.forEach(label => createBottle(label));
-
-            inputWrapper.style.display = 'none';
-            bottleContainer.style.display = 'flex';
-        } else {
-            alert("请输入有效的数据！");
-        }
-    });
-</script>
+            inputData.value = '';
+        });
+    </script>
 </body>
 </html>
-
