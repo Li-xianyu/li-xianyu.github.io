@@ -197,17 +197,7 @@ body {
 }
 
 .themeColorOpt.selected {
-  position: relative; 
+	transition: .5s;
+    box-shadow: 0 0 0 3px rgba(187, 187, 187, 0.5);
 }
 
-.themeColorOpt.selected::after {
-  content: '';
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  width: calc(100% + 6px); 
-  height: calc(100% + 6px);
-  border: 3px solid rgba(85, 85, 85, 0.3);
-  border-radius: 50%; 
-  z-index: -1; 
-}
