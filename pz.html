@@ -4,164 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>喜好瓶</title>
-    <style>
-
-* {
-	margin: 0;
-	padding: 0;
-	
-}
-html {
-	background-color: #f0f0f0;
-}
-body {
-	width: 100%;
-	height: 100vh;
-	max-width: 400px;
-	margin: 0 auto;
-	background-color: #ffffff;
-	font-family: Arial, sans-serif;
-	overflow-x: hidden;
-	position: relative;
-}
-
-.buttons {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    display: inline-block;
-    gap: 10px;
-}
-
-.buttons svg {
-    cursor: pointer;
-    width: 25px;
-    height: 25px;
-    fill: #555;
-    transition: fill 0.3s ease;
-}
-
-.buttons svg:hover {
-    fill: #000;
-}
-
-.input-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 150px;
-    width: 100%;
-}
-
-.input-box {
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-#inputData {
-    width: 250px;
-    height: 45px;  
-    resize: none; 
-    box-sizing: border-box;
-    outline: none;
-    padding: 10px;
-    font-size: 14px;
-    transition: height 0.3s ease;
-    user-select: text;
-	border-radius: 4px;
-}
-#inputData::placeholder {
-    user-select: none;
-}
-#startButton {
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 4px;
-    background-color: grey;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#startButton:hover {
-    background-color: black;
-    color:white;
-}
-
-
-.container, .bottle-container {
-    display: flex;
-    flex-wrap: wrap; 
-    justify-content: center; 
-    align-items: flex-start; 
-    gap: 10px; 
-	  padding-top: 50px;
-}
-
-
-.bottle-wrapper {
-    text-align: center;
-    width: 90px; 
-    min-width: 90px;  
-    height: 80px;
-    margin-bottom: 20px;
-    margin-right: 0px; 
-    border-radius: 10px;
-    box-sizing: border-box;
-}
-
-.hidden {
-    display: none;
-}
-
-.label {
-	user-select: none;
-}
-
-#settingsModal {
-	user-select: none;
-	display: none; 
-	position: fixed;
-	top: -300px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 300px;
-	min-height: 200px;
-	background-color: #fff;
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-	padding: 20px;
-	box-sizing: border-box;
-	z-index: 1000; 
-	border-radius: 15px; 
-	opacity: 0; 
-	transition: top 0.5s ease, opacity 0.5s ease; 
-}
-
-#settingsModal .modal-header {
-	text-align: center;
-	font-size: 16px;
-	font-weight: bold;
-	margin-bottom: 20px;
-}
-
-#settingsModal .modal-content {
-	font-size: 14px;
-}
-
-
-#overlay {
-	display: none; 
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.5);
-	z-index: 999; 
-}
-
-    </style>
+	<link href="css/index.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 
@@ -170,8 +13,16 @@ body {
     <div id="settingsModal">
         <div class="modal-header">Setting</div>
         <div class="modal-content">
-
-            后期做一些设置项。
+			<div class="setOptBox">
+			  <span class="setOptCaption">主题色</span>
+			  <div class="themeColorOptGroup">
+			    <span class="themeColorOpt" id="themeColorOptLime" title="青柠" style="background-color: #00ff00;"></span>
+			    <span class="themeColorOpt" id="themeColorOptIndigo" title="靛青" style="background-color: indigo;"></span>
+			    <span class="themeColorOpt" id="themeColorOptViolet" title="魅紫" style="background-color: violet;"></span>
+			    <span class="themeColorOpt" id="themeColorOptRose" title="玫红" style="background-color: #ff007f;"></span>
+			    <span class="themeColorOpt selected" id="themeColorOptBlue" title="岛蓝" style="background-color: #00aaff;"></span>
+			  </div>
+			</div>
         </div>
     </div>
 	
@@ -197,49 +48,61 @@ body {
 <div class="container bottle-container" id="bottleContainer"></div>
 
 <script>
- const inputWrapper = document.querySelector('.input-wrapper');
+const inputWrapper = document.querySelector('.input-wrapper');
 const bottleContainer = document.getElementById('bottleContainer');
 const startButton = document.getElementById('startButton');
 const inputData = document.getElementById('inputData');
-
 const settingsButton = document.getElementById('settingsButton');
 const editButton = document.getElementById('editButton');
-
 const settingsModal = document.getElementById('settingsModal');
-        const overlay = document.getElementById('overlay');
+const overlay = document.getElementById('overlay');
 
-        // 点击设置按钮时，显示弹窗并触发动画
-        settingsButton.addEventListener('click', () => {
-            settingsModal.style.display = 'block'; // 显示弹窗
-            overlay.style.display = 'block'; // 显示遮罩
-            document.body.style.overflow = 'hidden'; // 禁用页面滚动
+let currentColor = localStorage.getItem('selectedColor') || '#00aaff';
+window.addEventListener('load', () => {
+    // 先移除所有颜色选项的 'selected' 类
+    themeColorOptions.forEach(option => {
+        option.classList.remove('selected');
+    });
 
-            // 动画效果：从底部滑入，淡入
-            setTimeout(() => {
-                settingsModal.style.top = '50px'; // 移动到指定位置
-                settingsModal.style.opacity = 1;   // 设置为不透明
-            }, 10); // 延迟执行，确保样式变更生效
-        });
+    // 如果有保存的颜色，设置对应的颜色选项为选中状态
+    themeColorOptions.forEach(option => {
+        if (option.style.backgroundColor === currentColor) {
+            option.classList.add('selected');
+        }
+    });
+});
 
-        // 点击遮罩时，隐藏弹窗并触发动画
-        overlay.addEventListener('click', () => {
-            settingsModal.style.top = '-300px';  // 向下移动，消失
-            settingsModal.style.opacity = 0;     // 设置为透明
-            // 隐藏遮罩层
-            setTimeout(() => {
-                settingsModal.style.display = 'none';
-                overlay.style.display = 'none';
-                document.body.style.overflow = 'auto'; // 恢复页面滚动
-            }, 500); // 动画持续500ms后隐藏
-        });
+
+
+// 点击设置按钮时，显示弹窗并触发动画
+settingsButton.addEventListener('click', () => {
+	settingsModal.style.display = 'block'; // 显示弹窗
+	overlay.style.display = 'block'; // 显示遮罩
+	document.body.style.overflow = 'hidden'; // 禁用页面滚动
+
+	// 动画效果：从底部滑入，淡入
+	setTimeout(() => {
+		settingsModal.style.top = '50px'; // 移动到指定位置
+		settingsModal.style.opacity = 1;   // 设置为不透明
+	}, 10); // 延迟执行，确保样式变更生效
+});
+
+// 点击遮罩时，隐藏弹窗并触发动画
+overlay.addEventListener('click', () => {
+	settingsModal.style.top = '-300px';  // 向下移动，消失
+	settingsModal.style.opacity = 0;     // 设置为透明
+	// 隐藏遮罩层
+	setTimeout(() => {
+		settingsModal.style.display = 'none';
+		overlay.style.display = 'none';
+		document.body.style.overflow = 'auto'; // 恢复页面滚动
+	}, 500); // 动画持续500ms后隐藏
+});
 
 inputData.addEventListener('input', () => {
 	console.log(1);
-    inputData.style.height = '45px';
-    
-    // 设置高度为内容的高度 + padding (考虑到上/下 padding)
-
-    inputData.style.height =   `${Math.max(inputData.scrollHeight, 45)}px`;
+    inputData.style.height = 'auto'; // 确保初始时恢复为自动高度
+    inputData.style.height = `${Math.max(inputData.scrollHeight, 45)}px`; // 设置最小高度
 });
 
 
@@ -248,11 +111,12 @@ startButton.addEventListener("click", () => {
     if (inputText) {
         const labels = inputText.split(/\s+/);
         bottleContainer.innerHTML = ''; // 清空之前的瓶子
-        labels.forEach(label => createBottle(label));
+        labels.forEach(label => createBottle(label, currentColor));
 
         inputWrapper.style.display = 'none';
         bottleContainer.style.display = 'flex';
         editButton.classList.remove('hidden');
+		settingsButton.classList.add('hidden');
     } else {
         alert("请输入有效的数据！");
     }
@@ -263,8 +127,35 @@ startButton.addEventListener("click", () => {
         bottleContainer.style.display = 'none';
         inputWrapper.style.display = 'flex';
         editButton.classList.add('hidden');
+		settingsButton.classList.remove('hidden');
     });
-function createBottle(labelText) {
+
+
+
+const themeColorOptions = document.querySelectorAll('.themeColorOpt'); // 获取所有颜色选项
+
+
+// 监听每个颜色选项的点击事件
+// 监听每个颜色选项的点击事件
+themeColorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        // 移除所有选项的 selected 类
+        themeColorOptions.forEach(opt => opt.classList.remove('selected'));
+        
+        // 给当前点击的选项添加 selected 类
+        option.classList.add('selected');
+
+        // 获取选中的颜色
+        const selectedColor = option.style.backgroundColor;
+		 // 保存选中的颜色到 localStorage
+		localStorage.setItem('selectedColor', selectedColor);
+		currentColor = selectedColor;
+    });
+});
+
+
+// 修改 createBottle 函数，让它可以根据颜色参数重新绘制瓶子
+function createBottle(labelText, color) {
     const wrapper = document.createElement("div");
     wrapper.classList.add("bottle-wrapper");
 
@@ -306,8 +197,9 @@ function createBottle(labelText) {
         ctx.lineTo(60 * scale + offset, offset);
         ctx.stroke();
 
+        // 使用选中的颜色填充水
         if (currentWaterHeight > 0) {
-            ctx.fillStyle = "#4dabf7";
+            ctx.fillStyle = color; // 使用传入的颜色
             ctx.beginPath();
             ctx.moveTo(offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
             ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
@@ -354,6 +246,7 @@ function createBottle(labelText) {
 
     drawBottle();
 }
+
 
 </script>
 </body>
