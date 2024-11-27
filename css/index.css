@@ -1,7 +1,8 @@
 * {
 	margin: 0;
 	padding: 0;
-	
+	user-select: none;
+  -webkit-tap-highlight-color: transparent; /* 全局禁用点击高亮 */
 }
 html {
 	background-color: #f0f0f0;
@@ -23,7 +24,7 @@ body {
     right: 10px;
     display: inline-block;
     gap: 10px;
-	user-select: none;
+	
 }
 
 .buttons svg {
@@ -63,9 +64,6 @@ body {
     transition: height 0.3s ease;
     user-select: text;
 	border-radius: 4px;
-}
-#inputData::placeholder {
-    user-select: none;
 }
 #startButton {
     padding: 10px 20px;
@@ -109,14 +107,10 @@ body {
     display: none;
 }
 
-.label {
-	user-select: none;
-}
-
 /* setting */
 
 #settingsModal {
-	user-select: none;
+	
 	display: none; 
 	position: fixed;
 	top: -300px;
