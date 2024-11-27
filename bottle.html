@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喜好瓶</title>
+	<link href="css/index.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+
+    <div id="overlay"></div>
+
+    <div id="settingsModal">
+        <div class="modal-header">Setting</div>
+        <div class="modal-content">
+			<div class="setOptBox">
+			  <span class="setOptCaption">主题色</span>
+			  <div class="themeColorOptGroup">
+			    <span class="themeColorOpt" id="themeColorOptLime" title="青柠" style="background-color: #00ff00;"></span>
+			    <span class="themeColorOpt" id="themeColorOptIndigo" title="靛青" style="background-color: indigo;"></span>
+			    <span class="themeColorOpt" id="themeColorOptViolet" title="魅紫" style="background-color: violet;"></span>
+			    <span class="themeColorOpt" id="themeColorOptRose" title="玫红" style="background-color: #ff007f;"></span>
+			    <span class="themeColorOpt" id="themeColorOptBlue" title="岛蓝" style="background-color: #00aaff;"></span>
+			  </div>
+			</div>
+        </div>
+    </div>
+	
+<div class="buttons">
+
+    <svg id="settingsButton" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-sliders" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
+    </svg>
+
+    <svg id="editButton" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-pencil-square hidden" viewBox="0 0 16 16">
+        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+    </svg>
+</div>
+
+<div class="input-wrapper">
+    <div class="input-box">
+        <textarea type="text" id="inputData" placeholder="输入数据，用空格分隔"></textarea>
+    </div>
+    <button id="startButton">开始生成瓶子</button>
+</div>
+
+<div class="container bottle-container" id="bottleContainer"></div>
+
+<script>
+const inputWrapper = document.querySelector('.input-wrapper');
+const bottleContainer = document.getElementById('bottleContainer');
+const startButton = document.getElementById('startButton');
+const inputData = document.getElementById('inputData');
+const settingsButton = document.getElementById('settingsButton');
+const editButton = document.getElementById('editButton');
+const settingsModal = document.getElementById('settingsModal');
+const overlay = document.getElementById('overlay');
+
+let currentColor = localStorage.getItem('selectedColor') || '#00aaff';
+window.addEventListener('load', () => {
+    // 先移除所有颜色选项的 'selected' 类
+    themeColorOptions.forEach(option => {
+        option.classList.remove('selected');
+    });
+
+    // 如果有保存的颜色，设置对应的颜色选项为选中状态
+    themeColorOptions.forEach(option => {
+        if (option.style.backgroundColor === currentColor) {
+            option.classList.add('selected');
+        }
+    });
+});
+
+// 点击设置按钮时，显示弹窗并触发动画
+settingsButton.addEventListener('click', () => {
+	settingsModal.style.display = 'block'; // 显示弹窗
+	overlay.style.display = 'block'; // 显示遮罩
+	document.body.style.overflow = 'hidden'; // 禁用页面滚动
+
+	// 动画效果：从底部滑入，淡入
+	setTimeout(() => {
+		settingsModal.style.top = '50px'; // 移动到指定位置
+		settingsModal.style.opacity = 1;   // 设置为不透明
+	}, 10); // 延迟执行，确保样式变更生效
+});
+
+// 点击遮罩时，隐藏弹窗并触发动画
+overlay.addEventListener('click', () => {
+	settingsModal.style.top = '-300px';  // 向下移动，消失
+	settingsModal.style.opacity = 0;     // 设置为透明
+	// 隐藏遮罩层
+	setTimeout(() => {
+		settingsModal.style.display = 'none';
+		overlay.style.display = 'none';
+		document.body.style.overflow = 'auto'; // 恢复页面滚动
+	}, 500); // 动画持续500ms后隐藏
+});
+
+inputData.addEventListener('input', () => {
+	console.log(1);
+    inputData.style.height = 'auto'; // 确保初始时恢复为自动高度
+    inputData.style.height = `${Math.max(inputData.scrollHeight, 45)}px`; // 设置最小高度
+});
+
+const themeColorOptions = document.querySelectorAll('.themeColorOpt'); // 获取所有颜色选项
+
+
+
+startButton.addEventListener("click", () => {
+    const inputText = inputData.value.trim();
+    if (inputText) {
+        const labels = inputText.split(/\s+/);
+        bottleContainer.innerHTML = ''; // 清空之前的瓶子
+        labels.forEach(label => createBottle(label, currentColor));
+
+        inputWrapper.style.display = 'none';
+        bottleContainer.style.display = 'flex';
+        editButton.classList.remove('hidden');
+    } else {
+        alert("请输入有效的数据！");
+    }
+});
+
+editButton.addEventListener("click", () => {
+    const labels = Array.from(bottleContainer.querySelectorAll('.label')).map(label => label.textContent);
+    inputData.value = labels.join(' ');
+    bottleContainer.style.display = 'none';
+    inputWrapper.style.display = 'flex';
+    editButton.classList.add('hidden');
+});
+
+let bottleData = [];  // 用于保存瓶子的水位数据
+
+// 修改 createBottle 函数
+function createBottle(labelText, color, initialFillLevel = 0) {
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("bottle-wrapper");
+
+    const canvas = document.createElement("canvas");
+    const scale = 0.3;
+    const padding = 10 * scale;
+    canvas.width = (60 + padding * 2) * scale;
+    canvas.height = (180 + padding * 2) * scale;
+    wrapper.appendChild(canvas);
+
+    const label = document.createElement("div");
+    label.classList.add("label");
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+
+    bottleContainer.appendChild(wrapper);
+
+    const ctx = canvas.getContext("2d");
+    let fillLevel = initialFillLevel;  // 使用传入的初始水位
+    const maxLevel = 8;
+    const waterHeightPerLevel = 17.5 * scale;
+    let currentWaterHeight = waterHeightPerLevel * fillLevel;
+
+    // 绘制瓶子
+    function drawBottle() {
+        const bottleWidth = 60 * scale;
+        const bottleHeight = 180 * scale;
+        const offset = 2 * scale;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 2 * scale;
+        ctx.beginPath();
+        ctx.moveTo(offset, offset);
+        ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
+        ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
+        ctx.lineTo(40 * scale + offset, bottleHeight + offset);
+        ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
+        ctx.lineTo(60 * scale + offset, offset);
+        ctx.stroke();
+
+        // 绘制水
+        if (currentWaterHeight > 0) {
+            ctx.fillStyle = color; // 使用传入的颜色
+            ctx.beginPath();
+            ctx.moveTo(offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
+            ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
+            ctx.quadraticCurveTo(offset, bottleHeight + offset, 20 * scale + offset, bottleHeight + offset);
+            ctx.lineTo(40 * scale + offset, bottleHeight + offset);
+            ctx.quadraticCurveTo(60 * scale + offset, bottleHeight + offset, 60 * scale + offset, bottleHeight - 40 * scale + offset);
+            ctx.lineTo(60 * scale + offset, bottleHeight - 40 * scale - currentWaterHeight + offset);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    // 填充水位动画
+    function animateFillLevel() {
+        const targetWaterHeight = fillLevel * waterHeightPerLevel;
+        const animationSpeed = 0.5;
+
+        function step() {
+            if (Math.abs(currentWaterHeight - targetWaterHeight) < animationSpeed) {
+                currentWaterHeight = targetWaterHeight;
+            } else if (currentWaterHeight < targetWaterHeight) {
+                currentWaterHeight += animationSpeed;
+            } else {
+                currentWaterHeight -= animationSpeed * 10;
+            }
+
+            drawBottle();
+
+            if (currentWaterHeight !== targetWaterHeight) {
+                requestAnimationFrame(step);
+            }
+        }
+
+        step();
+    }
+
+    // 点击瓶子填充水位
+    canvas.addEventListener("click", function () {
+        if (fillLevel < maxLevel) {
+            fillLevel++;
+        } else {
+            fillLevel = 0;
+        }
+        animateFillLevel();
+
+        // 更新当前瓶子的水位
+        const bottleIndex = bottleData.findIndex(bottle => bottle.label === labelText);
+        if (bottleIndex !== -1) {
+            bottleData[bottleIndex].fillLevel = fillLevel;
+        } else {
+            bottleData.push({ label: labelText, fillLevel: fillLevel });
+        }
+    });
+
+    drawBottle();
+}
+
+// 更新颜色设置时保存当前水位数据
+themeColorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        // 移除所有选项的 selected 类
+        themeColorOptions.forEach(opt => opt.classList.remove('selected'));
+        
+        // 给当前点击的选项添加 selected 类
+        option.classList.add('selected');
+
+        // 获取选中的颜色
+        const selectedColor = option.style.backgroundColor;
+        // 保存选中的颜色到 localStorage
+        localStorage.setItem('selectedColor', selectedColor);
+
+        // 获取输入框中的数据
+        const inputText = inputData.value.trim();
+        if (inputText) {
+            const labels = inputText.split(/\s+/); // 获取输入的数据并分割
+            bottleContainer.innerHTML = ''; // 清空当前瓶子
+
+            // 根据选中的颜色重新绘制瓶子
+            labels.forEach((label, index) => {
+                // 根据 label 对应的瓶子的水位状态来恢复水位
+                const initialFillLevel = bottleData[index] ? bottleData[index].fillLevel : 0;
+                createBottle(label, selectedColor, initialFillLevel);
+            });
+        }
+    });
+});
+
+
+
+
+
+</script>
+</body>
+</html>
