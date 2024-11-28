@@ -64,6 +64,7 @@
 
 <div class="container bottle-container" id="bottleContainer"></div>
 
+<script src="js/xyui.js"></script>
 <script>
 const inputWrapper = document.querySelector('.input-wrapper');
 const bottleContainer = document.getElementById('bottleContainer');
@@ -77,7 +78,6 @@ const inputmaxlevel = document.getElementById('maxLevelInput');
 
 let currentColor = localStorage.getItem('selectedColor') || '#00aaff';
 let maxLevel = localStorage.getItem('maxlevel') || 8 ;
-
 
 window.addEventListener('load', () => {
     // 先移除所有颜色选项的 'selected' 类
@@ -97,17 +97,8 @@ window.addEventListener('load', () => {
 
 // 设置输入框的 focus 边框颜色
 function setInputFocusColor(input, color) {
-    // 动态插入样式
-    const styleSheet = document.createElement('style');
-    styleSheet.innerHTML = `
-        #${input.id}:focus {
-            border-bottom: 1.5px solid ${color} !important;
-        }
-    `;
-    document.head.appendChild(styleSheet);
+  input.style.setProperty("--focus-color", color);
 }
-
-
 
 // 点击设置按钮时，显示弹窗并触发动画
 settingsButton.addEventListener('click', () => {
@@ -141,25 +132,31 @@ inputData.addEventListener('input', () => {
 });
 
 // 最大级数输入
-let debounceTimer; // 用于存储防抖计时器
-
-inputmaxlevel.addEventListener('input', () => {
-    clearTimeout(debounceTimer); // 每次输入时清除之前的计时器
-
-    // 开始新的 3 秒计时
-    debounceTimer = setTimeout(() => {
-        let value = parseInt(inputmaxlevel.value, 10) || 0; // 转换为数字
-        if (value > 9) {
-            console.log("不许太大哦");
-            value = 9;
-        } else if (value < 3) {
-            console.log("不能太小哦");
-            value = 3;
-        }
-        inputmaxlevel.value = value; // 更新输入框的值
-        localStorage.setItem('maxlevel', value); // 保存到本地存储
-    }, 3000); // 延迟 3 秒执行校正
+// 监听输入框的输入和失去焦点事件
+inputmaxlevel.addEventListener('input', (e) => {
+    // 只允许输入数字
+    inputmaxlevel.value = inputmaxlevel.value.replace(/[^0-9]/g, ''); 
 });
+
+inputmaxlevel.addEventListener('blur', (e) => {
+    let value = parseInt(inputmaxlevel.value, 10) || 0; // 将值转换为数字
+    if (value > 10) {
+        tip.bottomPopup('级数只能是3~10的整数', { position: "top", duration: 2000, fadeDuration: 500 });
+        value = 10;
+    } else if (value < 3) {
+        tip.topBar("级数只能是3~10的整数", {
+          slideDuration: 500, // 滑出动画时间
+          duration: 3000, // 显示时间
+          backgroundColor: currentColor,
+          textColor: "white",
+        });
+        value = 3;
+    }
+    inputmaxlevel.value = value; // 更新输入框的值
+    maxLevel = valu;
+    localStorage.setItem('maxlevel', value); // 保存到本地存储
+});
+
 
 
 
@@ -193,7 +190,6 @@ startButton.addEventListener("click", () => {
 const themeColorOptions = document.querySelectorAll('.themeColorOpt'); // 获取所有颜色选项
 
 
-// 监听每个颜色选项的点击事件
 // 监听每个颜色选项的点击事件
 themeColorOptions.forEach(option => {
     option.addEventListener('click', () => {
