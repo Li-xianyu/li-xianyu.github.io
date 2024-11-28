@@ -149,6 +149,7 @@ inputmaxlevel.addEventListener('input', (e) => {
     } else if (value < 3) {
         value = 3;
     }
+    maxLevel = value;
     inputmaxlevel.value = value; // 更新输入框
     localStorage.setItem('maxlevel', value); // 保存到本地
 });
