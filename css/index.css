@@ -1,8 +1,7 @@
 * {
 	margin: 0;
 	padding: 0;
-	user-select: none;
-  -webkit-tap-highlight-color: transparent; /* 全局禁用点击高亮 */
+	
 }
 html {
 	background-color: #f0f0f0;
@@ -24,7 +23,7 @@ body {
     right: 10px;
     display: inline-block;
     gap: 10px;
-	
+	user-select: none;
 }
 
 .buttons svg {
@@ -44,7 +43,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 200px;
+    padding-top: 150px;
     width: 100%;
 }
 
@@ -64,6 +63,9 @@ body {
     transition: height 0.3s ease;
     user-select: text;
 	border-radius: 4px;
+}
+#inputData::placeholder {
+    user-select: none;
 }
 #startButton {
     padding: 10px 20px;
@@ -98,6 +100,7 @@ body {
     min-width: 90px;  
     height: 80px;
     margin-bottom: 20px;
+    margin-right: 10px; 
     border-radius: 10px;
     box-sizing: border-box;
 }
@@ -105,13 +108,15 @@ body {
 .hidden {
     display: none;
 }
+
 .label {
-    color:grey;
+	user-select: none;
 }
+
 /* setting */
 
 #settingsModal {
-	
+	user-select: none;
 	display: none; 
 	position: fixed;
 	top: -300px;
@@ -195,4 +200,38 @@ body {
 	transition: .5s;
     box-shadow: 0 0 0 3px rgba(187, 187, 187, 0.5);
 }
+
+/* 针对 Chrome、Edge、Safari (WebKit 内核) 浏览器 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* 针对 Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* 防止其他未知浏览器出现步进控件 */
+input[type="number"] {
+    appearance: none;
+}
+
+
+
+.maxLevelInput {
+    width: 60px;
+    text-align: center;
+    font-size: 16px;
+    outline: none;
+    border: none;
+    border-bottom: 1.5px solid #ccc;
+    transition: border-bottom-color 0.2s, border-width 0.2s;
+}
+
+.maxLevelInput:focus {
+    border-bottom: 1.5px solid #007bff;
+}
+
 
