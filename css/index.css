@@ -3,6 +3,21 @@
 	padding: 0;
 	
 }
+/* 消除 WebKit 内核浏览器的点击高亮 */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 防止一些 Android 浏览器的点击背景高亮 */
+*:focus {
+    outline: none;
+}
+
+/* 对 iOS Safari 的按钮点击闪烁问题 */
+button, input, textarea {
+    -webkit-appearance: none; /* 重置样式 */
+}
+
 html {
 	background-color: #f0f0f0;
 }
@@ -15,6 +30,8 @@ body {
 	font-family: Arial, sans-serif;
 	overflow-x: hidden;
 	position: relative;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
 }
 
 .buttons {
@@ -224,14 +241,20 @@ input[type="number"] {
     width: 60px;
     text-align: center;
     font-size: 16px;
-    outline: none;
     border: none;
-    border-bottom: 1.5px solid #ccc;
-    transition: border-bottom-color 0.2s, border-width 0.2s;
+    outline: none;
+    box-sizing: border-box;
+    background: linear-gradient(to right, var(--focus-color, #007bff), var(--focus-color, #007bff)) no-repeat;
+    background-position: left bottom;
+    background-size: 0% 2px;
+    background-repeat: no-repeat;
+    transition: background-size 0.5s ease, box-shadow 0.5s ease;
+    box-shadow: inset 0 -2px 0 0 #ccc; /* 模拟默认边框 */
 }
 
 .maxLevelInput:focus {
-    border-bottom: 1.5px solid #007bff;
+    background-size: 100% 2px; /* 焦点时展开背景 */
+    box-shadow: none; /* 隐藏默认阴影 */
 }
 
 
