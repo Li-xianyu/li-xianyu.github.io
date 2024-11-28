@@ -141,8 +141,13 @@ inputmaxlevel.addEventListener('input', (e) => {
 inputmaxlevel.addEventListener('blur', (e) => {
     let value = parseInt(inputmaxlevel.value, 10) || 0; // 将值转换为数字
     if (value > 10) {
-        tip.bottomPopup('级数只能是3~10的整数', { position: "top", duration: 2000, fadeDuration: 500 });
-        value = 10;
+        tip.topBar('级数只能是3~10的整数', { 
+          slideDuration: 500, // 滑出动画时间
+          duration: 3000, // 显示时间
+          backgroundColor: currentColor,
+          textColor: "white",
+        });        
+	    value = 10;
     } else if (value < 3) {
         tip.topBar("级数只能是3~10的整数", {
           slideDuration: 500, // 滑出动画时间
