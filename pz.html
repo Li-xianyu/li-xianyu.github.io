@@ -141,18 +141,26 @@ inputData.addEventListener('input', () => {
 });
 
 // 最大级数输入
-inputmaxlevel.addEventListener('input', (e) => {
-    let value = parseInt(inputmaxlevel.value, 10) || 0; // 转换为数字
-    if (value > 10) {
-        console.log("不许太大哦");
-        value = 10;
-    } else if (value < 3) {
-        value = 3;
-    }
-    maxLevel = value;
-    inputmaxlevel.value = value; // 更新输入框
-    localStorage.setItem('maxlevel', value); // 保存到本地
+let debounceTimer; // 用于存储防抖计时器
+
+inputmaxlevel.addEventListener('input', () => {
+    clearTimeout(debounceTimer); // 每次输入时清除之前的计时器
+
+    // 开始新的 3 秒计时
+    debounceTimer = setTimeout(() => {
+        let value = parseInt(inputmaxlevel.value, 10) || 0; // 转换为数字
+        if (value > 9) {
+            console.log("不许太大哦");
+            value = 9;
+        } else if (value < 3) {
+            console.log("不能太小哦");
+            value = 3;
+        }
+        inputmaxlevel.value = value; // 更新输入框的值
+        localStorage.setItem('maxlevel', value); // 保存到本地存储
+    }, 3000); // 延迟 3 秒执行校正
 });
+
 
 
 
