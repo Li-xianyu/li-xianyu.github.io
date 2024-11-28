@@ -10,21 +10,38 @@
 
     <div id="overlay"></div>
 
-    <div id="settingsModal">
-        <div class="modal-header">Setting</div>
-        <div class="modal-content">
-			<div class="setOptBox">
-			  <span class="setOptCaption">主题色</span>
-			  <div class="themeColorOptGroup">
-			    <span class="themeColorOpt" id="themeColorOptLime" title="青柠" style="background-color: #00ff00;"></span>
-			    <span class="themeColorOpt" id="themeColorOptIndigo" title="靛青" style="background-color: indigo;"></span>
-			    <span class="themeColorOpt" id="themeColorOptViolet" title="魅紫" style="background-color: violet;"></span>
-			    <span class="themeColorOpt" id="themeColorOptRose" title="玫红" style="background-color: #ff007f;"></span>
-			    <span class="themeColorOpt selected" id="themeColorOptBlue" title="岛蓝" style="background-color: #00aaff;"></span>
-			  </div>
-			</div>
+<div id="settingsModal">
+    <div class="modal-header">Setting</div>
+    <div class="modal-content">
+        <!-- 主题色配置 -->
+        <div class="setOptBox">
+            <span class="setOptCaption">主题色</span>
+            <div class="themeColorOptGroup">
+                <span class="themeColorOpt" id="themeColorOptLime" title="青柠" style="background-color: #70C000;"></span>
+                <span class="themeColorOpt" id="themeColorOptIndigo" title="靛青" style="background-color: #4CB6C2;"></span>
+                <span class="themeColorOpt" id="themeColorOptViolet" title="魅紫" style="background-color: #BB8CDD;"></span>
+                <span class="themeColorOpt" id="themeColorOptRose" title="玫红" style="background-color: #ff007f;"></span>
+                <span class="themeColorOpt selected" id="themeColorOptBlue" title="岛蓝" style="background-color: #00aaff;"></span>
+            </div>
         </div>
+        <!-- 水位最大级数配置 -->
+        <div class="setOptBox">
+            <span class="setOptCaption">水位最大级数</span>
+            <input
+                type="number"
+                id="maxLevelInput"
+                class="maxLevelInput"
+                value="5"
+                min="1"
+                max="10"
+                title="设置瓶子的最大填充级数"
+                autocomplete="off"
+            />
+        </div>
+
     </div>
+</div>
+
 	
 <div class="buttons">
 
@@ -56,8 +73,12 @@ const settingsButton = document.getElementById('settingsButton');
 const editButton = document.getElementById('editButton');
 const settingsModal = document.getElementById('settingsModal');
 const overlay = document.getElementById('overlay');
+const inputmaxlevel = document.getElementById('maxLevelInput');
 
 let currentColor = localStorage.getItem('selectedColor') || '#00aaff';
+let maxLevel = localStorage.getItem('maxlevel') || 8 ;
+
+
 window.addEventListener('load', () => {
     // 先移除所有颜色选项的 'selected' 类
     themeColorOptions.forEach(option => {
@@ -70,7 +91,21 @@ window.addEventListener('load', () => {
             option.classList.add('selected');
         }
     });
+	setInputFocusColor(maxLevelInput, currentColor);
+	inputmaxlevel.value = maxLevel;
 });
+
+// 设置输入框的 focus 边框颜色
+function setInputFocusColor(input, color) {
+    // 动态插入样式
+    const styleSheet = document.createElement('style');
+    styleSheet.innerHTML = `
+        #${input.id}:focus {
+            border-bottom: 1.5px solid ${color} !important;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+}
 
 
 
@@ -104,6 +139,20 @@ inputData.addEventListener('input', () => {
     inputData.style.height = 'auto'; // 确保初始时恢复为自动高度
     inputData.style.height = `${Math.max(inputData.scrollHeight, 45)}px`; // 设置最小高度
 });
+
+// 最大级数输入
+inputmaxlevel.addEventListener('input', (e) => {
+    let value = parseInt(inputmaxlevel.value, 10) || 0; // 转换为数字
+    if (value > 10) {
+        console.log("不许太大哦");
+        value = 10;
+    } else if (value < 3) {
+        value = 3;
+    }
+    inputmaxlevel.value = value; // 更新输入框
+    localStorage.setItem('maxlevel', value); // 保存到本地
+});
+
 
 
 startButton.addEventListener("click", () => {
@@ -148,6 +197,7 @@ themeColorOptions.forEach(option => {
         // 获取选中的颜色
         const selectedColor = option.style.backgroundColor;
 		 // 保存选中的颜色到 localStorage
+		setInputFocusColor(maxLevelInput, selectedColor);
 		localStorage.setItem('selectedColor', selectedColor);
 		currentColor = selectedColor;
     });
@@ -175,8 +225,8 @@ function createBottle(labelText, color) {
 
     const ctx = canvas.getContext("2d");
     let fillLevel = 0;
-    const maxLevel = 8;
-    const waterHeightPerLevel = 17.5 * scale;
+   
+    const waterHeightPerLevel = (140/maxLevel - 0.5) * scale;
     let currentWaterHeight = 0;
 
     function drawBottle() {
@@ -187,7 +237,7 @@ function createBottle(labelText, color) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         ctx.strokeStyle = "#333";
-        ctx.lineWidth = 2 * scale;
+        ctx.lineWidth = 1 * scale;
         ctx.beginPath();
         ctx.moveTo(offset, offset);
         ctx.lineTo(offset, bottleHeight - 40 * scale + offset);
