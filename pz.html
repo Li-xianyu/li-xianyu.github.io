@@ -78,6 +78,7 @@ const inputmaxlevel = document.getElementById('maxLevelInput');
 
 let currentColor = localStorage.getItem('selectedColor') || '#00aaff';
 let maxLevel = localStorage.getItem('maxlevel') || 8 ;
+if (maxLevel < 5){ maxLevel = 5};
 
 window.addEventListener('load', () => {
     // 先移除所有颜色选项的 'selected' 类
