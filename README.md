@@ -10,7 +10,7 @@
    一些关于我的介绍和随笔，展现自我的小角落。  
 
 2. **有趣的小应用/小游戏**  
-   - 喜好瓶填充小游戏  👉 **[喜好瓶](https://li-xianyu.github.io/xycode/pz.html)**  
+   - 喜好瓶填充小游戏  👉 **[喜好瓶](https://li-xianyu.github.io/pz.html)**  
 
 
 ---
