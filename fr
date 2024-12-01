@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家规</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- 引入 jQuery -->
+  <style>
+    /* 全局样式 */
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 标题样式 */
+    header {
+      text-align: center;
+      padding: 20px 0;
+      background: linear-gradient(90deg, #212121, #1a1a1a);
+      border-bottom: 2px solid #444;
+    }
+    header h1 {
+      color: #ff80ab;
+      font-size: 2.5em;
+      letter-spacing: 2px;
+      margin: 0;
+    }
+    header p {
+      color: #a0a0a0;
+      font-size: 1.2em;
+      margin: 5px 0 0;
+    }
+
+    /* 主体内容样式 */
+    main {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1e1e1e;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      line-height: 1.8;
+    }
+    main h2 {
+      color: #ff80ab;
+      font-size: 1.8em;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #444;
+      padding-bottom: 5px;
+    }
+    main ul {
+      list-style: none;
+      padding: 0;
+    }
+    main ul li {
+      margin: 10px 0;
+      padding: 10px;
+      background: #252525;
+      border-left: 4px solid #ff80ab;
+      border-radius: 4px;
+      position: relative;
+    }
+    main ul li:hover {
+      background: #333;
+      transition: 0.3s;
+    }
+    main ul li strong {
+      color: #ff80ab;
+    }
+
+    /* 惩罚措施样式 */
+    .punishment {
+      display: none; /* 默认隐藏 */
+      margin-top: 10px;
+      padding: 10px;
+      background: #333;
+      border-radius: 4px;
+      color: #ffcccb;
+      font-size: 0.9em;
+    }
+
+    /* 底部样式 */
+    footer {
+      text-align: center;
+      padding: 10px 0;
+      background: #181818;
+      color: #666;
+      font-size: 0.9em;
+      border-top: 2px solid #444;
+    }
+    footer a {
+      color: #ff80ab;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部标题 -->
+  <header>
+    <h1>家规</h1>
+    <p>一切约束，皆为守护。不为惩罚，只为成长</p>
+  </header>
+
+  <!-- 主体内容 -->
+  <main>
+    <h2>首则</h2>
+    <ul>
+      <li>
+        每天保持个人卫生，房间整洁。
+        <div class="punishment">惩罚：没想好或者舍不得罚</div>
+      </li>
+      <li>
+        违背规则需主动坦白。
+        <div class="punishment">惩罚：没想好或者舍不得罚</div>
+      </li>
+      <li>
+        重要事务需及时汇报。
+        <div class="punishment">惩罚：没想好或者舍不得罚</div>
+      </li>
+      <li>
+        保持良好的饮食和作息习惯。
+        <div class="punishment">惩罚：没想好或者舍不得罚</div>
+      </li>
+    </ul>
+  </main>
+
+  <!-- 底部 -->
+  <footer>
+    <p>家规 | <a href="#">小猫の档案</a></p>
+  </footer>
+
+  <!-- jQuery 脚本 -->
+  <script>
+    $(document).ready(function () {
+      // 当鼠标悬停在li上时，显示对应的惩罚措施
+      $("ul li").hover(
+        function () {
+          $(this).find(".punishment").stop(true, true).slideDown(500); // 显示
+        },
+        function () {
+          $(this).find(".punishment").stop(true, true).slideUp(500); // 隐藏
+        }
+      );
+    });
+  </script>
+</body>
+</html>
