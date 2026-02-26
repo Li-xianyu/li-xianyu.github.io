@@ -1,0 +1,22 @@
+卷 外地磁盘 的文件夹 PATH 列表
+卷序列号为 9C37-75CF
+C:\USERS\LENOVO\DESKTOP\WEB PJ\SFC2.0
+|   create.html
+|   game.html
+|   index.html
+|   ls.txt
+|   setting.html
+|   sfc2.0.zip
+|   structure.txt
+|   touzi.html
+|   
++---css
+|       index.css
+|       setting.css
+|       
++---img
+\---js
+        Data.js
+        index.js
+        ui.js
+        

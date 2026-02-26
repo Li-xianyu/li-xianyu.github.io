@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>游戏设置</title>
+	<script src="js/Data.js"></script>
+	<link rel="stylesheet" href="css/setting.css">
+</head>
+<body>
+
+	<h1>游戏设置</h1>
+
+	<!-- SP 任务个数区间 -->
+	<fieldset>
+		<legend>单次 SP 个数</legend>
+		<div class="input-group">
+			<label for="minCount">最小值：</label>
+			<input type="number" id="minCount" min="10" step="10">
+			<label for="maxCount">最大值：</label>
+			<input type="number" id="maxCount" min="20" step="10">
+		</div>
+	</fieldset>
+
+	<!-- 权重设置 -->
+	<fieldset class="weight-settings-container">
+		<legend>任务权重设置</legend>
+		<p class="tip">权重是指在总和中所占的比例，比如几个权重总和是10，SP的权重是5，那么SP的生成概率就是50%。</p>
+		<div class="input-container">
+			<label for="weight-prop">Spank权重：</label>
+			<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
+		</div>
+		<div class="input-container">
+			<label for="weight-reward">休息权重：</label>
+			<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
+		</div>
+		<div class="input-container">
+			<label for="weight-aod">特殊移动权重：</label>
+			<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
+		</div>
+		<div class="input-container">
+			<label for="weight-sports">体罚权重：</label>
+			<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
+		</div>
+	</fieldset>
+
+	<div id="settings-container"></div>
+
+	<button class="save-btn" onclick="saveSettings()">保存设置</button>
+
+	<div class="modal-overlay" id="modal">
+		<div class="modal">
+			<h2>设置已保存</h2>
+			<p>你的配置已经成功保存。</p>
+			<button onclick="closeModal()">确定</button>
+		</div>
+	</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	loadSettings();
+	loadGameData();
+	observeFieldsets(); // 首屏两个 fieldset + 动态 fieldset 都会动画
+});
+
+function loadSettings() {
+	const storedSettings = JSON.parse(localStorage.getItem("SPANK_COUNT_RANGE"));
+	if (storedSettings) {
+		document.getElementById("minCount").value = storedSettings.min;
+		document.getElementById("maxCount").value = storedSettings.max;
+	} else {
+		document.getElementById("minCount").value = SPANK_COUNT_RANGE.min;
+		document.getElementById("maxCount").value = SPANK_COUNT_RANGE.max;
+	}
+}
+
+function loadGameData() {
+	const storedGameData = JSON.parse(localStorage.getItem("GameData"));
+
+	if (storedGameData) {
+		Object.keys(GameData).forEach(category => {
+			if (!storedGameData[category]) return;
+
+			GameData[category].items.forEach((item, index) => {
+				const savedItem = storedGameData[category].items && storedGameData[category].items[index];
+				if (savedItem) item.selected = !!savedItem.selected;
+			});
+
+			if (storedGameData[category].weight !== undefined) {
+				GameData[category].weight = storedGameData[category].weight;
+			}
+		});
+
+		if (storedGameData.prop && storedGameData.prop.weight !== undefined) {
+			document.getElementById("weight-prop").value = storedGameData.prop.weight;
+		}
+		if (storedGameData.reward && storedGameData.reward.weight !== undefined) {
+			document.getElementById("weight-reward").value = storedGameData.reward.weight;
+		}
+		if (storedGameData.aod && storedGameData.aod.weight !== undefined) {
+			document.getElementById("weight-aod").value = storedGameData.aod.weight;
+		}
+		if (storedGameData.sports && storedGameData.sports.weight !== undefined) {
+			document.getElementById("weight-sports").value = storedGameData.sports.weight;
+		}
+	}
+
+	renderSettings();
+	observeFieldsets(); // 动态内容渲染完再挂一次
+}
+
+function renderSettings() {
+	const settingsContainer = document.getElementById("settings-container");
+	settingsContainer.innerHTML = "";
+
+	const gameCategories = {
+		posture: "姿势",
+		prop: "道具",
+		reward: "休息",
+		aod: "特殊移动",
+		sports: "体罚"
+	};
+
+	Object.keys(GameData).forEach(category => {
+		const fieldset = document.createElement("fieldset");
+		const legend = document.createElement("legend");
+		legend.textContent = gameCategories[category] || category;
+		fieldset.appendChild(legend);
+
+		const buttonGroup = document.createElement("div");
+		buttonGroup.className = "button-group";
+
+		GameData[category].items.forEach((item, index) => {
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = `select-btn ${item.selected ? "selected" : ""}`;
+			btn.textContent = item.name;
+
+			// 轻错峰：最多 18 个带延迟，后面不排队
+			const d = Math.min(index, 18);
+			btn.dataset.delay = String(d);
+			if (index > 18) btn.dataset.dcap = "1";
+
+			btn.addEventListener("click", () => {
+				item.selected = !item.selected;
+				btn.classList.toggle("selected", item.selected);
+			});
+
+			buttonGroup.appendChild(btn);
+		});
+
+		fieldset.appendChild(buttonGroup);
+		settingsContainer.appendChild(fieldset);
+	});
+}
+
+/* =========================
+   动效：Web Animations API
+   优点：不怕 CSS 覆盖、不卡、不会空白
+========================= */
+let _fsObserver = null;
+
+function animateFieldsetOnce(fs){
+	if (fs.dataset.animated === "1") return;
+	fs.dataset.animated = "1";
+
+	// 组本体
+	fs.animate(
+		[
+			{ opacity: 0, transform: "translateY(10px)" },
+			{ opacity: 1, transform: "translateY(0)" }
+		],
+		{
+			duration: 420,
+			easing: "cubic-bezier(.16,1,.3,1)",
+			fill: "both"
+		}
+	);
+
+	// 组内按钮（轻错峰，最多 18 个）
+	const btns = fs.querySelectorAll(".select-btn");
+	btns.forEach(btn => {
+		const cap = btn.dataset.dcap === "1";
+		const d = cap ? 0 : (parseInt(btn.dataset.delay || "0", 10) * 18);
+
+		btn.animate(
+			[
+				{ opacity: 0, transform: "translateY(6px)" },
+				{ opacity: 1, transform: "translateY(0)" }
+			],
+			{
+				duration: 320,
+				delay: d,
+				easing: "cubic-bezier(.16,1,.3,1)",
+				fill: "both"
+			}
+		);
+	});
+}
+
+function observeFieldsets(){
+	if (_fsObserver) _fsObserver.disconnect();
+
+	const allFieldsets = document.querySelectorAll("body > fieldset, #settings-container fieldset");
+	if (!allFieldsets.length) return;
+
+	_fsObserver = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (!entry.isIntersecting) return;
+			animateFieldsetOnce(entry.target);
+			_fsObserver.unobserve(entry.target);
+		});
+	}, {
+		threshold: 0,
+		rootMargin: "160px 0px 160px 0px"
+	});
+
+	allFieldsets.forEach(fs => _fsObserver.observe(fs));
+
+	// 首屏兜底：不等 observer 回调也能立刻播
+	requestAnimationFrame(() => {
+		allFieldsets.forEach(fs => {
+			const r = fs.getBoundingClientRect();
+			if (r.bottom > -160 && r.top < (window.innerHeight + 160)) {
+				animateFieldsetOnce(fs);
+			}
+		});
+	});
+}
+
+function saveSettings() {
+	const minVal = parseInt(document.getElementById('minCount').value);
+	const maxVal = parseInt(document.getElementById('maxCount').value);
+
+	if (minVal % 10 !== 0 || maxVal % 10 !== 0) {
+		showModal("错误", "请输入 10 的倍数！");
+		return;
+	}
+	if (minVal >= maxVal) {
+		showModal("错误", "最小值必须小于最大值！");
+		return;
+	}
+
+	localStorage.setItem("SPANK_COUNT_RANGE", JSON.stringify({ min: minVal, max: maxVal }));
+
+	GameData.prop.weight = parseInt(document.getElementById('weight-prop').value);
+	GameData.reward.weight = parseInt(document.getElementById('weight-reward').value);
+	GameData.aod.weight = parseInt(document.getElementById('weight-aod').value);
+	GameData.sports.weight = parseInt(document.getElementById('weight-sports').value);
+
+	localStorage.setItem("GameData", JSON.stringify(GameData));
+	showModal("设置已保存", "你的配置已经成功保存。");
+}
+
+function showModal(title, message) {
+	const modal = document.getElementById("modal");
+	modal.querySelector("h2").textContent = title;
+	modal.querySelector("p").textContent = message;
+	modal.classList.add("show");
+}
+
+function closeModal() {
+	document.getElementById("modal").classList.remove("show");
+}
+</script>
+
+</body>
+</html>

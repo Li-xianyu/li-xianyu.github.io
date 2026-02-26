@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>游戏中...</title>
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="css/index.css">
+</head>
+<body class="game-page">
+
+	<div class="round-info" id="roundInfo">第 1 回合</div>
+	<div class="board" id="board"></div>
+
+	<div class="controls" id="controls">
+		<button class="dice-btn master" id="rollmaster" type="button">主投掷</button>
+		<button class="dice-btn passive" id="rolldice" type="button">被投掷</button>
+	</div>
+
+	<div class="task-panel" id="taskPanel">
+		<div class="task-block" id="masterTaskBlock">
+			<div class="task-title">主任务</div>
+			<div class="task-content" id="taskMaster">—</div>
+		</div>
+		<div class="task-block">
+			<div class="task-title">被任务</div>
+			<div class="task-content" id="taskPassive">—</div>
+		</div>
+	</div>
+
+	<script src="js/ui.js"></script>
+	<script src="js/Data.js"></script>
+	<script>
+		// 游戏模式：dual（双人） / solo（单人）
+		(() => {
+			const sp = new URLSearchParams(location.search);
+			const m = (sp.get('mode') || '').trim().toLowerCase();
+			window.GAME_MODE = (m === 'solo' || m === 'dual') ? m : 'dual';
+		})();
+	</script>
+	<script src="js/index.js"></script>
+
+	<script>
+		function getUrlParam(key) {
+			const params = new URLSearchParams(window.location.search);
+			return params.get(key);
+		}
+
+		// 解析并验证棋盘ID
+		function getValidBoardId() {
+			const idFromUrl = parseInt(getUrlParam('id'));
+			if (!isNaN(idFromUrl) && idFromUrl > 0 && idFromUrl <= Boards.length) {
+				return idFromUrl;
+			}
+			return 1;
+		}
+
+		function initGame() {
+			try {
+				const boardId = getValidBoardId();
+				renderBoard(boardId);
+			} catch (error) {
+				console.error('初始化失败:', error);
+				renderBoard(1);
+			}
+		}
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', initGame);
+		} else {
+			initGame();
+		}
+	</script>
+</body>
+</html>

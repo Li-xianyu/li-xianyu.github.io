@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>棋盘工具</title>
+  <style>
+    .container {
+      display: flex;
+      gap: 20px;
+      flex-direction: column;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, 50px);
+      grid-template-rows: repeat(10, 50px);
+      gap: 2px;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: lightgray;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      border: 1px solid #ccc;
+      user-select: none; /* 防止文字选中 */
+    }
+    .active {
+      background-color: lightblue;
+    }
+    #output {
+      width: 400px;
+      height: 500px;
+      padding: 10px;
+      font-family: monospace;
+      white-space: pre;
+    }
+    #status {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="status">状态：绘制模式</div>
+    <div id="board" class="board"></div>
+    <textarea id="output"></textarea>
+  </div>
+
+  <script>
+    const boardSize = 10;
+    const boardElement = document.getElementById('board');
+    const outputElement = document.getElementById('output');
+    const statusElement = document.getElementById('status');
+    const boardData = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+    
+    let count = 1;
+    let eraseMode = false;
+    let isMouseDown = false;
+
+    function createBoard() {
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          boardElement.appendChild(cell);
+        }
+      }
+    }
+
+    function updateBoard(row, col) {
+      const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+      
+      if (eraseMode) {
+        // 擦除模式
+        if (boardData[row][col] !== 0) {
+          count = boardData[row][col];
+          boardData[row][col] = 0;
+          cell.classList.remove('active');
+          cell.innerText = '';
+        }
+      } else {
+        // 绘制模式
+        if (boardData[row][col] === 0) {
+          boardData[row][col] = count++;
+          cell.classList.add('active');
+          cell.innerText = boardData[row][col];
+        }
+      }
+      updateOutput();
+    }
+
+    function updateOutput() {
+      const formatted = boardData.map(row => 
+        `  [${row.map(n => n.toString().padStart(2)).join(', ')}]`
+      ).join(',\n');
+      outputElement.value = `const board = [\n${formatted}\n];`;
+    }
+
+    function updateStatus() {
+      statusElement.textContent = `状态：${eraseMode ? '擦除模式' : '绘制模式'}`;
+    }
+
+    // 事件监听
+    boardElement.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // 防止文字选中
+      isMouseDown = true;
+      eraseMode = e.shiftKey; // 按住Shift进入擦除模式
+      updateStatus();
+      const cell = e.target;
+      if (cell.classList.contains('cell')) {
+        updateBoard(Number(cell.dataset.row), Number(cell.dataset.col));
+      }
+    });
+
+    boardElement.addEventListener('mousemove', (e) => {
+      if (isMouseDown) {
+        const cell = e.target;
+        if (cell.classList.contains('cell')) {
+          updateBoard(Number(cell.dataset.row), Number(cell.dataset.col));
+        }
+      }
+    });
+
+    boardElement.addEventListener('mouseup', () => {
+      isMouseDown = false;
+    });
+
+    // 初始化
+    createBoard();
+    updateOutput();
+  </script>
+</body>
+</html>
