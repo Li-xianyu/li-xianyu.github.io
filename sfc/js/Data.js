@@ -127,8 +127,7 @@ let GameData = {
             { name: '揉2分钟', selected: true },
             { name: '温柔的抱抱', selected: true },
             { name: '免罚一轮', selected: true },
-            { name: '免罚两轮', selected: true },
-            { name: '下项惩罚减半', selected: true }
+            { name: '免罚两轮', selected: true }
         ]
     },
     aod: {
@@ -162,7 +161,8 @@ let ActiveData = {
         { name: '数量-10', selected: true },
         { name: '翻倍', selected: true },
         { name: '减半(向上取整)', selected: true },
-        { name: '补上一轮', selected: true },
+        { name: '下一项减半', selected: true },
+        { name: '重复上一轮z指令', selected: true },
         { name: '换道具', selected: true },
         { name: '换体位', selected: true },
         { name: '指定道具', selected: true },
