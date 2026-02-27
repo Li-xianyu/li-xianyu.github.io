@@ -78,8 +78,8 @@ const SPANK_COUNT_RANGE = {
 
 let GameData = {
     posture: {
-        description: '体位',
-        weight: 60, // Spank为体位加道具  且权重取的是道具的
+        description: '姿势',
+        weight: 60,
         items: [
             { name: 'OTK', selected: true },
 			{ name: 'OTK(脚离地)', selected: true },
@@ -92,7 +92,7 @@ let GameData = {
             { name: '站立', selected: true },
             { name: '跪立', selected: true },
             { name: '狗趴式', selected: true },
-            { name: '垫脚扶墙', selected: true },
+            { name: '垫脚扶墙', selected: true }
         ]
     },
     prop: {
@@ -102,6 +102,10 @@ let GameData = {
             { name: '戒尺', selected: true },
             { name: '藤条', selected: true },
             { name: '热熔胶棒', selected: true },
+            { name: '木勺', selected: true },
+            { name: '皮鞭', selected: true },
+            { name: '竹条', selected: true },
+            { name: '小绿', selected: true },   
             { name: '小红', selected: true },
             { name: '巴掌', selected: true },
             { name: '数据线', selected: true },
@@ -136,28 +140,26 @@ let GameData = {
         ]
     },
     sports: {
-        description: '体罚',
+        description: '额外运动',
         weight: 10,
         items: [
-            { name: '罚跪五分钟', selected: true },
+            { name: '跪立五分钟', selected: true },
             { name: '墙角罚站五分钟', selected: true }
         ]
     }
 };
 
 
-// =========================
-// 主动方（主）任务池
-// 说明：这里放的是“主在格子上触发的指令/规则牌”，和被动方的体位/道具体系分开。
+
 // =========================
 let ActiveData = {
     description: '主动方指令',
     weight: 30,
     items: [
-        { name: '加罚+5', selected: true },
-        { name: '加罚+10', selected: true },
-        { name: '减罚-5', selected: true },
-        { name: '减罚-10', selected: true },
+        { name: '数量+5', selected: true },
+        { name: '数量+10', selected: true },
+        { name: '数量-5', selected: true },
+        { name: '数量-10', selected: true },
         { name: '翻倍', selected: true },
         { name: '减半(向上取整)', selected: true },
         { name: '补上一轮', selected: true },
