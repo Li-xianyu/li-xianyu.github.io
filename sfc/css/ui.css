@@ -35,6 +35,14 @@
 	--primary-2:#6a45b8;
 	--danger:#ff6b6b;
 	--ok:#58d8a3;
+
+
+
+    --master-color: #8BA4F8;
+    --master-glow: rgba(139,164,248,.28);
+
+	--passive-color: #FF6B9A;       
+	--passive-glow: rgba(255,107,154,.35);
 }
 
 [data-theme="dark"]{

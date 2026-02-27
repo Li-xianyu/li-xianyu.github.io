@@ -129,9 +129,13 @@ body.game-page{
 }
 
 .dice-btn:active{ transform:scale(.98); }
-.dice-btn.master{ background:#ff6b9a; }
-.dice-btn.passive{ background:var(--button-color,#c567ff); }
+.dice-btn.master{
+	background: var(--master-color);
+}
 
+.dice-btn.passive{
+	background: var(--passive-color);
+}
 .dice-btn:disabled{
 	opacity:.5;
 	cursor:not-allowed;
@@ -230,12 +234,13 @@ body.game-page{
 
 /* 主/被当前位置 */
 .master-location{
-	outline:2px solid rgba(0,122,255,0.9);
-	box-shadow:0 0 0 4px rgba(0,122,255,0.18);
+	outline:2px solid var(--master-color);
+	box-shadow:0 0 0 4px var(--master-glow);
 }
+
 .passive-location{
-	outline:2px solid rgba(255,107,154,0.9);
-	box-shadow:0 0 0 4px rgba(255,107,154,0.25);
+	outline:2px solid var(--passive-color);
+	box-shadow:0 0 0 4px var(--passive-glow);
 }
 
 .black{

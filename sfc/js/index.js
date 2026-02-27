@@ -301,13 +301,8 @@ function moveStep(from, to, role){
 			return;
 		}
 
-		// ✅ 1) 高亮边框立刻跟过去（你要的“跟着走”）
 		toCell.classList.add(locClass);
-
-		// ✅ 2) 再叠 moving 做落脚动效
 		toCell.style.transitionDuration = activeTime + 'ms';
-
-		// 让浏览器吃到“先加locClass再加moving”的状态，避免同一帧合并导致观感不明显
 		requestAnimationFrame(()=>{
 			toCell.classList.add('moving');
 
@@ -455,22 +450,32 @@ function showMasterResult(targetNumber) {
 	document.body.appendChild(overlay);
 }
 
-function showCellInfo(num) {
-	if (!num) return;
-	if (num === 1) return;
-	if (num === endNumber) return;
+function showCellInfo(num){
+	if(!num) return;
+	if(num === 1) return;
+	if(num === endNumber) return;
 
 	const isPassiveHere = passive_location === num;
 	const isMasterHere = master_location === num;
 
-	if (IS_DUAL) {
-		if (!isPassiveHere && !isMasterHere) return;
-	} else {
-		if (!isPassiveHere) return;
+	if(IS_DUAL){
+		if(!isPassiveHere && !isMasterHere) return;
+	}else{
+		if(!isPassiveHere) return;
 	}
 
 	const m = current_task_master[num]?.text || '';
 	const p = current_punishment_passive[num]?.text || '';
+
+	// ✅ 关键：只拼当前格子“在场角色”的内容
+	let contentHtml = '';
+
+	if(IS_DUAL && isMasterHere){
+		contentHtml += `<div style="margin-bottom:10px;"><b>Z：</b>${escapeHtml(m)}</div>`;
+	}
+	if(isPassiveHere){
+		contentHtml += `<div><b>B：</b>${escapeHtml(p)}</div>`;
+	}
 
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
@@ -479,15 +484,13 @@ function showCellInfo(num) {
 	dialog.className = 'punishment-dialog';
 	dialog.innerHTML = `
 		<h3 class="punishment-title">当前格子</h3>
-		<div class="punishment-content">
-			${IS_DUAL ? `<div style="margin-bottom:10px;"><b>Z：</b>${escapeHtml(m)}</div>` : ''}
-			<div><b>B：</b>${escapeHtml(p)}</div>
-		</div>
+		<div class="punishment-content">${contentHtml}</div>
 		<button class="punishment-button" id="confirmBtn">👌 确认</button>
 	`;
 
 	const confirmBtn = dialog.querySelector('#confirmBtn');
 	confirmBtn.addEventListener('click', () => overlay.remove());
+
 	overlay.appendChild(dialog);
 	document.body.appendChild(overlay);
 }
