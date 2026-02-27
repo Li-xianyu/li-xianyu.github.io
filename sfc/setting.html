@@ -3,50 +3,77 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>游戏设置</title>
+	<title>规则设置</title>
 	<script src="js/Data.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="css/ui.css">
 	<link rel="stylesheet" href="css/setting.css">
+	
 </head>
 <body>
 
-	<h1>游戏设置</h1>
+	<h1>规则设置</h1>
 
-	<!-- SP 任务个数区间 -->
-	<fieldset>
-		<legend>单次 SP 个数</legend>
-		<div class="input-group">
-			<label for="minCount">最小值：</label>
-			<input type="number" id="minCount" min="10" step="10">
-			<label for="maxCount">最大值：</label>
-			<input type="number" id="maxCount" min="20" step="10">
-		</div>
-	</fieldset>
+	<!-- iOS 分段选择器 -->
+	<div class="segmented" id="segmented">
+		<button class="seg-btn active" type="button" data-tab="b">B：执行模块</button>
+		<button class="seg-btn" type="button" data-tab="z">Z：指令模块</button>
+		<div class="seg-indicator" id="segIndicator"></div>
+	</div>
 
-	<!-- 权重设置 -->
-	<fieldset class="weight-settings-container">
-		<legend>任务权重设置</legend>
-		<p class="tip">权重是指在总和中所占的比例，比如几个权重总和是10，SP的权重是5，那么SP的生成概率就是50%。</p>
-		<div class="input-container">
-			<label for="weight-prop">Spank权重：</label>
-			<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
-		</div>
-		<div class="input-container">
-			<label for="weight-reward">休息权重：</label>
-			<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
-		</div>
-		<div class="input-container">
-			<label for="weight-aod">特殊移动权重：</label>
-			<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
-		</div>
-		<div class="input-container">
-			<label for="weight-sports">体罚权重：</label>
-			<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
-		</div>
-	</fieldset>
+	<!-- ========== B：执行模块（GameData）========== -->
+	<section class="tab-panel" id="panel-b">
 
-	<div id="settings-container"></div>
+		<fieldset>
+			<legend>单次强度区间</legend>
+			<div class="input-group">
+				<label for="minCount">最小数量：</label>
+				<input type="number" id="minCount" min="10" step="10">
+				<label for="maxCount">最大数量：</label>
+				<input type="number" id="maxCount" min="20" step="10">
+			</div>
+		</fieldset>
 
-	<button class="save-btn" onclick="saveSettings()">保存设置</button>
+		<fieldset class="weight-settings-container">
+			<legend>模块权重设置</legend>
+			<p class="tip">权重表示各模块在随机生成时的相对占比。权重越高，被选中的概率越大。</p>
+
+			<div class="input-container">
+				<label for="weight-prop">核心模块权重：</label>
+				<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
+			</div>
+			<div class="input-container">
+				<label for="weight-reward">恢复模块权重：</label>
+				<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
+			</div>
+			<div class="input-container">
+				<label for="weight-aod">位移模块权重：</label>
+				<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
+			</div>
+			<div class="input-container">
+				<label for="weight-sports">运动模块权重：</label>
+				<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
+			</div>
+		</fieldset>
+
+		<div id="settings-container"></div>
+	</section>
+
+	<!-- ========== Z：指令模块（ActiveData）========== -->
+	<section class="tab-panel" id="panel-z" style="display:none;">
+		<fieldset class="weight-settings-container">
+			<legend>Z 模块权重</legend>
+			<p class="tip">这个权重是给未来“指令也参与随机池”预留的；现在不影响格子显示逻辑。</p>
+			<div class="input-container">
+				<label for="weight-active">指令权重：</label>
+				<input type="number" id="weight-active" value="30" min="0" max="100" step="1">
+			</div>
+		</fieldset>
+
+		<div id="active-container"></div>
+	</section>
+
+	<button class="save-btn" id="saveBtn">保存设置</button>
 
 	<div class="modal-overlay" id="modal">
 		<div class="modal">
@@ -55,15 +82,77 @@
 			<button onclick="closeModal()">确定</button>
 		</div>
 	</div>
-
+<script src="js/ui.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-	loadSettings();
-	loadGameData();
-	observeFieldsets(); // 首屏两个 fieldset + 动态 fieldset 都会动画
+	initSegmented();
+
+	loadSettingsB();
+	loadGameDataB();
+	loadActiveDataZ();
+
+	renderSettingsB();
+	renderSettingsZ();
+
+	observeFieldsets();
+
+	document.getElementById("saveBtn").addEventListener("click", saveAllSettings);
 });
 
-function loadSettings() {
+/* =========================
+   Segmented Control
+========================= */
+function initSegmented(){
+	const root = document.getElementById("segmented");
+	const btns = root.querySelectorAll(".seg-btn");
+	const indicator = document.getElementById("segIndicator");
+
+	function moveIndicatorTo(btn){
+		const r = btn.getBoundingClientRect();
+		const pr = root.getBoundingClientRect();
+		const left = r.left - pr.left;
+		indicator.style.width = r.width + "px";
+		indicator.style.transform = "translateX(" + left + "px)";
+	}
+
+	function switchTab(tabKey){
+		const b = document.getElementById("panel-b");
+		const z = document.getElementById("panel-z");
+
+		if (tabKey === "b"){
+			b.style.display = "";
+			z.style.display = "none";
+		}else{
+			b.style.display = "none";
+			z.style.display = "";
+		}
+		observeFieldsets();
+	}
+
+	btns.forEach(btn => {
+		btn.addEventListener("click", () => {
+			btns.forEach(x => x.classList.remove("active"));
+			btn.classList.add("active");
+			moveIndicatorTo(btn);
+			switchTab(btn.dataset.tab);
+		});
+	});
+
+	// 默认定位到 active 的按钮
+	const act = root.querySelector(".seg-btn.active") || btns[0];
+	requestAnimationFrame(() => moveIndicatorTo(act));
+
+	// 旋转/缩放时也保持位置
+	window.addEventListener("resize", () => {
+		const act2 = root.querySelector(".seg-btn.active") || btns[0];
+		moveIndicatorTo(act2);
+	});
+}
+
+/* =========================
+   B：执行模块
+========================= */
+function loadSettingsB() {
 	const storedSettings = JSON.parse(localStorage.getItem("SPANK_COUNT_RANGE"));
 	if (storedSettings) {
 		document.getElementById("minCount").value = storedSettings.min;
@@ -74,51 +163,56 @@ function loadSettings() {
 	}
 }
 
-function loadGameData() {
+function loadGameDataB() {
 	const storedGameData = JSON.parse(localStorage.getItem("GameData"));
-
-	if (storedGameData) {
-		Object.keys(GameData).forEach(category => {
-			if (!storedGameData[category]) return;
-
-			GameData[category].items.forEach((item, index) => {
-				const savedItem = storedGameData[category].items && storedGameData[category].items[index];
-				if (savedItem) item.selected = !!savedItem.selected;
-			});
-
-			if (storedGameData[category].weight !== undefined) {
-				GameData[category].weight = storedGameData[category].weight;
-			}
-		});
-
-		if (storedGameData.prop && storedGameData.prop.weight !== undefined) {
-			document.getElementById("weight-prop").value = storedGameData.prop.weight;
-		}
-		if (storedGameData.reward && storedGameData.reward.weight !== undefined) {
-			document.getElementById("weight-reward").value = storedGameData.reward.weight;
-		}
-		if (storedGameData.aod && storedGameData.aod.weight !== undefined) {
-			document.getElementById("weight-aod").value = storedGameData.aod.weight;
-		}
-		if (storedGameData.sports && storedGameData.sports.weight !== undefined) {
-			document.getElementById("weight-sports").value = storedGameData.sports.weight;
-		}
+	if (!storedGameData) {
+		fillWeightInputsFromGameData();
+		return;
 	}
 
-	renderSettings();
-	observeFieldsets(); // 动态内容渲染完再挂一次
+	Object.keys(GameData).forEach(category => {
+		if (!storedGameData[category]) return;
+
+		const savedItems = storedGameData[category].items || [];
+		GameData[category].items.forEach((item, index) => {
+			const savedItem = savedItems[index];
+			if (savedItem) item.selected = !!savedItem.selected;
+		});
+
+		if (storedGameData[category].weight !== undefined) {
+			GameData[category].weight = storedGameData[category].weight;
+		}
+	});
+
+	fillWeightInputsFromGameData();
 }
 
-function renderSettings() {
+function fillWeightInputsFromGameData(){
+	if (GameData.prop && GameData.prop.weight !== undefined) {
+		document.getElementById("weight-prop").value = GameData.prop.weight;
+	}
+	if (GameData.reward && GameData.reward.weight !== undefined) {
+		document.getElementById("weight-reward").value = GameData.reward.weight;
+	}
+	if (GameData.aod && GameData.aod.weight !== undefined) {
+		document.getElementById("weight-aod").value = GameData.aod.weight;
+	}
+	if (GameData.sports && GameData.sports.weight !== undefined) {
+		document.getElementById("weight-sports").value = GameData.sports.weight;
+	}
+}
+
+function renderSettingsB() {
 	const settingsContainer = document.getElementById("settings-container");
 	settingsContainer.innerHTML = "";
 
+	// UI 文案弱化（你之前那套保留）
 	const gameCategories = {
-		posture: "姿势",
-		prop: "道具",
-		reward: "休息",
-		aod: "特殊移动",
-		sports: "体罚"
+		posture: "形式",
+		prop: "执行方式",
+		reward: "恢复选项",
+		aod: "特殊位移",
+		sports: "运动选项"
 	};
 
 	Object.keys(GameData).forEach(category => {
@@ -136,7 +230,6 @@ function renderSettings() {
 			btn.className = `select-btn ${item.selected ? "selected" : ""}`;
 			btn.textContent = item.name;
 
-			// 轻错峰：最多 18 个带延迟，后面不排队
 			const d = Math.min(index, 18);
 			btn.dataset.delay = String(d);
 			if (index > 18) btn.dataset.dcap = "1";
@@ -155,8 +248,61 @@ function renderSettings() {
 }
 
 /* =========================
+   Z：指令模块（ActiveData）
+========================= */
+function loadActiveDataZ(){
+	const storedActive = JSON.parse(localStorage.getItem("ActiveData"));
+	if (storedActive) {
+		const savedItems = storedActive.items || [];
+		if (Array.isArray(ActiveData.items)) {
+			ActiveData.items.forEach((item, i) => {
+				const saved = savedItems[i];
+				if (saved) item.selected = !!saved.selected;
+			});
+		}
+		if (storedActive.weight !== undefined) {
+			ActiveData.weight = storedActive.weight;
+		}
+	}
+	document.getElementById("weight-active").value = (ActiveData.weight !== undefined ? ActiveData.weight : 30);
+}
+
+function renderSettingsZ(){
+	const container = document.getElementById("active-container");
+	container.innerHTML = "";
+
+	const fieldset = document.createElement("fieldset");
+	const legend = document.createElement("legend");
+	legend.textContent = "指令池（Z）";
+	fieldset.appendChild(legend);
+
+	const buttonGroup = document.createElement("div");
+	buttonGroup.className = "button-group";
+
+	(ActiveData.items || []).forEach((item, index) => {
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = `select-btn ${item.selected ? "selected" : ""}`;
+		btn.textContent = item.name;
+
+		const d = Math.min(index, 18);
+		btn.dataset.delay = String(d);
+		if (index > 18) btn.dataset.dcap = "1";
+
+		btn.addEventListener("click", () => {
+			item.selected = !item.selected;
+			btn.classList.toggle("selected", item.selected);
+		});
+
+		buttonGroup.appendChild(btn);
+	});
+
+	fieldset.appendChild(buttonGroup);
+	container.appendChild(fieldset);
+}
+
+/* =========================
    动效：Web Animations API
-   优点：不怕 CSS 覆盖、不卡、不会空白
 ========================= */
 let _fsObserver = null;
 
@@ -164,7 +310,6 @@ function animateFieldsetOnce(fs){
 	if (fs.dataset.animated === "1") return;
 	fs.dataset.animated = "1";
 
-	// 组本体
 	fs.animate(
 		[
 			{ opacity: 0, transform: "translateY(10px)" },
@@ -177,7 +322,6 @@ function animateFieldsetOnce(fs){
 		}
 	);
 
-	// 组内按钮（轻错峰，最多 18 个）
 	const btns = fs.querySelectorAll(".select-btn");
 	btns.forEach(btn => {
 		const cap = btn.dataset.dcap === "1";
@@ -201,7 +345,10 @@ function animateFieldsetOnce(fs){
 function observeFieldsets(){
 	if (_fsObserver) _fsObserver.disconnect();
 
-	const allFieldsets = document.querySelectorAll("body > fieldset, #settings-container fieldset");
+	const bHidden = document.getElementById("panel-b").style.display === "none";
+	const visiblePanel = bHidden ? document.getElementById("panel-z") : document.getElementById("panel-b");
+
+	const allFieldsets = visiblePanel.querySelectorAll("fieldset");
 	if (!allFieldsets.length) return;
 
 	_fsObserver = new IntersectionObserver((entries) => {
@@ -217,7 +364,6 @@ function observeFieldsets(){
 
 	allFieldsets.forEach(fs => _fsObserver.observe(fs));
 
-	// 首屏兜底：不等 observer 回调也能立刻播
 	requestAnimationFrame(() => {
 		allFieldsets.forEach(fs => {
 			const r = fs.getBoundingClientRect();
@@ -228,7 +374,10 @@ function observeFieldsets(){
 	});
 }
 
-function saveSettings() {
+/* =========================
+   保存
+========================= */
+function saveAllSettings(){
 	const minVal = parseInt(document.getElementById('minCount').value);
 	const maxVal = parseInt(document.getElementById('maxCount').value);
 
@@ -249,16 +398,22 @@ function saveSettings() {
 	GameData.sports.weight = parseInt(document.getElementById('weight-sports').value);
 
 	localStorage.setItem("GameData", JSON.stringify(GameData));
+
+	ActiveData.weight = parseInt(document.getElementById('weight-active').value);
+	localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
+
 	showModal("设置已保存", "你的配置已经成功保存。");
 }
 
+/* =========================
+   Modal
+========================= */
 function showModal(title, message) {
 	const modal = document.getElementById("modal");
 	modal.querySelector("h2").textContent = title;
 	modal.querySelector("p").textContent = message;
 	modal.classList.add("show");
 }
-
 function closeModal() {
 	document.getElementById("modal").classList.remove("show");
 }

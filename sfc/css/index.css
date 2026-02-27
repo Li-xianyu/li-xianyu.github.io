@@ -1,60 +1,7 @@
-/* ====== index.css（整份替换）====== */
-
 *{
 	-webkit-tap-highlight-color: transparent;
 	-webkit-user-select: none;
 	user-select: none;
-}
-
-:root{
-	/* 白天 */
-	--bg-color:#f8f4ff;
-	--board-color:#ffffff;
-	--cell-color:#f0e8ff;
-	--black-cell:#6a45b8;
-	--start-cell:#ff6b8b;
-	--end-cell:#58d8a3;
-	--text-color:#3d2963;
-	--shadow-color:rgba(0,0,0,0.1);
-
-	--cell-radius:6px;
-	--hover-scale:1.08;
-	--transition-speed:.3s;
-
-	--current-color:#c792ea;
-	--current-glow:rgba(199,146,234,0.4);
-	--moving-color:#ff7d7d;
-	--moving-glow:rgba(255,255,255,0.8);
-
-	/* 通用弹窗 */
-	--overlay-bg:rgba(255,255,255,0.2);
-	--dialog-bg:rgba(255,255,255,0.65);
-	--dialog-border:rgba(255,255,255,0.42);
-	--dialog-text:#2d2d2d;
-	--dialog-muted:#4a4a4a;
-}
-
-[data-theme="dark"]{
-	/* 夜间 */
-	--bg-color:#1a103d;
-	--board-color:#2a2150;
-	--cell-color:#352b60;
-	--black-cell:#9d7aff;
-	--start-cell:#ff8fab;
-	--end-cell:#7affc1;
-	--text-color:#e2d9ff;
-	--shadow-color:rgba(0,0,0,0.3);
-
-	--current-color:#7f47ff;
-	--current-glow:rgba(127,71,255,0.5);
-	--moving-color:#ff6b8b;
-	--moving-glow:rgba(163,101,255,0.6);
-
-	--overlay-bg:rgba(0,0,0,0.35);
-	--dialog-bg:rgba(42,33,80,0.78);
-	--dialog-border:rgba(255,255,255,0.16);
-	--dialog-text:rgba(255,255,255,0.92);
-	--dialog-muted:rgba(255,255,255,0.75);
 }
 
 body{
@@ -324,20 +271,7 @@ body.game-page{
 	box-shadow:0 2px 8px var(--shadow-color);
 }
 
-/* ===== 主题切换按钮 ===== */
-.theme-toggle{
-	position:fixed;
-	top:20px;
-	right:20px;
-	padding:15px 18px;
-	background:var(--black-cell);
-	color:#fff;
-	border:none;
-	border-radius:20px;
-	cursor:pointer;
-	font-weight:700;
-	box-shadow:0 2px 8px var(--shadow-color);
-}
+
 
 /* ===== 动效 ===== */
 @keyframes pulse{
