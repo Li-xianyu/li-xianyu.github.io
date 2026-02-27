@@ -92,8 +92,8 @@ function generatePunishment(options = {}) {
 
 				return {
 					text: postureName
-						? `${postureName}${propName} ${count}下`
-						: `${propName} ${count}下`
+						? `${postureName}${propName} ${count}`
+						: `${propName} ${count}`
 				};
 			}
 		},
