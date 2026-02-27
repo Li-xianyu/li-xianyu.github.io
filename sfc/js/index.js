@@ -8,6 +8,9 @@ let master_location;
 let current_board;
 let endNumber;
 
+window.MOVE_ANIM_DURATION = window.MOVE_ANIM_DURATION || 500; 
+// 单步总时长（ms）
+
 const size = 10;
 
 // localStorage 读设置
@@ -276,24 +279,44 @@ if (!IS_DUAL) {
 updateRoundInfo();
 setButtonsState();
 
-function moveStep(from, to, role) {
+function moveStep(from, to, role){
 	return new Promise(resolve => {
+
+		const total = window.MOVE_ANIM_DURATION || 500;
+		const activeTime = Math.max(80, Math.floor(total * 0.6)); // 保险：别太短
+		const gapTime = Math.max(0, total - activeTime);
+
+		const locClass = (role === 'master') ? 'master-location' : 'passive-location';
+
 		const fromCell = document.querySelector(`[data-number="${from}"]`);
-		if (fromCell) {
-			fromCell.classList.remove(role === 'master' ? 'master-location' : 'passive-location');
+		const toCell = document.querySelector(`[data-number="${to}"]`);
+
+		if(fromCell){
+			fromCell.classList.remove(locClass);
+			fromCell.classList.remove('moving'); // 防止极端情况下残留
 		}
 
-		const toCell = document.querySelector(`[data-number="${to}"]`);
-		if (toCell) {
+		if(!toCell){
+			resolve();
+			return;
+		}
+
+		// ✅ 1) 高亮边框立刻跟过去（你要的“跟着走”）
+		toCell.classList.add(locClass);
+
+		// ✅ 2) 再叠 moving 做落脚动效
+		toCell.style.transitionDuration = activeTime + 'ms';
+
+		// 让浏览器吃到“先加locClass再加moving”的状态，避免同一帧合并导致观感不明显
+		requestAnimationFrame(()=>{
 			toCell.classList.add('moving');
+
 			setTimeout(() => {
 				toCell.classList.remove('moving');
-				toCell.classList.add(role === 'master' ? 'master-location' : 'passive-location');
+				// locClass 不动，保持在目标格子上
 				resolve();
-			}, 300);
-		} else {
-			resolve();
-		}
+			}, activeTime + gapTime);
+		});
 	});
 }
 
@@ -331,7 +354,7 @@ async function moveBySteps(steps, role) {
 			await moveStep(cur2, nextLocation, role);
 			if (role === 'master') master_location = nextLocation;
 			else passive_location = nextLocation;
-			await new Promise(resolve => setTimeout(resolve, 200));
+			// await new Promise(resolve => setTimeout(resolve, 200));
 		}
 	} finally {
 		isMoving = false;
@@ -469,15 +492,21 @@ function showCellInfo(num) {
 	document.body.appendChild(overlay);
 }
 
-function showDice(finalNumber) {
-	return new Promise((resolve) => {
+function showDice(finalNumber, duration = 1000){
+	return new Promise(resolve => {
+
+		const overlay = document.createElement('div');
+		overlay.className = 'dice-overlay';
+		document.body.appendChild(overlay);
+		document.body.classList.add('dice-focus');
+
 		const popup = document.createElement('div');
 		popup.className = 'popup';
 
 		const dice = document.createElement('div');
 		dice.className = 'dice';
 
-		for (let i = 0; i < 9; i++) {
+		for(let i=0;i<9;i++){
 			const dot = document.createElement('div');
 			dot.className = 'dot';
 			dice.appendChild(dot);
@@ -486,22 +515,28 @@ function showDice(finalNumber) {
 		popup.appendChild(dice);
 		document.body.appendChild(popup);
 
-		let count = 0;
-		const maxLoop = 20;
+		const interval = 30; // 每次跳点间隔
+		const loops = Math.floor((duration * 0.7) / interval); // 前70%乱跳
+		const stayTime = duration - loops * interval; // 剩余时间停留最终值
 
-		const animation = setInterval(() => {
-			let randomPoint = Math.floor(Math.random() * 6) + 1;
+		let count = 0;
+
+		const timer = setInterval(()=>{
+			const randomPoint = Math.floor(Math.random()*6)+1;
 			dice.setAttribute('data-point', randomPoint);
 
-			if (++count >= maxLoop) {
-				clearInterval(animation);
+			if(++count >= loops){
+				clearInterval(timer);
 				dice.setAttribute('data-point', finalNumber);
-				setTimeout(() => {
+
+				setTimeout(()=>{
 					popup.remove();
+					overlay.remove();
+					document.body.classList.remove('dice-focus');
 					resolve();
-				}, 1000);
+				}, stayTime);
 			}
-		}, 100);
+		}, interval);
 	});
 }
 
