@@ -29,10 +29,15 @@
 		<fieldset>
 			<legend>单次强度区间</legend>
 			<div class="input-group">
-				<label for="minCount">最小数量：</label>
-				<input type="number" id="minCount" min="10" step="10">
-				<label for="maxCount">最大数量：</label>
-				<input type="number" id="maxCount" min="20" step="10">
+				<div class="field">
+					<label for="minCount">最小数量：</label>
+					<input type="number" id="minCount" min="10" step="10">
+				</div>
+
+				<div class="field">
+					<label for="maxCount">最大数量：</label>
+					<input type="number" id="maxCount" min="20" step="10">
+				</div>
 			</div>
 		</fieldset>
 
@@ -124,10 +129,13 @@ function initSegmented(){
 		if (tabKey === "b"){
 			b.style.display = "";
 			z.style.display = "none";
+			resetPanelAnimations(b);
 		}else{
 			b.style.display = "none";
 			z.style.display = "";
+			resetPanelAnimations(z);
 		}
+
 		observeFieldsets();
 	}
 
@@ -341,6 +349,26 @@ function animateFieldsetOnce(fs){
 				fill: "both"
 			}
 		);
+	});
+}
+
+function resetPanelAnimations(panel){
+	const fss = panel.querySelectorAll("fieldset");
+	fss.forEach(fs => {
+		
+		delete fs.dataset.animated;
+
+		fs.getAnimations().forEach(a => a.cancel());
+
+		fs.style.opacity = "0";
+		fs.style.transform = "translateY(10px)";
+
+		const btns = fs.querySelectorAll(".select-btn");
+		btns.forEach(btn => {
+			btn.getAnimations().forEach(a => a.cancel());
+			btn.style.opacity = "0";
+			btn.style.transform = "translateY(6px)";
+		});
 	});
 }
 
