@@ -14,42 +14,8 @@
 	<link rel="stylesheet" href="css/ui.css">
 	<link rel="stylesheet" href="css/index.css">
 
-<script>
-/*
-	UV统计
-	- 只做轻量打点，不影响渲染
-	- token + Origin 白名单（服务器端还会再校验）
-*/
-(function(){
-	try{
-		var ENDPOINT = 'https://1.xingkongw.top/pages_uvstatistics/log.php';
-		var TOKEN = 'xianyu';
-		var PAYLOAD = {
-			path: location.pathname,
-			page: (location.pathname.split('/').pop() || 'index.html'),
-			ref: document.referrer || '',
-			ts: Date.now()
-		};
-
-		var send = function(){
-			fetch(ENDPOINT + '?token=' + encodeURIComponent(TOKEN) + '&t=' + Date.now(), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(PAYLOAD),
-				keepalive: true,
-				credentials: 'omit',
-				cache: 'no-store'
-			}).catch(function(){});
-		};
-
-		if('requestIdleCallback' in window){
-			requestIdleCallback(send, { timeout: 1500 });
-		}else{
-			setTimeout(send, 10);
-		}
-	}catch(e){}
-})();
-</script>
+	<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+	<script>LA.init({id:"3PBO9GOtpK0bSeXz",ck:"3PBO9GOtpK0bSeXz"})</script>
 </head>
 <body>
 	<div class="menu-container">
