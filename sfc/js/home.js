@@ -191,8 +191,8 @@ function createModeDialog(boardId){
 	listContainer.className = 'board-list';
 
 	const modes = [
-		{ key:'solo', name:'单人模式', desc:'只投「被」的一套任务' },
-		{ key:'dual', name:'双人模式', desc:'主/被都投，一个格子中有两人的任务' }
+		{ key:'solo', name:'DIY模式', desc:'自己投骰自己执行' },
+		{ key:'dual', name:'SJ模式', desc:'双人都投骰子，每一个格子中都有两人的任务' }
 	];
 
 	modes.forEach(m => {
