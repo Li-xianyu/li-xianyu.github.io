@@ -431,7 +431,7 @@ function saveAllSettings(){
 
 	ActiveData.weight = parseInt(document.getElementById('weight-active').value);
 	localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
-	LA.track('SETTING');
+
 	showModal("设置已保存", "你的配置已经成功保存。");
 }
 
