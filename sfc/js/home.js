@@ -254,4 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('gameSettings').addEventListener('click', () => {
 		window.location.href = 'setting.html';
 	});
+
+	// 开发日志
+	document.getElementById('devLog').addEventListener('click', () => {
+		window.location.href = 'devlog.html';
+	});
 });

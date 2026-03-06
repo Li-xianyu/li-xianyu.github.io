@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>Dual Protocol · 开发日志</title>
+	<link rel="icon" href="img/favicon.png" sizes="any">
+	<link rel="apple-touch-icon" href="img/favicon.png">
+	<meta name="theme-color" content="#6EA8FE">
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="css/ui.css">
+
+	<style>
+		*{
+			box-sizing:border-box;
+			-webkit-tap-highlight-color:transparent;
+		}
+
+		body{
+			margin:0;
+			min-height:100vh;
+			background:
+				radial-gradient(circle at top left, rgba(127,71,255,.08), transparent 32%),
+				radial-gradient(circle at bottom right, rgba(255,107,139,.08), transparent 28%),
+				var(--bg-color);
+			color:var(--text-color);
+			font-family:
+				-apple-system,
+				BlinkMacSystemFont,
+				"Segoe UI",
+				"PingFang SC",
+				"Hiragino Sans GB",
+				"Microsoft YaHei",
+				sans-serif;
+		}
+
+		.page{
+			width:min(980px, calc(100vw - 28px));
+			margin:0 auto;
+			padding:28px 0 42px;
+		}
+
+		.topbar{
+			display:flex;
+			align-items:center;
+			justify-content:space-between;
+			gap:12px;
+			margin-bottom:18px;
+		}
+
+		.back-btn,
+		.top-btn{
+			border:none;
+			border-radius:14px;
+			padding:10px 14px;
+			background:var(--black-cell);
+			color:#fff;
+			cursor:pointer;
+			box-shadow:0 8px 24px var(--shadow-color);
+			transition:transform .18s ease, filter .18s ease;
+			font-size:14px;
+		}
+
+		.back-btn:hover,
+		.top-btn:hover{
+			transform:translateY(-1px) scale(1.02);
+			filter:brightness(1.05);
+		}
+
+		.hero{
+			position:relative;
+			overflow:hidden;
+			padding:24px 20px 18px;
+			border-radius:22px;
+			background:linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.52));
+			border:1px solid rgba(255,255,255,.35);
+			box-shadow:0 14px 40px var(--shadow-color);
+			backdrop-filter:blur(14px);
+			-webkit-backdrop-filter:blur(14px);
+			margin-bottom:16px;
+		}
+
+		.hero::before{
+			content:"";
+			position:absolute;
+			inset:-20% auto auto -10%;
+			width:260px;
+			height:260px;
+			background:radial-gradient(circle, rgba(127,71,255,.14), transparent 68%);
+			pointer-events:none;
+		}
+
+		.hero::after{
+			content:"";
+			position:absolute;
+			right:-60px;
+			bottom:-60px;
+			width:220px;
+			height:220px;
+			background:radial-gradient(circle, rgba(255,107,139,.14), transparent 70%);
+			pointer-events:none;
+		}
+
+		.hero-title{
+			position:relative;
+			z-index:1;
+			margin:0 0 8px;
+			font-size:clamp(28px, 6vw, 42px);
+			letter-spacing:.5px;
+		}
+
+		.hero-sub{
+			position:relative;
+			z-index:1;
+			margin:0;
+			line-height:1.8;
+			opacity:.88;
+			font-size:15px;
+		}
+
+		.meta-grid{
+			display:grid;
+			grid-template-columns:repeat(4, minmax(0,1fr));
+			gap:12px;
+			margin:16px 0 20px;
+		}
+
+		.meta-card{
+			padding:14px 14px 12px;
+			border-radius:16px;
+			background:var(--board-color);
+			box-shadow:0 8px 24px rgba(0,0,0,.06);
+			border:1px solid rgba(255,255,255,.4);
+		}
+
+		.meta-label{
+			font-size:12px;
+			opacity:.68;
+			margin-bottom:6px;
+		}
+
+		.meta-value{
+			font-size:18px;
+			font-weight:700;
+		}
+
+		.section{
+			margin-top:18px;
+		}
+
+		.section-title{
+			display:flex;
+			align-items:center;
+			gap:10px;
+			margin:0 0 12px;
+			font-size:20px;
+		}
+
+		.section-title i{
+			font-size:18px;
+			color:var(--primary);
+		}
+
+		.note-card{
+			padding:16px 16px 14px;
+			border-radius:18px;
+			background:var(--board-color);
+			box-shadow:0 10px 28px rgba(0,0,0,.06);
+			line-height:1.85;
+			font-size:15px;
+		}
+
+		.timeline{
+			position:relative;
+			display:grid;
+			gap:14px;
+			margin-top:10px;
+		}
+
+		.timeline::before{
+			content:"";
+			position:absolute;
+			top:0;
+			bottom:0;
+			left:14px;
+			width:2px;
+			background:linear-gradient(to bottom, rgba(127,71,255,.36), rgba(255,107,139,.22));
+			border-radius:99px;
+		}
+
+		.log-item{
+			position:relative;
+			margin-left:38px;
+			padding:16px 16px 14px;
+			border-radius:18px;
+			background:var(--board-color);
+			box-shadow:0 10px 28px rgba(0,0,0,.06);
+			border:1px solid rgba(255,255,255,.35);
+		}
+
+		.log-item::before{
+			content:"";
+			position:absolute;
+			left:-31px;
+			top:18px;
+			width:16px;
+			height:16px;
+			border-radius:999px;
+			background:linear-gradient(135deg, var(--primary), var(--passive-color));
+			box-shadow:0 0 0 4px rgba(127,71,255,.12);
+		}
+
+		.log-head{
+			display:flex;
+			align-items:flex-start;
+			justify-content:space-between;
+			gap:12px;
+			margin-bottom:8px;
+		}
+
+		.log-title{
+			margin:0;
+			font-size:18px;
+		}
+
+		.log-time{
+			flex-shrink:0;
+			padding:4px 10px;
+			border-radius:999px;
+			background:rgba(127,71,255,.10);
+			color:var(--primary);
+			font-size:12px;
+			font-weight:700;
+		}
+
+		.log-desc{
+			margin:0;
+			opacity:.9;
+			line-height:1.8;
+			font-size:14px;
+		}
+
+		.tag-row{
+			display:flex;
+			flex-wrap:wrap;
+			gap:8px;
+			margin-top:12px;
+		}
+
+		.tag{
+			padding:5px 10px;
+			border-radius:999px;
+			font-size:12px;
+			background:var(--cell-color);
+			color:var(--text-color);
+		}
+
+		.footer-box{
+			margin-top:18px;
+			padding:16px;
+			border-radius:18px;
+			background:linear-gradient(135deg, rgba(127,71,255,.10), rgba(255,107,139,.08));
+			border:1px solid rgba(127,71,255,.08);
+			line-height:1.9;
+			font-size:14px;
+		}
+
+		@media (max-width:780px){
+			.meta-grid{
+				grid-template-columns:repeat(2, minmax(0,1fr));
+			}
+		}
+
+		@media (max-width:560px){
+			.page{
+				width:min(100vw - 20px, 980px);
+				padding:18px 0 28px;
+			}
+
+			.hero{
+				padding:20px 16px 16px;
+				border-radius:18px;
+			}
+
+			.log-head{
+				flex-direction:column;
+				align-items:flex-start;
+			}
+
+			.log-item{
+				margin-left:32px;
+				padding:14px 14px 12px;
+			}
+
+			.timeline::before{
+				left:11px;
+			}
+
+			.log-item::before{
+				left:-26px;
+				width:14px;
+				height:14px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="page">
+	<div class="topbar">
+		<button class="back-btn" id="backHome">
+			<i class="bi bi-arrow-left"></i>
+			返回主页
+		</button>
+	</div>
+
+	<section class="hero">
+		<h1 class="hero-title">Dual Protocol 开发日志</h1>
+		<p class="hero-sub">
+			从最初的“想做个什么东西玩玩”，到现在的“想把这个东西做好”，
+			Dual Protocol 的开发思路经历了几个阶段的升级。
+			这个日志里，我会回顾一下这些阶段，以及每个阶段的核心思路和关键节点。
+		</p>
+	</section>
+
+	<section class="section">
+		<h2 class="section-title">
+			<i class="bi bi-clock-history"></i>
+			重大节点
+		</h2>
+
+		<div class="timeline">
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">最早期原型：规则列表化</h3>
+					<span class="log-time">2024 年中前后</span>
+				</div>
+				<p class="log-desc">
+					最开始并不是棋盘游戏，而是偏“网页规则本”的形态。
+					当时主要是在整理规则内容、做展开收起交互，让玩法先有一个能承载内容的壳。
+				</p>
+				<div class="tag-row">
+					<span class="tag">规则列表</span>
+					<span class="tag">前端交互</span>
+					<span class="tag">最初雏形</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">路线成型：决定做固定路线飞行棋</h3>
+					<span class="log-time">2024 年 10 月</span>
+				</div>
+				<p class="log-desc">
+					这是第一个真正意义上的大转向。
+					项目从静态规则页面，开始往固定路线、格子推进、事件触发的方向发展，第一次有了“游戏骨架”。
+				</p>
+				<div class="tag-row">
+					<span class="tag">固定路线</span>
+					<span class="tag">棋盘化</span>
+					<span class="tag">方向确认</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">双核思路：不止内容，还要有流程</h3>
+					<span class="log-time">2025 年上半年</span>
+				</div>
+				<p class="log-desc">
+					只堆任务内容已经不够了，真正让玩法活起来的是流程感。
+					于是开始逐步补上回合、骰子、移动、位置状态这些东西，项目开始像个完整玩法。
+				</p>
+				<div class="tag-row">
+					<span class="tag">回合制</span>
+					<span class="tag">骰子逻辑</span>
+					<span class="tag">流程推进</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">数据拆分：任务内容开始模块化</h3>
+					<span class="log-time">2025 年中后期</span>
+				</div>
+				<p class="log-desc">
+					随着内容变多，最头疼的已经不是页面，而是数据管理。
+					于是开始把任务内容逐步拆分、分类，让不同玩法和任务池能更清晰地被控制。
+				</p>
+				<div class="tag-row">
+					<span class="tag">Data.js</span>
+					<span class="tag">模块化</span>
+					<span class="tag">可扩展</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">设置系统上线：用户体验 ++</h3>
+					<span class="log-time">2025 年下半年</span>
+				</div>
+				<p class="log-desc">
+					这一步让项目不再只是“作者自己写来自己玩”的版本。
+					用户开始可以通过设置页控制玩法和内容类别，飞行棋也正式有了可配置工具的味道。
+				</p>
+				<div class="tag-row">
+					<span class="tag">设置页</span>
+					<span class="tag">本地存储</span>
+					<span class="tag">可配置</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">决定部署 Pages，尽可能优化敏感文本</h3>
+					<span class="log-time">2026 年 2 月</span>
+				</div>
+				<p class="log-desc">
+					项目开始往公开部署方向靠拢。为了顺利上线，也对一些文本表达做了收敛和优化。
+					说白了就是想发出来，又不想一上来就把自己送走。
+				</p>
+				<div class="tag-row">
+					<span class="tag">GitHub Pages</span>
+					<span class="tag">文本调整</span>
+					<span class="tag">公开部署</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">结构升级：引擎层与规则层开始分家</h3>
+					<span class="log-time">2026 年 2 月下旬 - 3 月上旬</span>
+				</div>
+				<p class="log-desc">
+					这是技术结构上的关键节点。棋盘移动逐渐独立给引擎层处理，回合、弹窗、任务触发等逻辑交给规则层。
+					项目开始从“能跑”升级为“能维护、能扩展”。
+				</p>
+				<div class="tag-row">
+					<span class="tag">引擎层</span>
+					<span class="tag">规则层</span>
+					<span class="tag">结构分离</span>
+				</div>
+			</article>
+		</div>
+	</section>
+
+	<section class="section">
+		<h2 class="section-title">
+			<i class="bi bi-lightning-charge"></i>
+			To You
+		</h2>
+		<div class="footer-box">
+			能看到这里，很谢谢你的停留<br><br>
+			与君共勉
+		</div>
+	</section>
+</div>
+	<script src="js/ui.js"></script>
+	<script>
+		"use strict";
+
+		document.getElementById("backHome").addEventListener("click", function(){
+			window.location.href = "index.html";
+		});
+	</script>
+</body>
+</html>
