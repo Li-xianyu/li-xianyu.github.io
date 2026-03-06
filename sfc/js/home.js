@@ -207,6 +207,7 @@ function createModeDialog(boardId){
 		`;
 
 		item.addEventListener('click', () => {
+			LA.track('PLAY');
 			window.location.href = `game.html?id=${encodeURIComponent(boardId)}&mode=${encodeURIComponent(m.key)}`;
 		});
 
