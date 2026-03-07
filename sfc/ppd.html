@@ -46,7 +46,7 @@ let dataArray;
 let count = 0;
 let lastTriggerTime = 0;
 
-const THRESHOLD = 0.25;      // 音量触发阈值（可自己调）
+const THRESHOLD = 0.08;      // 音量触发阈值（可自己调）
 const MIN_INTERVAL = 180;    // 最小间隔ms 防止一次触发多次
 
 const countEl = document.getElementById("count");
@@ -90,15 +90,19 @@ function loop(){
 	}
 
 	let rms = Math.sqrt(sum / dataArray.length); // 音量强度
+	let peak = 0;
+for(let i=0;i<dataArray.length;i++){
+	let v = Math.abs(dataArray[i]);
+	if(v > peak) peak = v;
+}
 
-	let now = Date.now();
+let now = Date.now();
 
-	if(rms > THRESHOLD && (now - lastTriggerTime > MIN_INTERVAL)){
-		count++;
-		lastTriggerTime = now;
-		countEl.innerText = count;
-		console.log("检测到一次，当前音量:", rms.toFixed(3));
-	}
+if(peak > 0.35 && (now - lastTriggerTime > MIN_INTERVAL)){
+	count++;
+	lastTriggerTime = now;
+	countEl.innerText = count;
+}
 
 	requestAnimationFrame(loop);
 }
