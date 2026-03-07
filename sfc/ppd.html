@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Piapa计数器</title>
+<style>
+	body{
+		background:#111;
+		color:#fff;
+		font-family:Arial;
+		text-align:center;
+		padding-top:80px;
+	}
+	button{
+		padding:12px 30px;
+		font-size:18px;
+		cursor:pointer;
+	}
+	#count{
+		font-size:64px;
+		margin-top:40px;
+		color:#00ff99;
+	}
+	#status{
+		margin-top:20px;
+		color:#aaa;
+	}
+</style>
+</head>
+<body>
+
+<h1>Piapa 声音计数器</h1>
+<button id="startBtn">开始监听</button>
+
+<div id="count">0</div>
+<div id="status">未启动</div>
+
+<script>
+"use strict";
+
+let audioContext;
+let analyser;
+let microphone;
+let dataArray;
+
+let count = 0;
+let lastTriggerTime = 0;
+
+const THRESHOLD = 0.25;      // 音量触发阈值（可自己调）
+const MIN_INTERVAL = 180;    // 最小间隔ms 防止一次触发多次
+
+const countEl = document.getElementById("count");
+const statusEl = document.getElementById("status");
+const btn = document.getElementById("startBtn");
+
+btn.onclick = async function(){
+
+	if(audioContext){
+		return;
+	}
+
+	try{
+		const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+		
+		audioContext = new (window.AudioContext || window.webkitAudioContext)();
+		analyser = audioContext.createAnalyser();
+		analyser.fftSize = 2048;
+
+		microphone = audioContext.createMediaStreamSource(stream);
+		microphone.connect(analyser);
+
+		dataArray = new Float32Array(analyser.fftSize);
+
+		statusEl.innerText = "监听中...";
+		loop();
+
+	}catch(e){
+		statusEl.innerText = "获取麦克风失败";
+		console.error(e);
+	}
+};
+
+function loop(){
+	analyser.getFloatTimeDomainData(dataArray);
+
+	let sum = 0;
+
+	for(let i=0;i<dataArray.length;i++){
+		sum += dataArray[i] * dataArray[i];
+	}
+
+	let rms = Math.sqrt(sum / dataArray.length); // 音量强度
+
+	let now = Date.now();
+
+	if(rms > THRESHOLD && (now - lastTriggerTime > MIN_INTERVAL)){
+		count++;
+		lastTriggerTime = now;
+		countEl.innerText = count;
+		console.log("检测到一次，当前音量:", rms.toFixed(3));
+	}
+
+	requestAnimationFrame(loop);
+}
+</script>
+
+</body>
+</html>
