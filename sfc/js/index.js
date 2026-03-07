@@ -21,14 +21,10 @@ if (storedSettings) {
 }
 
 const storedGameData = JSON.parse(localStorage.getItem('GameData'));
-if (storedGameData) {
-	GameData = storedGameData;
-}
+GameData = normalizeGameData(storedGameData);
 
 const storedActiveData = JSON.parse(localStorage.getItem('ActiveData'));
-if (storedActiveData) {
-	ActiveData = storedActiveData;
-}
+ActiveData = normalizeActiveData(storedActiveData);
 
 const board = document.getElementById('board');
 const rolldice = document.getElementById('rolldice');

@@ -176,3 +176,156 @@ let ActiveData = {
         { name: '情绪校准(喝水/深呼吸/拥抱30秒)', selected: true }
     ]
 };
+
+const CUSTOMIZABLE_GAME_CATEGORIES = ['posture', 'prop', 'reward', 'sports'];
+
+function cloneStructuredData(value){
+	return JSON.parse(JSON.stringify(value));
+}
+
+function createBuiltinItem(item, fallbackId){
+	return {
+		id: String((item && item.id) || fallbackId),
+		name: String((item && item.name) || '').trim(),
+		selected: item && item.selected !== undefined ? !!item.selected : true,
+		custom: false
+	};
+}
+
+function createCustomItemId(scopeKey){
+	return `${scopeKey}-custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createCustomItem(scopeKey, name, selected = true){
+	return {
+		id: createCustomItemId(scopeKey),
+		name: String(name || '').trim(),
+		selected: !!selected,
+		custom: true
+	};
+}
+
+function isCustomStoredItem(item, scopeKey){
+	if (!item || typeof item !== 'object') return false;
+	if (item.custom) return true;
+
+	const id = String(item.id || '');
+	return id.startsWith(`${scopeKey}-custom-`);
+}
+
+function normalizeStoredCustomItems(items, scopeKey){
+	if (!Array.isArray(items)) return [];
+
+	return items
+		.filter(item => isCustomStoredItem(item, scopeKey))
+		.map(item => {
+			const name = String(item.name || '').trim();
+			if (!name) return null;
+
+			return {
+				id: String(item.id || createCustomItemId(scopeKey)),
+				name,
+				selected: item.selected !== undefined ? !!item.selected : true,
+				custom: true
+			};
+		})
+		.filter(Boolean);
+}
+
+function normalizeItemsWithStored(defaultItems, storedItems, scopeKey){
+	const builtins = defaultItems.map((item, index) => createBuiltinItem(item, `${scopeKey}-${index + 1}`));
+	const sourceItems = Array.isArray(storedItems) ? storedItems : [];
+	const storedBuiltins = sourceItems.filter(item => !isCustomStoredItem(item, scopeKey));
+	const storedCustoms = normalizeStoredCustomItems(sourceItems, scopeKey);
+
+	const mergedBuiltins = builtins.map((item, index) => {
+		const matchedById = storedBuiltins.find(stored => String((stored && stored.id) || '') === item.id);
+		const matchedByIndex = storedBuiltins[index];
+		const matchedByName = storedBuiltins.find(stored => String((stored && stored.name) || '').trim() === item.name);
+		const matched = matchedById || matchedByIndex || matchedByName;
+
+		return {
+			...item,
+			selected: matched && matched.selected !== undefined ? !!matched.selected : item.selected
+		};
+	});
+
+	return [...mergedBuiltins, ...storedCustoms];
+}
+
+function buildDefaultGameData(source){
+	const clone = cloneStructuredData(source);
+
+	Object.keys(clone).forEach(categoryKey => {
+		const category = clone[categoryKey] || {};
+		const items = Array.isArray(category.items) ? category.items : [];
+		category.items = items.map((item, index) => createBuiltinItem(item, `${categoryKey}-${index + 1}`));
+		clone[categoryKey] = category;
+	});
+
+	return clone;
+}
+
+function buildDefaultActiveData(source){
+	const clone = cloneStructuredData(source);
+	const items = Array.isArray(clone.items) ? clone.items : [];
+	clone.items = items.map((item, index) => createBuiltinItem(item, `active-${index + 1}`));
+	return clone;
+}
+
+const DEFAULT_GAME_DATA = buildDefaultGameData(GameData);
+const DEFAULT_ACTIVE_DATA = buildDefaultActiveData(ActiveData);
+
+function normalizeGameData(storedGameData){
+	const base = cloneStructuredData(DEFAULT_GAME_DATA);
+	const stored = storedGameData && typeof storedGameData === 'object' ? storedGameData : {};
+
+	Object.keys(base).forEach(categoryKey => {
+		const category = base[categoryKey];
+		const storedCategory = stored[categoryKey] && typeof stored[categoryKey] === 'object'
+			? stored[categoryKey]
+			: {};
+
+		category.weight = storedCategory.weight !== undefined
+			? Number(storedCategory.weight)
+			: category.weight;
+
+		if (!Number.isFinite(category.weight)) {
+			category.weight = DEFAULT_GAME_DATA[categoryKey].weight;
+		}
+
+		category.items = normalizeItemsWithStored(
+			DEFAULT_GAME_DATA[categoryKey].items,
+			storedCategory.items,
+			categoryKey
+		);
+	});
+
+	return base;
+}
+
+function normalizeActiveData(storedActiveData){
+	const base = cloneStructuredData(DEFAULT_ACTIVE_DATA);
+	const stored = storedActiveData && typeof storedActiveData === 'object' ? storedActiveData : {};
+
+	base.weight = stored.weight !== undefined ? Number(stored.weight) : base.weight;
+	if (!Number.isFinite(base.weight)) {
+		base.weight = DEFAULT_ACTIVE_DATA.weight;
+	}
+
+	base.items = normalizeItemsWithStored(
+		DEFAULT_ACTIVE_DATA.items,
+		stored.items,
+		'active'
+	);
+
+	return base;
+}
+
+GameData = normalizeGameData(GameData);
+ActiveData = normalizeActiveData(ActiveData);
+
+window.CUSTOMIZABLE_GAME_CATEGORIES = CUSTOMIZABLE_GAME_CATEGORIES;
+window.createCustomItem = createCustomItem;
+window.normalizeGameData = normalizeGameData;
+window.normalizeActiveData = normalizeActiveData;

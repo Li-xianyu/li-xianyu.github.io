@@ -205,25 +205,7 @@ function loadSettingsB() {
 
 function loadGameDataB() {
 	const storedGameData = JSON.parse(localStorage.getItem("GameData"));
-	if (!storedGameData) {
-		fillWeightInputsFromGameData();
-		return;
-	}
-
-	Object.keys(GameData).forEach(category => {
-		if (!storedGameData[category]) return;
-
-		const savedItems = storedGameData[category].items || [];
-		GameData[category].items.forEach((item, index) => {
-			const savedItem = savedItems[index];
-			if (savedItem) item.selected = !!savedItem.selected;
-		});
-
-		if (storedGameData[category].weight !== undefined) {
-			GameData[category].weight = storedGameData[category].weight;
-		}
-	});
-
+	GameData = normalizeGameData(storedGameData);
 	fillWeightInputsFromGameData();
 }
 
@@ -242,45 +224,365 @@ function fillWeightInputsFromGameData(){
 	}
 }
 
+const CATEGORY_LABELS = {
+	posture: "形式",
+	prop: "执行方式",
+	reward: "恢复选项",
+	aod: "特殊位移",
+	sports: "运动选项",
+	active: "指令池（Z）"
+};
+
+const EDITABLE_SCOPE_META = {
+	posture: { title: "新增形式", placeholder: "输入新的形式内容" },
+	prop: { title: "新增执行方式", placeholder: "输入新的执行方式" },
+	reward: { title: "新增恢复选项", placeholder: "输入新的恢复选项" },
+	sports: { title: "新增运动选项", placeholder: "输入新的运动选项" },
+	active: { title: "新增 Z 指令", placeholder: "输入新的 Z 指令" }
+};
+
+function isEditableScope(scopeKey){
+	return scopeKey === "active" || (
+		Array.isArray(window.CUSTOMIZABLE_GAME_CATEGORIES) &&
+		window.CUSTOMIZABLE_GAME_CATEGORIES.includes(scopeKey)
+	);
+}
+
+function getScopeItems(scopeKey){
+	if (scopeKey === "active") {
+		if (!Array.isArray(ActiveData.items)) ActiveData.items = [];
+		return ActiveData.items;
+	}
+
+	if (!GameData[scopeKey]) return [];
+	if (!Array.isArray(GameData[scopeKey].items)) GameData[scopeKey].items = [];
+	return GameData[scopeKey].items;
+}
+
+function normalizeCustomName(value){
+	return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function persistScopeState(scopeKey){
+	if (scopeKey === "active") {
+		localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
+		return;
+	}
+
+	localStorage.setItem("GameData", JSON.stringify(GameData));
+}
+
+function splitItemsByOrigin(items){
+	const official = [];
+	const custom = [];
+
+	(items || []).forEach(item => {
+		if (item && item.custom) custom.push(item);
+		else official.push(item);
+	});
+
+	return { official, custom };
+}
+
+function setChipDelay(btn, index){
+	const d = Math.min(index, 18);
+	btn.dataset.delay = String(d);
+	if (index > 18) btn.dataset.dcap = "1";
+}
+
+function createSelectButton(scopeKey, item, index){
+	const btn = document.createElement("button");
+	btn.type = "button";
+	btn.className = `select-btn ${item.selected ? "selected" : ""}`;
+	btn.textContent = item.name;
+	setChipDelay(btn, index);
+
+	btn.addEventListener("click", () => {
+		item.selected = !item.selected;
+		btn.classList.toggle("selected", item.selected);
+		persistScopeState(scopeKey);
+	});
+
+	return btn;
+}
+
+function createCustomChip(scopeKey, item, index){
+	const wrap = document.createElement("div");
+	wrap.className = "custom-chip-wrap";
+
+	const btn = createSelectButton(scopeKey, item, index);
+	btn.classList.add("custom-select-btn");
+
+	const deleteBtn = document.createElement("button");
+	deleteBtn.type = "button";
+	deleteBtn.className = "custom-chip-delete";
+	deleteBtn.textContent = "×";
+	deleteBtn.setAttribute("aria-label", `删除 ${item.name}`);
+
+	deleteBtn.addEventListener("click", async (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		await removeCustomItem(scopeKey, item);
+	});
+
+	wrap.appendChild(btn);
+	wrap.appendChild(deleteBtn);
+	return wrap;
+}
+
+function createAddChip(scopeKey, index){
+	const btn = document.createElement("button");
+	btn.type = "button";
+	btn.className = "select-btn add-select-btn";
+	btn.textContent = "+";
+	btn.setAttribute("aria-label", `新增 ${CATEGORY_LABELS[scopeKey] || "内容"}`);
+	setChipDelay(btn, index);
+
+	btn.addEventListener("click", async () => {
+		await promptCreateCustomItem(scopeKey);
+	});
+
+	return btn;
+}
+
+function renderChipGroup(buttonGroup, scopeKey, items){
+	const { official, custom } = splitItemsByOrigin(items);
+	let visualIndex = 0;
+
+	official.forEach(item => {
+		buttonGroup.appendChild(createSelectButton(scopeKey, item, visualIndex));
+		visualIndex += 1;
+	});
+
+	if (isEditableScope(scopeKey)) {
+		buttonGroup.appendChild(createAddChip(scopeKey, visualIndex));
+		visualIndex += 1;
+	}
+
+	custom.forEach(item => {
+		buttonGroup.appendChild(createCustomChip(scopeKey, item, visualIndex));
+		visualIndex += 1;
+	});
+}
+
+function rerenderScope(scopeKey){
+	if (scopeKey === "active") renderSettingsZ();
+	else renderSettingsB();
+
+	requestAnimationFrame(() => observeFieldsets());
+}
+
+function hasDuplicateScopeItem(scopeKey, name){
+	const normalizedName = normalizeCustomName(name).toLowerCase();
+	return getScopeItems(scopeKey).some(item => normalizeCustomName(item.name).toLowerCase() === normalizedName);
+}
+
+function showInputDialog(options){
+	const {
+		title,
+		placeholder,
+		confirmText = "确定",
+		cancelText = "取消",
+		initialValue = ""
+	} = options;
+
+	return new Promise(resolve => {
+		const overlay = document.createElement("div");
+		overlay.className = "editor-overlay";
+
+		const dialog = document.createElement("div");
+		dialog.className = "editor-dialog";
+
+		const heading = document.createElement("h3");
+		heading.className = "editor-title";
+		heading.textContent = title;
+
+		const input = document.createElement("input");
+		input.className = "editor-input";
+		input.type = "text";
+		input.maxLength = 60;
+		input.placeholder = placeholder || "";
+		input.value = initialValue;
+
+		const actions = document.createElement("div");
+		actions.className = "editor-actions";
+
+		const cancelBtn = document.createElement("button");
+		cancelBtn.type = "button";
+		cancelBtn.className = "editor-btn editor-btn-secondary";
+		cancelBtn.textContent = cancelText;
+
+		const confirmBtn = document.createElement("button");
+		confirmBtn.type = "button";
+		confirmBtn.className = "editor-btn editor-btn-primary";
+		confirmBtn.textContent = confirmText;
+
+		const cleanup = (value) => {
+			overlay.remove();
+			resolve(value);
+		};
+
+		cancelBtn.addEventListener("click", () => cleanup(null));
+		confirmBtn.addEventListener("click", () => cleanup(input.value));
+		overlay.addEventListener("click", (event) => {
+			if (event.target === overlay) cleanup(null);
+		});
+
+		input.addEventListener("keydown", (event) => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				confirmBtn.click();
+			}
+			if (event.key === "Escape") {
+				event.preventDefault();
+				cancelBtn.click();
+			}
+		});
+
+		actions.append(cancelBtn, confirmBtn);
+		dialog.append(heading, input, actions);
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		requestAnimationFrame(() => {
+			input.focus();
+			input.select();
+		});
+	});
+}
+
+function showConfirmDialog(options){
+	const {
+		title,
+		message,
+		confirmText = "确定",
+		cancelText = "取消",
+		danger = false
+	} = options;
+
+	return new Promise(resolve => {
+		const overlay = document.createElement("div");
+		overlay.className = "editor-overlay";
+
+		const dialog = document.createElement("div");
+		dialog.className = "editor-dialog editor-dialog-confirm";
+
+		const heading = document.createElement("h3");
+		heading.className = "editor-title";
+		heading.textContent = title;
+
+		const body = document.createElement("p");
+		body.className = "editor-message";
+		body.textContent = message;
+
+		const actions = document.createElement("div");
+		actions.className = "editor-actions";
+
+		const cancelBtn = document.createElement("button");
+		cancelBtn.type = "button";
+		cancelBtn.className = "editor-btn editor-btn-secondary";
+		cancelBtn.textContent = cancelText;
+
+		const confirmBtn = document.createElement("button");
+		confirmBtn.type = "button";
+		confirmBtn.className = `editor-btn ${danger ? "editor-btn-danger" : "editor-btn-primary"}`;
+		confirmBtn.textContent = confirmText;
+
+		const cleanup = (value) => {
+			overlay.remove();
+			resolve(value);
+		};
+
+		cancelBtn.addEventListener("click", () => cleanup(false));
+		confirmBtn.addEventListener("click", () => cleanup(true));
+		overlay.addEventListener("click", (event) => {
+			if (event.target === overlay) cleanup(false);
+		});
+
+		dialog.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") {
+				event.preventDefault();
+				cancelBtn.click();
+			}
+			if (event.key === "Enter") {
+				event.preventDefault();
+				confirmBtn.click();
+			}
+		});
+
+		actions.append(cancelBtn, confirmBtn);
+		dialog.append(heading, body, actions);
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		requestAnimationFrame(() => {
+			confirmBtn.focus();
+		});
+	});
+}
+
+async function promptCreateCustomItem(scopeKey){
+	const meta = EDITABLE_SCOPE_META[scopeKey] || {
+		title: "新增内容",
+		placeholder: "输入新的内容"
+	};
+
+	const rawValue = await showInputDialog({
+		title: meta.title,
+		placeholder: meta.placeholder
+	});
+
+	if (rawValue === null) return;
+
+	const name = normalizeCustomName(rawValue);
+	if (!name) {
+		showModal("内容不能为空", "请输入内容后再确定。");
+		return;
+	}
+
+	if (hasDuplicateScopeItem(scopeKey, name)) {
+		showModal("内容重复", "当前分类里已经有相同内容。");
+		return;
+	}
+
+	getScopeItems(scopeKey).push(createCustomItem(scopeKey, name, true));
+	persistScopeState(scopeKey);
+	rerenderScope(scopeKey);
+}
+
+async function removeCustomItem(scopeKey, item){
+	const shouldDelete = await showConfirmDialog({
+		title: "删除自定义内容",
+		message: `确定删除“${item.name}”吗？`,
+		confirmText: "删除",
+		cancelText: "取消",
+		danger: true
+	});
+
+	if (!shouldDelete) return;
+
+	const items = getScopeItems(scopeKey);
+	const targetIndex = items.findIndex(entry => entry && entry.id === item.id);
+	if (targetIndex === -1) return;
+
+	items.splice(targetIndex, 1);
+	persistScopeState(scopeKey);
+	rerenderScope(scopeKey);
+}
+
 function renderSettingsB() {
 	const settingsContainer = document.getElementById("settings-container");
 	settingsContainer.innerHTML = "";
 
-	// UI 文案弱化（你之前那套保留）
-	const gameCategories = {
-		posture: "形式",
-		prop: "执行方式",
-		reward: "恢复选项",
-		aod: "特殊位移",
-		sports: "运动选项"
-	};
-
 	Object.keys(GameData).forEach(category => {
 		const fieldset = document.createElement("fieldset");
 		const legend = document.createElement("legend");
-		legend.textContent = gameCategories[category] || category;
+		legend.textContent = CATEGORY_LABELS[category] || category;
 		fieldset.appendChild(legend);
 
 		const buttonGroup = document.createElement("div");
 		buttonGroup.className = "button-group";
-
-		GameData[category].items.forEach((item, index) => {
-			const btn = document.createElement("button");
-			btn.type = "button";
-			btn.className = `select-btn ${item.selected ? "selected" : ""}`;
-			btn.textContent = item.name;
-
-			const d = Math.min(index, 18);
-			btn.dataset.delay = String(d);
-			if (index > 18) btn.dataset.dcap = "1";
-
-			btn.addEventListener("click", () => {
-				item.selected = !item.selected;
-				btn.classList.toggle("selected", item.selected);
-			});
-
-			buttonGroup.appendChild(btn);
-		});
+		renderChipGroup(buttonGroup, category, GameData[category].items || []);
 
 		fieldset.appendChild(buttonGroup);
 		settingsContainer.appendChild(fieldset);
@@ -292,18 +594,7 @@ function renderSettingsB() {
 ========================= */
 function loadActiveDataZ(){
 	const storedActive = JSON.parse(localStorage.getItem("ActiveData"));
-	if (storedActive) {
-		const savedItems = storedActive.items || [];
-		if (Array.isArray(ActiveData.items)) {
-			ActiveData.items.forEach((item, i) => {
-				const saved = savedItems[i];
-				if (saved) item.selected = !!saved.selected;
-			});
-		}
-		if (storedActive.weight !== undefined) {
-			ActiveData.weight = storedActive.weight;
-		}
-	}
+	ActiveData = normalizeActiveData(storedActive);
 	document.getElementById("weight-active").value = (ActiveData.weight !== undefined ? ActiveData.weight : 30);
 }
 
@@ -313,29 +604,12 @@ function renderSettingsZ(){
 
 	const fieldset = document.createElement("fieldset");
 	const legend = document.createElement("legend");
-	legend.textContent = "指令池（Z）";
+	legend.textContent = CATEGORY_LABELS.active;
 	fieldset.appendChild(legend);
 
 	const buttonGroup = document.createElement("div");
 	buttonGroup.className = "button-group";
-
-	(ActiveData.items || []).forEach((item, index) => {
-		const btn = document.createElement("button");
-		btn.type = "button";
-		btn.className = `select-btn ${item.selected ? "selected" : ""}`;
-		btn.textContent = item.name;
-
-		const d = Math.min(index, 18);
-		btn.dataset.delay = String(d);
-		if (index > 18) btn.dataset.dcap = "1";
-
-		btn.addEventListener("click", () => {
-			item.selected = !item.selected;
-			btn.classList.toggle("selected", item.selected);
-		});
-
-		buttonGroup.appendChild(btn);
-	});
+	renderChipGroup(buttonGroup, "active", ActiveData.items || []);
 
 	fieldset.appendChild(buttonGroup);
 	container.appendChild(fieldset);
@@ -434,12 +708,18 @@ function observeFieldsets(){
 	});
 }
 
+function getNumericInputValue(id, fallbackValue){
+	const input = document.getElementById(id);
+	const value = Number.parseInt(input.value, 10);
+	return Number.isFinite(value) ? value : fallbackValue;
+}
+
 /* =========================
    保存
 ========================= */
 function saveAllSettings(){
-	const minVal = parseInt(document.getElementById('minCount').value);
-	const maxVal = parseInt(document.getElementById('maxCount').value);
+	const minVal = getNumericInputValue("minCount", SPANK_COUNT_RANGE.min);
+	const maxVal = getNumericInputValue("maxCount", SPANK_COUNT_RANGE.max);
 
 	if (minVal % 10 !== 0 || maxVal % 10 !== 0) {
 		showModal("错误", "请输入 10 的倍数！");
@@ -452,14 +732,14 @@ function saveAllSettings(){
 
 	localStorage.setItem("SPANK_COUNT_RANGE", JSON.stringify({ min: minVal, max: maxVal }));
 
-	GameData.prop.weight = parseInt(document.getElementById('weight-prop').value);
-	GameData.reward.weight = parseInt(document.getElementById('weight-reward').value);
-	GameData.aod.weight = parseInt(document.getElementById('weight-aod').value);
-	GameData.sports.weight = parseInt(document.getElementById('weight-sports').value);
+	GameData.prop.weight = getNumericInputValue("weight-prop", GameData.prop.weight);
+	GameData.reward.weight = getNumericInputValue("weight-reward", GameData.reward.weight);
+	GameData.aod.weight = getNumericInputValue("weight-aod", GameData.aod.weight);
+	GameData.sports.weight = getNumericInputValue("weight-sports", GameData.sports.weight);
 
 	localStorage.setItem("GameData", JSON.stringify(GameData));
 
-	ActiveData.weight = parseInt(document.getElementById('weight-active').value);
+	ActiveData.weight = getNumericInputValue("weight-active", ActiveData.weight);
 	localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
 
 	showModal("设置已保存", "你的配置已经成功保存。");
