@@ -480,11 +480,16 @@ fieldset.weight-settings-container{
 
 .add-select-btn{
 	width:38px;
+	height:38px;
+	min-width:38px;
+	min-height:38px;
+	flex:0 0 38px;
 	padding:0;
 	border-radius:50%;
 	display:inline-flex;
 	align-items:center;
 	justify-content:center;
+	aspect-ratio:1 / 1;
 	font-size:24px;
 	font-weight:600;
 	line-height:1;
@@ -790,7 +795,10 @@ fieldset.weight-settings-container{
 
 	.add-select-btn{
 		width:36px;
+		height:36px;
+		min-width:36px;
 		min-height:36px;
+		flex-basis:36px;
 		font-size:22px;
 	}
 

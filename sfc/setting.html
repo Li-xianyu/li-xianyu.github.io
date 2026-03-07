@@ -354,15 +354,14 @@ function renderChipGroup(buttonGroup, scopeKey, items){
 		visualIndex += 1;
 	});
 
-	if (isEditableScope(scopeKey)) {
-		buttonGroup.appendChild(createAddChip(scopeKey, visualIndex));
-		visualIndex += 1;
-	}
-
 	custom.forEach(item => {
 		buttonGroup.appendChild(createCustomChip(scopeKey, item, visualIndex));
 		visualIndex += 1;
 	});
+
+	if (isEditableScope(scopeKey)) {
+		buttonGroup.appendChild(createAddChip(scopeKey, visualIndex));
+	}
 }
 
 function rerenderScope(scopeKey){
