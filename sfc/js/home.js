@@ -121,7 +121,42 @@ function getMaxGrid(board){
 	return Math.max(...board.flat(2).filter(n => n > 0));
 }
 
+function getCustomBoards(){
+	try{
+		const raw = JSON.parse(localStorage.getItem("CUSTOM_BOARDS") || "[]");
+		return Array.isArray(raw) ? raw : [];
+	}catch(err){
+		console.error("[Home] 读取自定义棋盘失败", err);
+		return [];
+	}
+}
+
+function getBuiltInBoardOptions(){
+	return Boards.map((board, index) => ({
+		type: "builtin",
+		token: `builtin:${index + 1}`,
+		name: (boardNames[index] && boardNames[index].name) || `官方棋盘 ${index + 1}`,
+		desc: (boardNames[index] && boardNames[index].desc) || "",
+		steps: getMaxGrid(board),
+		board
+	}));
+}
+
+function getCustomBoardOptions(){
+	return getCustomBoards().map(item => ({
+		type: "custom",
+		token: `custom:${item.id}`,
+		name: item.name || "未命名棋盘",
+		desc: item.desc || "",
+		steps: item.steps || getMaxGrid(item.board || []),
+		board: item.board || []
+	}));
+}
+
 function createBoardDialog(){
+	const builtInBoards = getBuiltInBoardOptions();
+	const customBoards = getCustomBoardOptions();
+
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
 
@@ -132,26 +167,78 @@ function createBoardDialog(){
 	title.className = 'punishment-title';
 	title.textContent = '选择棋盘';
 
+	const segmented = document.createElement('div');
+	segmented.className = 'board-segmented';
+	segmented.innerHTML = `
+		<button class="board-seg-btn active" type="button" data-tab="builtin">官方棋盘</button>
+		<button class="board-seg-btn" type="button" data-tab="custom">自定义</button>
+		<div class="board-seg-indicator"></div>
+	`;
+
 	const listContainer = document.createElement('div');
 	listContainer.className = 'board-list';
 
-	Boards.forEach((board, index) => {
-		const item = document.createElement('div');
-		item.className = 'board-item';
-		item.innerHTML = `
-			<div class="board-info">
-				<div class="board-name">${boardNames[index].name}</div>
-				<div class="board-desc">${boardNames[index].desc}</div>
-			</div>
-			<div class="board-size">${getMaxGrid(board)}格</div>
-		`;
+	function renderBoardList(tab){
+		const list = tab === "custom" ? customBoards : builtInBoards;
+		listContainer.innerHTML = "";
 
-		item.addEventListener('click', () => {
-			overlay.remove();
-			document.body.appendChild(createModeDialog(index + 1));
+		if (!list.length){
+			const empty = document.createElement("div");
+			empty.className = "board-empty";
+			empty.textContent = tab === "custom"
+				? "还没有自定义棋盘，先去设置页顶部的“创建棋盘”做一个。"
+				: "暂无官方棋盘";
+			listContainer.appendChild(empty);
+			return;
+		}
+
+		list.forEach(item => {
+			const el = document.createElement("div");
+			el.className = "board-item";
+			el.innerHTML = `
+				<div class="board-info">
+					<div class="board-name">${item.name}</div>
+					<div class="board-desc">${item.desc || (item.type === "custom" ? "本地自定义棋盘" : "")}</div>
+				</div>
+				<div class="board-size">${item.steps}格</div>
+			`;
+
+			el.addEventListener("click", () => {
+				overlay.remove();
+				document.body.appendChild(createModeDialog(item.token));
+			});
+
+			listContainer.appendChild(el);
 		});
+	}
 
-		listContainer.appendChild(item);
+	function moveIndicator(btn){
+		const indicator = segmented.querySelector(".board-seg-indicator");
+		const rootRect = segmented.getBoundingClientRect();
+		const btnRect = btn.getBoundingClientRect();
+		indicator.style.width = btnRect.width + "px";
+		indicator.style.transform = `translateX(${btnRect.left - rootRect.left}px)`;
+	}
+
+	const segBtns = segmented.querySelectorAll(".board-seg-btn");
+	segBtns.forEach(btn => {
+		btn.addEventListener("click", () => {
+			segBtns.forEach(x => x.classList.remove("active"));
+			btn.classList.add("active");
+			moveIndicator(btn);
+			renderBoardList(btn.dataset.tab);
+		});
+	});
+
+	requestAnimationFrame(() => {
+		const active = segmented.querySelector(".board-seg-btn.active");
+		if (active) moveIndicator(active);
+		renderBoardList("builtin");
+	});
+
+	window.addEventListener("resize", () => {
+		const active = segmented.querySelector(".board-seg-btn.active");
+		if (active) moveIndicator(active);
 	});
 
 	const cancelBtn = document.createElement('button');
@@ -163,7 +250,7 @@ function createBoardDialog(){
 	footer.className = 'dialog-buttons';
 	footer.appendChild(cancelBtn);
 
-	dialog.append(title, listContainer, footer);
+	dialog.append(title, segmented, listContainer, footer);
 	overlay.appendChild(dialog);
 
 	overlay.addEventListener('click', (e) => {
@@ -176,7 +263,7 @@ function createBoardDialog(){
 	return overlay;
 }
 
-function createModeDialog(boardId){
+function createModeDialog(boardToken){
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
 
@@ -207,7 +294,7 @@ function createModeDialog(boardId){
 		`;
 
 		item.addEventListener('click', () => {
-			window.location.href = `game.html?id=${encodeURIComponent(boardId)}&mode=${encodeURIComponent(m.key)}`;
+			window.location.href = `game.html?id=${encodeURIComponent(boardToken)}&mode=${encodeURIComponent(m.key)}`;
 		});
 
 		listContainer.appendChild(item);

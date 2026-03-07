@@ -45,35 +45,44 @@
 	<script src="js/index.js"></script>
 
 	<script>
-		function getUrlParam(key) {
-			const params = new URLSearchParams(window.location.search);
-			return params.get(key);
+	function getUrlParam(key) {
+		const params = new URLSearchParams(window.location.search);
+		return params.get(key);
+	}
+
+	function getValidBoardToken() {
+		const token = (getUrlParam("id") || "").trim();
+
+		if (!token) return "builtin:1";
+
+		if (token.startsWith("builtin:") || token.startsWith("custom:")){
+			return token;
 		}
 
-		// 解析并验证棋盘ID
-		function getValidBoardId() {
-			const idFromUrl = parseInt(getUrlParam('id'));
-			if (!isNaN(idFromUrl) && idFromUrl > 0 && idFromUrl <= Boards.length) {
-				return idFromUrl;
-			}
-			return 1;
+		/* 兼容旧版纯数字链接 */
+		const n = parseInt(token, 10);
+		if (!isNaN(n) && n > 0 && n <= Boards.length){
+			return `builtin:${n}`;
 		}
 
-		function initGame() {
-			try {
-				const boardId = getValidBoardId();
-				renderBoard(boardId);
-			} catch (error) {
-				console.error('初始化失败:', error);
-				renderBoard(1);
-			}
-		}
+		return "builtin:1";
+	}
 
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', initGame);
-		} else {
-			initGame();
+	function initGame() {
+		try {
+			const boardToken = getValidBoardToken();
+			renderBoard(boardToken);
+		} catch (error) {
+			console.error('初始化失败:', error);
+			renderBoard('builtin:1');
 		}
-	</script>
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initGame);
+	} else {
+		initGame();
+	}
+</script>
 </body>
 </html>

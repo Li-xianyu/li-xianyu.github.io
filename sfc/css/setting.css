@@ -41,10 +41,10 @@
 
 	--container-w:min(860px, 92vw);
 
-	/* 表单排版参数（你要“够宽并排，不够换行”就靠它） */
-	--row-min:320px;	/* 一组(label+input)的最小宽度阈值 */
-	--label-w:88px;	/* label 固定宽度，避免跳动 */
-	--input-w:86px;	/* number 输入框默认宽度 */
+	/* 表单排版参数 */
+	--row-min:320px;
+	--label-w:88px;
+	--input-w:86px;
 	--gap-row:12px;
 	--gap-col:18px;
 }
@@ -89,22 +89,75 @@ body{
 	transition:background var(--transition-speed), color var(--transition-speed);
 }
 
-body > h1,
+.page-wrap{
+	width:var(--container-w);
+	margin:0 auto;
+}
+
 .segmented,
 .tab-panel,
 .save-btn{
-	width:var(--container-w);
+	width:100%;
 	margin-left:auto;
 	margin-right:auto;
 }
 
-h1{
+/* =========================
+   Top Bar
+========================= */
+.top-bar{
+	position:relative;
+	width:100%;
+	margin:4px auto 16px;
+	min-height:56px;
+	padding-right:60px;
+}
+
+.page-title{
 	font-size:24px;
 	font-weight:800;
 	letter-spacing:.4px;
 	text-align:center;
-	margin:10px auto 16px;
+	margin:0;
+	line-height:56px;
 	text-shadow:0 2px 10px rgba(0,0,0,0.06);
+}
+
+.nav-btn{
+	position:absolute;
+	top:50%;
+	transform:translateY(-50%);
+	border:none;
+	border-radius:14px;
+	padding:11px 16px;
+	cursor:pointer;
+	font-size:14px;
+	font-weight:700;
+	color:#fff;
+	background:var(--black-cell);
+	box-shadow:0 8px 20px var(--shadow-color);
+	transition:transform .18s ease, filter .18s ease;
+	display:inline-flex;
+	align-items:center;
+	gap:8px;
+	white-space:nowrap;
+}
+
+.nav-btn:hover{
+	transform:translateY(calc(-50% - 1px));
+	filter:brightness(1.04);
+}
+
+.nav-btn:active{
+	transform:translateY(-50%) scale(.98);
+}
+
+.nav-btn-left{
+	left:0;
+}
+
+.nav-btn-right{
+	right:0;
 }
 
 /* =========================
@@ -135,9 +188,11 @@ h1{
 	transform:scale(1.05);
 	filter:brightness(1.05);
 }
+
 .theme-toggle:active{
 	transform:scale(.98);
 }
+
 .theme-toggle i{
 	font-size:18px;
 	line-height:1;
@@ -187,6 +242,7 @@ h1{
 .seg-btn:active{
 	transform:scale(.98);
 }
+
 .seg-btn.active{
 	color:var(--dialog-text);
 }
@@ -253,16 +309,14 @@ legend{
 	font-size:13px;
 	color:rgba(61,41,99,0.70);
 }
+
 [data-theme="dark"] .tip{
 	color:rgba(255,255,255,0.70);
 }
 
 /* =========================
-   Form System (统一版)
-   目标：够宽并排，不够自动换行
+   Form System
 ========================= */
-
-/* 输入控件统一 */
 input{
 	border-radius:10px;
 	border:1px solid var(--input-border);
@@ -294,13 +348,11 @@ input[type="number"]::-webkit-inner-spin-button{
 	margin:0;
 }
 
-
 label{
 	font-size:14px;
 	font-weight:800;
 	opacity:.85;
 }
-
 
 .input-group{
 	display:flex;
@@ -309,22 +361,37 @@ label{
 	align-items:center;
 }
 
-.form-row{
+.field{
 	display:flex;
 	align-items:center;
 	gap:10px;
-
 	flex:1 1 var(--row-min);
 	min-width:var(--row-min);
 }
 
+.field label{
+	min-width:var(--label-w);
+	text-align:right;
+	white-space:nowrap;
+}
+
+.field input{
+	flex:0 0 auto;
+}
+
+.form-row{
+	display:flex;
+	align-items:center;
+	gap:10px;
+	flex:1 1 var(--row-min);
+	min-width:var(--row-min);
+}
 
 .form-row label{
 	min-width:var(--label-w);
 	text-align:right;
 	white-space:nowrap;
 }
-
 
 .form-row input{
 	flex:1 1 auto;
@@ -513,18 +580,76 @@ fieldset.weight-settings-container{
 /* =========================
    Small Screen
 ========================= */
+@media (max-width:640px){
+	.top-bar{
+		min-height:auto;
+		padding-right:56px;
+		margin:2px auto 14px;
+		display:grid;
+		grid-template-columns:1fr auto;
+		gap:10px 10px;
+		align-items:center;
+	}
+
+	.page-title{
+		grid-column:1 / -1;
+		order:-1;
+		line-height:1.4;
+		font-size:22px;
+		margin-bottom:2px;
+		padding:0 4px;
+	}
+
+	.nav-btn{
+		position:static;
+		transform:none;
+		padding:10px 13px;
+		font-size:13px;
+		border-radius:12px;
+	}
+
+	.nav-btn:hover{
+		transform:translateY(-1px);
+	}
+
+	.nav-btn:active{
+		transform:scale(.98);
+	}
+
+	.nav-btn-left{
+		justify-self:start;
+	}
+
+	.nav-btn-right{
+		justify-self:end;
+	}
+}
+
 @media (max-width:420px){
 	body{
 		padding:22px 12px 30px;
 	}
+
 	:root{
 		--row-min:260px;
 		--label-w:76px;
 	}
+
+	.page-title{
+		font-size:20px;
+	}
+
 	.select-btn{
 		padding:8px 12px;
 	}
+
 	.input-container label{
 		min-width:150px;
+	}
+
+	.nav-btn{
+		padding:9px 12px;
+		font-size:12px;
+		gap:6px;
 	}
 }

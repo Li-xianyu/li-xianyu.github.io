@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>创建棋盘</title>
+	<meta name="theme-color" content="#f8f4ff">
+	<link rel="icon" href="img/favicon.png" sizes="any">
+	<link rel="apple-touch-icon" href="img/favicon.png">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="css/ui.css">
+	<link rel="stylesheet" href="css/create_boards.css">
+</head>
+<body>
+	<div class="page">
+		<div class="topbar">
+			<button class="top-btn" id="backBtn" type="button">
+				<i class="bi bi-arrow-left"></i>
+				返回设置
+			</button>
+
+			<div class="topbar-right">
+				<button class="top-btn" id="loadDraftBtn" type="button">
+					<i class="bi bi-clock-history"></i>
+					载入草稿
+				</button>
+				<button class="top-btn danger" id="clearBtn" type="button">
+					<i class="bi bi-trash3"></i>
+					清空
+				</button>
+			</div>
+		</div>
+
+		<section class="hero">
+			<h1 class="hero-title">创建棋盘</h1>
+			<p class="hero-sub">
+				即画即成<br>
+				建议从起点一路拖到终点，脑子会清爽很多。
+			</p>
+		</section>
+
+		<section class="layout">
+			<div class="left-col">
+				<div class="card">
+					<div class="card-head">
+						<h2 class="card-title">
+							<i class="bi bi-grid-3x3-gap-fill"></i>
+							画布
+						</h2>
+
+						<div class="mode-switch" id="modeSwitch">
+							<button class="mode-btn active" type="button" data-mode="draw">
+								<i class="bi bi-pencil-fill"></i>
+								绘制
+							</button>
+							<button class="mode-btn" type="button" data-mode="erase">
+								<i class="bi bi-eraser-fill"></i>
+								擦除
+							</button>
+						</div>
+					</div>
+
+					<div class="tips">
+						<div class="tip-item"><i class="bi bi-mouse"></i> 鼠标/手指按住可连续拖拽</div>
+                        <div class="tip-item"><i class="bi bi-lightning-charge"></i> 别拖太快，可能漏格</div>
+						<div class="tip-item"><i class="bi bi-sign-turn-right"></i> 路径应上下左右相连</div>
+						<div class="tip-item"><i class="bi bi-stars"></i> 会自动重排编号，不会留洞</div>
+					</div>
+
+					<div class="board-wrap">
+						<div class="board" id="board"></div>
+					</div>
+
+					<div class="stats" id="stats">
+						<div class="stat-chip">
+							<span class="label">格子数</span>
+							<span class="value" id="statCount">0</span>
+						</div>
+						<div class="stat-chip">
+							<span class="label">起点</span>
+							<span class="value" id="statStart">-</span>
+						</div>
+						<div class="stat-chip">
+							<span class="label">终点</span>
+							<span class="value" id="statEnd">-</span>
+						</div>
+						<div class="stat-chip status-chip" id="pathStatusChip">
+							<span class="label">路径状态</span>
+							<span class="value" id="pathStatusText">未开始</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="right-col">
+				<div class="card form-card">
+					<div class="card-head">
+						<h2 class="card-title">
+							<i class="bi bi-card-heading"></i>
+							棋盘信息
+						</h2>
+					</div>
+
+					<div class="form-grid">
+						<div class="field">
+							<label for="boardName">棋盘名称</label>
+							<input id="boardName" type="text" maxlength="24" placeholder="例如：回旋长廊">
+						</div>
+
+						<div class="field">
+							<label for="boardDesc">棋盘简介</label>
+							<input id="boardDesc" type="text" maxlength="50" placeholder="例如：中等长度，转角较多">
+						</div>
+					</div>
+
+					<div class="quick-actions">
+						<button class="action-btn" id="fillDemoBtn" type="button">
+							<i class="bi bi-magic"></i>
+							加载示例
+						</button>
+						<button class="action-btn" id="copyBoardBtn" type="button">
+							<i class="bi bi-copy"></i>
+							复制 board
+						</button>
+						<button class="action-btn primary" id="saveBoardBtn" type="button">
+							<i class="bi bi-floppy-fill"></i>
+							保存到本地
+						</button>
+					</div>
+				</div>
+
+				<div class="card">
+					<div class="card-head">
+						<h2 class="card-title">
+							<i class="bi bi-code-slash"></i>
+							导出结果
+						</h2>
+					</div>
+
+					<textarea id="output" class="code-output" readonly spellcheck="false"></textarea>
+
+					<div class="export-help">
+						<div>保存格式：`CUSTOM_BOARDS`</div>
+						<div>导出格式：只吐出 `board` 二维数组，方便你直接塞进 `Data.js`</div>
+					</div>
+				</div>
+
+				<div class="card">
+					<div class="card-head">
+						<h2 class="card-title">
+							<i class="bi bi-hdd-stack-fill"></i>
+							本地存档
+						</h2>
+					</div>
+
+					<div class="saved-list" id="savedList"></div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<div class="toast" id="toast"></div>
+
+	<script src="js/ui.js"></script>
+	<script src="js/create_boards.js"></script>
+</body>
+</html>

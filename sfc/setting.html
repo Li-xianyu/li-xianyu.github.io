@@ -13,74 +13,89 @@
 	<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=3PBO9GOtpK0bSeXz&ck=3PBO9GOtpK0bSeXz"></script>
 </head>
 <body>
+	<div class="page-wrap">
 
-	<h1>规则设置</h1>
+		<div class="top-bar">
+			<button class="nav-btn nav-btn-left" id="backHomeBtn" type="button">
+				<i class="bi bi-arrow-left"></i>
+				返回主页
+			</button>
 
-	<!-- iOS 分段选择器 -->
-	<div class="segmented" id="segmented">
-		<button class="seg-btn active" type="button" data-tab="b">B：执行模块</button>
-		<button class="seg-btn" type="button" data-tab="z">Z：指令模块</button>
-		<div class="seg-indicator" id="segIndicator"></div>
+			<h1 class="page-title">规则设置</h1>
+
+			<button class="nav-btn nav-btn-right" id="goCreateBoardsBtn" type="button">
+				<i class="bi bi-grid-3x3-gap-fill"></i>
+				创建棋盘
+			</button>
+		</div>
+
+		<!-- iOS 分段选择器 -->
+		<div class="segmented" id="segmented">
+			<button class="seg-btn active" type="button" data-tab="b">B：执行模块</button>
+			<button class="seg-btn" type="button" data-tab="z">Z：指令模块</button>
+			<div class="seg-indicator" id="segIndicator"></div>
+		</div>
+
+		<!-- ========== B：执行模块（GameData）========== -->
+		<section class="tab-panel" id="panel-b">
+
+			<fieldset>
+				<legend>单次强度区间</legend>
+				<div class="input-group">
+					<div class="field">
+						<label for="minCount">最小数量：</label>
+						<input type="number" id="minCount" min="10" step="10">
+					</div>
+
+					<div class="field">
+						<label for="maxCount">最大数量：</label>
+						<input type="number" id="maxCount" min="20" step="10">
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="weight-settings-container">
+				<legend>模块权重设置</legend>
+				<p class="tip">权重表示各模块在随机生成时的相对占比。权重越高，被选中的概率越大。</p>
+
+				<div class="input-container">
+					<label for="weight-prop">核心模块权重：</label>
+					<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
+				</div>
+				<div class="input-container">
+					<label for="weight-reward">恢复模块权重：</label>
+					<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
+				</div>
+				<div class="input-container">
+					<label for="weight-aod">位移模块权重：</label>
+					<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
+				</div>
+				<div class="input-container">
+					<label for="weight-sports">运动模块权重：</label>
+					<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
+				</div>
+			</fieldset>
+
+			<div id="settings-container"></div>
+		</section>
+
+		<!-- ========== Z：指令模块（ActiveData）========== -->
+		<section class="tab-panel" id="panel-z" style="display:none;">
+			<fieldset class="weight-settings-container">
+				<legend>Z 模块权重</legend>
+				<p class="tip">这个权重是给未来“指令也参与随机池”预留的；现在不影响格子显示逻辑。</p>
+				<div class="input-container">
+					<label for="weight-active">指令权重：</label>
+					<input type="number" id="weight-active" value="30" min="0" max="100" step="1">
+				</div>
+			</fieldset>
+
+			<div id="active-container"></div>
+		</section>
+
+		<button class="save-btn" id="saveBtn">保存设置</button>
+
 	</div>
-
-	<!-- ========== B：执行模块（GameData）========== -->
-	<section class="tab-panel" id="panel-b">
-
-		<fieldset>
-			<legend>单次强度区间</legend>
-			<div class="input-group">
-				<div class="field">
-					<label for="minCount">最小数量：</label>
-					<input type="number" id="minCount" min="10" step="10">
-				</div>
-
-				<div class="field">
-					<label for="maxCount">最大数量：</label>
-					<input type="number" id="maxCount" min="20" step="10">
-				</div>
-			</div>
-		</fieldset>
-
-		<fieldset class="weight-settings-container">
-			<legend>模块权重设置</legend>
-			<p class="tip">权重表示各模块在随机生成时的相对占比。权重越高，被选中的概率越大。</p>
-
-			<div class="input-container">
-				<label for="weight-prop">核心模块权重：</label>
-				<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
-			</div>
-			<div class="input-container">
-				<label for="weight-reward">恢复模块权重：</label>
-				<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
-			</div>
-			<div class="input-container">
-				<label for="weight-aod">位移模块权重：</label>
-				<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
-			</div>
-			<div class="input-container">
-				<label for="weight-sports">运动模块权重：</label>
-				<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
-			</div>
-		</fieldset>
-
-		<div id="settings-container"></div>
-	</section>
-
-	<!-- ========== Z：指令模块（ActiveData）========== -->
-	<section class="tab-panel" id="panel-z" style="display:none;">
-		<fieldset class="weight-settings-container">
-			<legend>Z 模块权重</legend>
-			<p class="tip">这个权重是给未来“指令也参与随机池”预留的；现在不影响格子显示逻辑。</p>
-			<div class="input-container">
-				<label for="weight-active">指令权重：</label>
-				<input type="number" id="weight-active" value="30" min="0" max="100" step="1">
-			</div>
-		</fieldset>
-
-		<div id="active-container"></div>
-	</section>
-
-	<button class="save-btn" id="saveBtn">保存设置</button>
 
 	<div class="modal-overlay" id="modal">
 		<div class="modal">
@@ -91,6 +106,7 @@
 	</div>
 <script src="js/ui.js"></script>
 <script>
+
 document.addEventListener("DOMContentLoaded", () => {
 	initSegmented();
 
@@ -104,6 +120,20 @@ document.addEventListener("DOMContentLoaded", () => {
 	observeFieldsets();
 
 	document.getElementById("saveBtn").addEventListener("click", saveAllSettings);
+
+	const backHomeBtn = document.getElementById("backHomeBtn");
+	if (backHomeBtn){
+		backHomeBtn.addEventListener("click", () => {
+			window.location.href = "index.html";
+		});
+	}
+
+	const goCreateBoardsBtn = document.getElementById("goCreateBoardsBtn");
+	if (goCreateBoardsBtn){
+		goCreateBoardsBtn.addEventListener("click", () => {
+			window.location.href = "create_boards.html";
+		});
+	}
 });
 
 /* =========================

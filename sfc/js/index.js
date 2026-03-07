@@ -134,18 +134,60 @@ function getNonZeroCount(board) {
 	return count;
 }
 
-function generateBoard(boardIndex) {
-	boardIndex--;
-	if (boardIndex === undefined || boardIndex < 0 || boardIndex >= Boards.length) {
-		boardIndex = Math.floor(Math.random() * Boards.length);
+function getCustomBoardsFromStorage(){
+	try{
+		const raw = JSON.parse(localStorage.getItem("CUSTOM_BOARDS") || "[]");
+		return Array.isArray(raw) ? raw : [];
+	}catch(err){
+		console.error("[Game] 读取自定义棋盘失败", err);
+		return [];
 	}
-	const selectedBoard = Boards[boardIndex];
+}
 
-	const nonZeroCount = getNonZeroCount(selectedBoard) - 2;
+function resolveBoardPayload(boardToken){
+	const token = String(boardToken || "builtin:1").trim();
+
+	if (token.startsWith("custom:")){
+		const customId = token.slice("custom:".length);
+		const customBoards = getCustomBoardsFromStorage();
+		const found = customBoards.find(item => String(item.id) === customId);
+
+		if (found && Array.isArray(found.board)){
+			return {
+				type: "custom",
+				token,
+				name: found.name || "自定义棋盘",
+				board: found.board
+			};
+		}
+	}
+
+	let index = 1;
+
+	if (token.startsWith("builtin:")){
+		index = parseInt(token.slice("builtin:".length), 10);
+	}else{
+		index = parseInt(token, 10);
+	}
+
+	if (isNaN(index) || index < 1 || index > Boards.length){
+		index = 1;
+	}
+
+	return {
+		type: "builtin",
+		token: `builtin:${index}`,
+		name: (boardNames[index - 1] && boardNames[index - 1].name) || `官方棋盘 ${index}`,
+		board: Boards[index - 1]
+	};
+}
+
+function generateBoardFromData(boardData){
+	const nonZeroCount = getNonZeroCount(boardData) - 2;
 	const passiveMap = {};
 	const masterMap = {};
 
-	for (let i = 0; i < nonZeroCount; i++) {
+	for (let i = 0; i < nonZeroCount; i++){
 		const num = i + 2;
 		passiveMap[num] = generatePunishment(['spank', 'rest', 'move', 'sports']);
 		masterMap[num] = generateMasterTask();
@@ -154,9 +196,15 @@ function generateBoard(boardIndex) {
 	return { passiveMap, masterMap };
 }
 
-function renderBoard(boardIndex) {
-	mapData = Boards[boardIndex - 1];
-	const packs = generateBoard(boardIndex);
+function generateBoard(boardIndex) {
+	const payload = resolveBoardPayload(`builtin:${boardIndex}`);
+	return generateBoardFromData(payload.board);
+}
+function renderBoard(boardToken){
+	const payload = resolveBoardPayload(boardToken);
+
+	mapData = payload.board;
+	const packs = generateBoardFromData(mapData);
 	current_punishment_passive = packs.passiveMap;
 	current_task_master = packs.masterMap;
 
@@ -180,9 +228,13 @@ function renderBoard(boardIndex) {
 			cell.className = 'cell';
 
 			if (cellValue !== 0) {
-				if (cellValue === startNumber) cell.classList.add('start');
-				else if (cellValue === endNumber) cell.classList.add('end');
-				else cell.classList.add('black');
+				if (cellValue === startNumber) {
+					cell.classList.add('start');
+				} else if (cellValue === endNumber) {
+					cell.classList.add('end');
+				} else {
+					cell.classList.add('black');
+				}
 
 				if (cellValue === passive_location) cell.classList.add('passive-location');
 				if (IS_DUAL && cellValue === master_location) cell.classList.add('master-location');
@@ -279,11 +331,11 @@ if (!IS_DUAL) {
 updateRoundInfo();
 setButtonsState();
 
-function moveStep(from, to, role){
+function moveStep(from, to, role, stepDuration){
 	return new Promise(resolve => {
 
-		const total = window.MOVE_ANIM_DURATION || 500;
-		const activeTime = Math.max(80, Math.floor(total * 0.6)); // 保险：别太短
+		const total = stepDuration || window.MOVE_ANIM_DURATION || 500;
+		const activeTime = Math.max(80, Math.floor(total * 0.6));
 		const gapTime = Math.max(0, total - activeTime);
 
 		const locClass = (role === 'master') ? 'master-location' : 'passive-location';
@@ -293,7 +345,7 @@ function moveStep(from, to, role){
 
 		if(fromCell){
 			fromCell.classList.remove(locClass);
-			fromCell.classList.remove('moving'); // 防止极端情况下残留
+			fromCell.classList.remove('moving');
 		}
 
 		if(!toCell){
@@ -303,12 +355,12 @@ function moveStep(from, to, role){
 
 		toCell.classList.add(locClass);
 		toCell.style.transitionDuration = activeTime + 'ms';
+
 		requestAnimationFrame(()=>{
 			toCell.classList.add('moving');
 
 			setTimeout(() => {
 				toCell.classList.remove('moving');
-				// locClass 不动，保持在目标格子上
 				resolve();
 			}, activeTime + gapTime);
 		});
@@ -320,14 +372,16 @@ async function handleSpecialMove(moveType) {
 	const endNumber = Math.max(...mapData.flat());
 
 	if (moveType === 'toEnd') {
-		await moveStep(passive_location, endNumber, 'passive');
-		passive_location = endNumber;
+		const steps = endNumber - passive_location;
+		if (steps > 0) {
+			await moveBySteps(steps, 'passive');
+		}
 	} else if (moveType === 'toStart') {
-		await moveStep(passive_location, startNumber, 'passive');
-		passive_location = startNumber;
+		const steps = startNumber - passive_location;
+		if (steps < 0) {
+			await moveBySteps(steps, 'passive');
+		}
 	}
-
-	showPassiveResult(passive_location);
 }
 
 async function moveBySteps(steps, role) {
@@ -343,13 +397,35 @@ async function moveBySteps(steps, role) {
 		if (targetLocation > maxLocation) steps = maxLocation - cur;
 		else if (targetLocation < 1) steps = 1 - cur;
 
-		for (let i = 0; i < Math.abs(steps); i++) {
+		const totalSteps = Math.abs(steps);
+
+		function getStepDuration(totalSteps, index){
+			let base;
+
+			if (totalSteps >= 15) base = 120;
+			else if (totalSteps >= 9) base = 180;
+			else if (totalSteps >= 5) base = 260;
+			else base = 420;
+
+			/* 前两步和最后一步稍微慢一点，中间更快，看起来更顺 */
+			if (totalSteps >= 6){
+				if (index === 0) return base + 80;
+				if (index === 1) return base + 30;
+				if (index === totalSteps - 1) return base + 60;
+			}
+
+			return base;
+		}
+
+		for (let i = 0; i < totalSteps; i++) {
 			const cur2 = role === 'master' ? master_location : passive_location;
 			const nextLocation = cur2 + direction;
-			await moveStep(cur2, nextLocation, role);
+			const stepDuration = getStepDuration(totalSteps, i);
+
+			await moveStep(cur2, nextLocation, role, stepDuration);
+
 			if (role === 'master') master_location = nextLocation;
 			else passive_location = nextLocation;
-			// await new Promise(resolve => setTimeout(resolve, 200));
 		}
 	} finally {
 		isMoving = false;
@@ -398,13 +474,14 @@ function showPassiveResult(targetNumber) {
 
 	confirmBtn.addEventListener('click', async function () {
 		this.disabled = true;
-		try {
-			if (punishment.type === 'move') {
-				const isToEnd = punishment.text.includes('直达终点');
-				await handleSpecialMove(isToEnd ? 'toEnd' : 'toStart');
-			}
-		} finally {
-			overlay.remove();
+
+		overlay.remove();
+
+		await new Promise(resolve => requestAnimationFrame(resolve));
+
+		if (punishment.type === 'move') {
+			const isToEnd = punishment.text.includes('直达终点');
+			await handleSpecialMove(isToEnd ? 'toEnd' : 'toStart');
 		}
 	});
 
