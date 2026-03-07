@@ -2,32 +2,73 @@
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8">
-	
 	<meta name="theme-color" content="#f8f4ff">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Dual Protocol</title>
 	<link rel="icon" href="img/favicon.png" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png">
-	<meta name="theme-color" content="#6EA8FE">
-
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css">
 	<link rel="stylesheet" href="css/index.css">
 
 	<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=3PBO9GOtpK0bSeXz&ck=3PBO9GOtpK0bSeXz"></script>
 </head>
-<body>
-	<div class="menu-container">
-		<h1 class="game-title">Dual Protocol</h1>
-		<div class="menu-buttons">
-			<div class="menu-buttons">
-				<button class="menu-btn" id="startGame">🎮 开始游戏</button>
-				<button class="menu-btn" id="gameSettings">⚙️ 游戏设置</button>
-				<button class="menu-btn" id="gameManual">📖 使用须知</button>
-				<button class="menu-btn" id="devLog">📝 开发日志</button>
+<body class="home-page">
+	<main class="menu-container">
+		<section class="hero-panel">
+			<div class="hero-chip-row" aria-hidden="true">
+				<span class="hero-chip">本地优先</span>
+				<span class="hero-chip">Dual / Solo</span>
+				<span class="hero-chip">可选棋盘</span>
 			</div>
-		</div>
-	</div>
+
+			<p class="hero-kicker">Private Board Experience</p>
+			<h1 class="game-title">Dual Protocol</h1>
+			<p class="hero-subtitle">将设置、棋盘与流程都留在本地，在更安静克制的界面里开始一局。</p>
+
+			<div class="menu-buttons">
+				<button class="menu-btn menu-btn-primary" id="startGame" type="button">
+					<span class="menu-btn-icon" aria-hidden="true">🎮</span>
+					<span class="menu-btn-copy">
+						<span class="menu-btn-title">开始游戏</span>
+						<span class="menu-btn-desc">选择棋盘与模式后进入当前对局</span>
+					</span>
+					<span class="menu-btn-arrow" aria-hidden="true">→</span>
+				</button>
+
+				<div class="menu-secondary-grid">
+					<button class="menu-btn menu-btn-secondary" id="gameSettings" type="button">
+						<span class="menu-btn-icon" aria-hidden="true">⚙️</span>
+						<span class="menu-btn-copy">
+							<span class="menu-btn-title">游戏设置</span>
+							<span class="menu-btn-desc">调整项目权重与规则参数</span>
+						</span>
+					</button>
+
+					<button class="menu-btn menu-btn-secondary" id="gameManual" type="button">
+						<span class="menu-btn-icon" aria-hidden="true">📖</span>
+						<span class="menu-btn-copy">
+							<span class="menu-btn-title">使用须知</span>
+							<span class="menu-btn-desc">查看说明与本地使用条款</span>
+						</span>
+					</button>
+
+					<button class="menu-btn menu-btn-secondary" id="devLog" type="button">
+						<span class="menu-btn-icon" aria-hidden="true">📝</span>
+						<span class="menu-btn-copy">
+							<span class="menu-btn-title">开发日志</span>
+							<span class="menu-btn-desc">快速查看版本调整与更新记录</span>
+						</span>
+					</button>
+				</div>
+			</div>
+
+			<div class="home-note">
+				<span class="home-note-dot" aria-hidden="true"></span>
+				<p>所有设置与棋盘默认仅存储在当前浏览器本地。</p>
+			</div>
+		</section>
+	</main>
 
 	<script src="js/ui.js"></script>
 	<script src="js/Data.js"></script>

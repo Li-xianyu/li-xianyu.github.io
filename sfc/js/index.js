@@ -258,6 +258,158 @@ function escapeHtml(str) {
 		.replaceAll("'", '&#39;');
 }
 
+const REST_COUNTDOWN_FALLBACK_SECONDS = 10;
+
+function parseChineseNumber(rawValue) {
+	const value = String(rawValue || '').trim();
+	if (!value) return NaN;
+	if (value === '半') return 0.5;
+
+	const digitMap = {
+		'零': 0,
+		'一': 1,
+		'二': 2,
+		'两': 2,
+		'三': 3,
+		'四': 4,
+		'五': 5,
+		'六': 6,
+		'七': 7,
+		'八': 8,
+		'九': 9
+	};
+
+	if (value.includes('十')) {
+		const [tenPart, unitPart] = value.split('十');
+		const tens = tenPart ? (digitMap[tenPart] ?? NaN) : 1;
+		const units = unitPart ? (digitMap[unitPart] ?? NaN) : 0;
+		if (Number.isNaN(tens) || Number.isNaN(units)) return NaN;
+		return (tens * 10) + units;
+	}
+
+	let result = '';
+	for (const char of value) {
+		if (digitMap[char] === undefined) return NaN;
+		result += String(digitMap[char]);
+	}
+
+	return Number(result);
+}
+
+function getRestCountdownConfig(text) {
+	const content = String(text || '').trim();
+	const match = content.match(/(\d+(?:\.\d+)?|[零一二两三四五六七八九十半]+)\s*(小时|时|分钟|分|秒钟|秒|hours?|hrs?|hr|h|minutes?|mins?|min|m|seconds?|secs?|sec|s)/i);
+
+	if (!match) {
+		return {
+			seconds: REST_COUNTDOWN_FALLBACK_SECONDS,
+			usedFallback: true
+		};
+	}
+
+	const rawValue = match[1];
+	const unit = match[2].toLowerCase();
+	const value = /^\d/.test(rawValue) ? Number.parseFloat(rawValue) : parseChineseNumber(rawValue);
+
+	if (!Number.isFinite(value) || value <= 0) {
+		return {
+			seconds: REST_COUNTDOWN_FALLBACK_SECONDS,
+			usedFallback: true
+		};
+	}
+
+	let multiplier = 1;
+	if (unit.includes('小时') || unit === '时' || unit.startsWith('h')) {
+		multiplier = 3600;
+	} else if (unit.includes('分钟') || unit === '分' || unit.startsWith('m')) {
+		multiplier = 60;
+	}
+
+	return {
+		seconds: Math.max(1, Math.round(value * multiplier)),
+		usedFallback: false
+	};
+}
+
+function formatCountdown(remainingMs) {
+	const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+
+	if (hours > 0) {
+		return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+	}
+
+	return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function showRestCountdownDialog(restText) {
+	const { seconds, usedFallback } = getRestCountdownConfig(restText);
+	const totalMs = seconds * 1000;
+
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay';
+
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog rest-countdown-dialog';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">☕️ B：强制休息</h3>
+			<div class="punishment-content rest-countdown-content">
+				<div class="rest-countdown-badge">倒计时结束后自动继续</div>
+				<div class="rest-countdown-text">${escapeHtml(restText)}</div>
+				<div class="rest-countdown-number" id="restCountdownValue">${formatCountdown(totalMs)}</div>
+				<div class="rest-countdown-progress" aria-hidden="true">
+					<div class="rest-countdown-progress-bar" id="restCountdownBar"></div>
+				</div>
+				<div class="rest-countdown-note">${usedFallback ? `未识别到时长，默认强制休息 ${seconds} 秒` : `本次强制休息 ${formatCountdown(totalMs)}`}</div>
+			</div>
+		`;
+
+		const countdownValue = dialog.querySelector('#restCountdownValue');
+		const progressBar = dialog.querySelector('#restCountdownBar');
+		const startedAt = performance.now();
+		let timerId = 0;
+		let finished = false;
+
+		const finish = () => {
+			if (finished) return;
+			finished = true;
+			if (timerId) {
+				window.clearInterval(timerId);
+			}
+			overlay.remove();
+			resolve();
+		};
+
+		const tick = () => {
+			const elapsed = Math.min(performance.now() - startedAt, totalMs);
+			const remaining = Math.max(totalMs - elapsed, 0);
+			const progress = totalMs > 0 ? elapsed / totalMs : 1;
+
+			countdownValue.textContent = formatCountdown(remaining);
+			progressBar.style.transform = `scaleX(${progress})`;
+
+			if (elapsed >= totalMs) {
+				finish();
+			}
+		};
+
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) {
+				playDialogShake(dialog);
+			}
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		tick();
+		timerId = window.setInterval(tick, 100);
+	});
+}
+
 let isMoving = false;
 
 function setTaskText(role, text) {
@@ -434,7 +586,7 @@ async function moveBySteps(steps, role) {
 
 function showPassiveResult(targetNumber) {
 	const punishment = current_punishment_passive[targetNumber];
-	if (!punishment) return;
+	if (!punishment) return Promise.resolve();
 
 	const typeMap = {
 		spank: '⛔️ B：处理项',
@@ -454,77 +606,88 @@ function showPassiveResult(targetNumber) {
 
 	setTaskText('passive', `${panelPrefix[punishment.type] || '内容'}：${punishment.text}`);
 
-	const overlay = document.createElement('div');
-	overlay.className = 'punishment-overlay';
+	if (punishment.type === 'rest') {
+		return showRestCountdownDialog(punishment.text);
+	}
 
-	const dialog = document.createElement('div');
-	dialog.className = 'punishment-dialog';
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay';
 
-	dialog.innerHTML = `
-		<h3 class="punishment-title">${typeMap[punishment.type] || '提示'}</h3>
-		<div class="punishment-content">${punishment.text}</div>
-		<button class="punishment-button" id="confirmBtn">👌 确认</button>
-	`;
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog';
 
-	overlay.style.pointerEvents = 'auto';
-	dialog.style.pointerEvents = 'auto';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">${typeMap[punishment.type] || '提示'}</h3>
+			<div class="punishment-content">${escapeHtml(punishment.text)}</div>
+			<button class="punishment-button" id="confirmBtn">👌 确认</button>
+		`;
 
-	const confirmBtn = dialog.querySelector('#confirmBtn');
-	confirmBtn.disabled = false;
+		overlay.style.pointerEvents = 'auto';
+		dialog.style.pointerEvents = 'auto';
 
-	confirmBtn.addEventListener('click', async function () {
-		this.disabled = true;
+		const confirmBtn = dialog.querySelector('#confirmBtn');
+		confirmBtn.disabled = false;
 
-		overlay.remove();
+		confirmBtn.addEventListener('click', async function () {
+			this.disabled = true;
 
-		await new Promise(resolve => requestAnimationFrame(resolve));
+			overlay.remove();
 
-		if (punishment.type === 'move') {
-			const isToEnd = punishment.text.includes('直达终点');
-			await handleSpecialMove(isToEnd ? 'toEnd' : 'toStart');
-		}
+			await new Promise((innerResolve) => requestAnimationFrame(innerResolve));
+
+			if (punishment.type === 'move') {
+				const isToEnd = punishment.text.includes('直达终点');
+				await handleSpecialMove(isToEnd ? 'toEnd' : 'toStart');
+			}
+
+			resolve();
+		});
+
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) {
+				playDialogShake(confirmBtn);
+			}
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
 	});
-
-	overlay.addEventListener('click', (e) => {
-		if (e.target === overlay) {
-			confirmBtn.style.animation = 'shake 0.5s';
-			setTimeout(() => { confirmBtn.style.animation = ''; }, 500);
-		}
-	});
-
-	overlay.appendChild(dialog);
-	document.body.appendChild(overlay);
 }
 
 function showMasterResult(targetNumber) {
 	const task = current_task_master[targetNumber];
-	if (!task) return;
+	if (!task) return Promise.resolve();
 
 	setTaskText('master', task.text);
 
-	const overlay = document.createElement('div');
-	overlay.className = 'punishment-overlay';
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay';
 
-	const dialog = document.createElement('div');
-	dialog.className = 'punishment-dialog';
-	dialog.innerHTML = `
-		<h3 class="punishment-title">🎲 Z：本格指令</h3>
-		<div class="punishment-content">${escapeHtml(task.text)}</div>
-		<button class="punishment-button" id="confirmBtn">👌 确认</button>
-	`;
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">🎲 Z：本格指令</h3>
+			<div class="punishment-content">${escapeHtml(task.text)}</div>
+			<button class="punishment-button" id="confirmBtn">👌 确认</button>
+		`;
 
-	const confirmBtn = dialog.querySelector('#confirmBtn');
-	confirmBtn.addEventListener('click', () => overlay.remove());
+		const confirmBtn = dialog.querySelector('#confirmBtn');
+		confirmBtn.addEventListener('click', () => {
+			overlay.remove();
+			resolve();
+		});
 
-	overlay.addEventListener('click', (e) => {
-		if (e.target === overlay) {
-			confirmBtn.style.animation = 'shake 0.5s';
-			setTimeout(() => confirmBtn.style.animation = '', 500);
-		}
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) {
+				playDialogShake(confirmBtn);
+			}
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
 	});
-
-	overlay.appendChild(dialog);
-	document.body.appendChild(overlay);
 }
 
 function showCellInfo(num){
@@ -653,8 +816,7 @@ function showEndGameDialog() {
 
 		overlay.addEventListener('click', (e) => {
 			if (e.target === overlay) {
-				btnWrap.style.animation = 'shake 0.5s';
-				setTimeout(() => { btnWrap.style.animation = ''; }, 500);
+				playDialogShake(btnWrap);
 			}
 		});
 
@@ -703,8 +865,19 @@ async function handleRoll(role) {
 			return;
 		}
 
-		if (role === 'passive') showPassiveResult(passive_location);
-		if (role === 'master') showMasterResult(master_location);
+		if (role === 'passive') await showPassiveResult(passive_location);
+		if (role === 'master') await showMasterResult(master_location);
+
+		if (role === 'passive' && passive_location === endNumber) {
+			const userChoice = await showEndGameDialog();
+			if (userChoice) window.location.reload();
+			return;
+		}
+		if (role === 'master' && master_location === endNumber) {
+			const userChoice = await showEndGameDialog();
+			if (userChoice) window.location.reload();
+			return;
+		}
 
 		if (!IS_DUAL) {
 			roundPassiveDone = true;

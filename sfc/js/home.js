@@ -74,8 +74,7 @@ function createManualDialog(){
 	// 点遮罩不关，只抖一下提示
 	overlay.addEventListener('click', (e) => {
 		if (e.target === overlay){
-			confirmBtn.style.animation = 'shake 0.5s';
-			setTimeout(() => confirmBtn.style.animation = '', 500);
+			playDialogShake(confirmBtn);
 		}
 	});
 
@@ -255,8 +254,7 @@ function createBoardDialog(){
 
 	overlay.addEventListener('click', (e) => {
 		if (e.target === overlay){
-			cancelBtn.style.animation = 'shake 0.5s';
-			setTimeout(() => cancelBtn.style.animation = '', 500);
+			playDialogShake(cancelBtn);
 		}
 	});
 

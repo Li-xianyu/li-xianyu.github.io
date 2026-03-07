@@ -35,6 +35,43 @@ function updateThemeColor(theme) {
 	meta.setAttribute('content', color || (theme === 'dark' ? '#1a103d' : '#f8f4ff'));
 }
 
+function playDialogShake(element) {
+	if (!element || typeof element.animate !== 'function') return;
+
+	if (element._dialogShakeAnimation) {
+		element._dialogShakeAnimation.cancel();
+	}
+
+	const animation = element.animate(
+		[
+			{ transform: 'translateX(0)' },
+			{ transform: 'translateX(-5px)' },
+			{ transform: 'translateX(5px)' },
+			{ transform: 'translateX(-5px)' },
+			{ transform: 'translateX(5px)' },
+			{ transform: 'translateX(0)' }
+		],
+		{
+			duration: 500,
+			easing: 'ease'
+		}
+	);
+
+	element._dialogShakeAnimation = animation;
+	animation.addEventListener('finish', () => {
+		if (element._dialogShakeAnimation === animation) {
+			element._dialogShakeAnimation = null;
+		}
+	});
+	animation.addEventListener('cancel', () => {
+		if (element._dialogShakeAnimation === animation) {
+			element._dialogShakeAnimation = null;
+		}
+	});
+}
+
+window.playDialogShake = playDialogShake;
+
 // 初始化
 function initTheme() {
 	const savedTheme = localStorage.getItem('theme') || 'light';
