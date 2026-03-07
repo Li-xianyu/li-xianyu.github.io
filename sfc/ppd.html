@@ -117,7 +117,6 @@ btn.onclick = async function(){
 
 function loop(){
 
-	// 获取时域数据
 	analyser.getFloatTimeDomainData(timeData);
 
 	let energy = 0;
@@ -126,18 +125,17 @@ function loop(){
 	}
 	energy = Math.sqrt(energy / timeData.length);
 
-	// 计算瞬时变化
+	// 瞬时变化
 	let delta = energy - lastEnergy;
 	lastEnergy = energy;
 
-	// 获取频域数据
+	// 频域
 	analyser.getByteFrequencyData(freqData);
 
 	let highEnergy = 0;
 	let totalEnergy = 0;
 
-	// 高频区（后 40% 频段）
-	let split = Math.floor(freqData.length * 0.6);
+	let split = Math.floor(freqData.length * 0.7);
 
 	for(let i = 0; i < freqData.length; i++){
 		totalEnergy += freqData[i];
@@ -148,8 +146,8 @@ function loop(){
 
 	let highRatio = totalEnergy ? highEnergy / totalEnergy : 0;
 
-	// 更新UI
-	deltaBar.style.width = Math.min(delta * 2000, 100) + "%";
+	// UI
+	deltaBar.style.width = Math.min(delta * 4000, 100) + "%";
 	deltaText.innerText = delta.toFixed(4);
 
 	highBar.style.width = Math.min(highRatio * 200, 100) + "%";
@@ -157,11 +155,10 @@ function loop(){
 
 	let now = Date.now();
 
-	// 三条件判断
+	// 放宽条件：只要瞬时变化够大即可
 	if(
-		delta > DELTA_THRESHOLD &&
-		highRatio > HIGH_RATIO_THRESHOLD &&
-		(now - lastTriggerTime > MIN_INTERVAL)
+		delta > 0.01 &&  // 降低
+		(now - lastTriggerTime > 180)
 	){
 		count++;
 		lastTriggerTime = now;
