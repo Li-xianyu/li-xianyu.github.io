@@ -2,38 +2,71 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>Piapa计数器</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Piapa计数器 Pro</title>
 <style>
-	body{
-		background:#111;
-		color:#fff;
-		font-family:Arial;
-		text-align:center;
-		padding-top:80px;
-	}
-	button{
-		padding:12px 30px;
-		font-size:18px;
-		cursor:pointer;
-	}
-	#count{
-		font-size:64px;
-		margin-top:40px;
-		color:#00ff99;
-	}
-	#status{
-		margin-top:20px;
-		color:#aaa;
-	}
+body{
+	background:#111;
+	color:#fff;
+	font-family:Arial;
+	text-align:center;
+	padding:20px;
+}
+button{
+	padding:12px 25px;
+	font-size:18px;
+	margin:10px;
+}
+#count{
+	font-size:72px;
+	margin:20px 0;
+	color:#00ff99;
+}
+.panel{
+	background:#1e1e1e;
+	padding:15px;
+	border-radius:10px;
+	margin-top:20px;
+}
+.bar{
+	height:20px;
+	background:#333;
+	border-radius:5px;
+	overflow:hidden;
+	margin:5px 0;
+}
+.fill{
+	height:100%;
+	width:0%;
+	background:#00ff99;
+}
+input[type=range]{
+	width:100%;
+}
+.small{
+	font-size:14px;
+	color:#aaa;
+}
 </style>
 </head>
 <body>
 
-<h1>Piapa 声音计数器</h1>
+<h2>Piapa 监听计数器</h2>
 <button id="startBtn">开始监听</button>
 
 <div id="count">0</div>
-<div id="status">未启动</div>
+
+<div class="panel">
+	<div>实时强度</div>
+	<div class="bar"><div id="levelBar" class="fill"></div></div>
+	<div class="small">当前强度: <span id="levelText">0</span></div>
+</div>
+
+<div class="panel">
+	<div>阈值调节</div>
+	<input type="range" id="thresholdSlider" min="0.01" max="0.5" step="0.01" value="0.08">
+	<div class="small">当前阈值: <span id="thresholdText">0.08</span></div>
+</div>
 
 <script>
 "use strict";
@@ -45,13 +78,20 @@ let dataArray;
 
 let count = 0;
 let lastTriggerTime = 0;
-
-const THRESHOLD = 0.08;      // 音量触发阈值（可自己调）
-const MIN_INTERVAL = 180;    // 最小间隔ms 防止一次触发多次
+let THRESHOLD = 0.08;
+const MIN_INTERVAL = 180;
 
 const countEl = document.getElementById("count");
-const statusEl = document.getElementById("status");
+const levelBar = document.getElementById("levelBar");
+const levelText = document.getElementById("levelText");
+const thresholdSlider = document.getElementById("thresholdSlider");
+const thresholdText = document.getElementById("thresholdText");
 const btn = document.getElementById("startBtn");
+
+thresholdSlider.oninput = function(){
+	THRESHOLD = parseFloat(this.value);
+	thresholdText.innerText = THRESHOLD.toFixed(2);
+};
 
 btn.onclick = async function(){
 
@@ -71,38 +111,35 @@ btn.onclick = async function(){
 
 		dataArray = new Float32Array(analyser.fftSize);
 
-		statusEl.innerText = "监听中...";
 		loop();
 
 	}catch(e){
-		statusEl.innerText = "获取麦克风失败";
-		console.error(e);
+		alert("麦克风获取失败");
 	}
 };
 
 function loop(){
+
 	analyser.getFloatTimeDomainData(dataArray);
 
-	let sum = 0;
+	let peak = 0;
 
-	for(let i=0;i<dataArray.length;i++){
-		sum += dataArray[i] * dataArray[i];
+	for(let i = 0; i < dataArray.length; i++){
+		let v = Math.abs(dataArray[i]);
+		if(v > peak) peak = v;
 	}
 
-	let rms = Math.sqrt(sum / dataArray.length); // 音量强度
-	let peak = 0;
-for(let i=0;i<dataArray.length;i++){
-	let v = Math.abs(dataArray[i]);
-	if(v > peak) peak = v;
-}
+	let now = Date.now();
 
-let now = Date.now();
+	// 更新UI
+	levelBar.style.width = Math.min(peak * 300, 100) + "%";
+	levelText.innerText = peak.toFixed(3);
 
-if(peak > 0.35 && (now - lastTriggerTime > MIN_INTERVAL)){
-	count++;
-	lastTriggerTime = now;
-	countEl.innerText = count;
-}
+	if(peak > THRESHOLD && (now - lastTriggerTime > MIN_INTERVAL)){
+		count++;
+		lastTriggerTime = now;
+		countEl.innerText = count;
+	}
 
 	requestAnimationFrame(loop);
 }
