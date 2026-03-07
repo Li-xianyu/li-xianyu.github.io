@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Piapa计数器 Pro</title>
+<title>冲击瞬态计数器</title>
 <style>
 body{
 	background:#111;
@@ -29,19 +29,16 @@ button{
 	margin-top:20px;
 }
 .bar{
-	height:20px;
+	height:18px;
 	background:#333;
 	border-radius:5px;
 	overflow:hidden;
-	margin:5px 0;
+	margin:6px 0;
 }
 .fill{
 	height:100%;
 	width:0%;
 	background:#00ff99;
-}
-input[type=range]{
-	width:100%;
 }
 .small{
 	font-size:14px;
@@ -51,21 +48,21 @@ input[type=range]{
 </head>
 <body>
 
-<h2>Piapa 监听计数器</h2>
+<h2>冲击瞬态计数器</h2>
 <button id="startBtn">开始监听</button>
 
 <div id="count">0</div>
 
 <div class="panel">
-	<div>实时强度</div>
-	<div class="bar"><div id="levelBar" class="fill"></div></div>
-	<div class="small">当前强度: <span id="levelText">0</span></div>
+	<div>瞬时变化强度</div>
+	<div class="bar"><div id="deltaBar" class="fill"></div></div>
+	<div class="small">当前变化值: <span id="deltaText">0</span></div>
 </div>
 
 <div class="panel">
-	<div>阈值调节</div>
-	<input type="range" id="thresholdSlider" min="0.01" max="0.5" step="0.01" value="0.08">
-	<div class="small">当前阈值: <span id="thresholdText">0.08</span></div>
+	<div>高频比例</div>
+	<div class="bar"><div id="highBar" class="fill"></div></div>
+	<div class="small">高频比例: <span id="highText">0</span></div>
 </div>
 
 <script>
@@ -73,43 +70,43 @@ input[type=range]{
 
 let audioContext;
 let analyser;
-let microphone;
-let dataArray;
+let mic;
+let timeData;
+let freqData;
 
-let count = 0;
+let lastEnergy = 0;
 let lastTriggerTime = 0;
-let THRESHOLD = 0.08;
-const MIN_INTERVAL = 180;
+let count = 0;
 
-const countEl = document.getElementById("count");
-const levelBar = document.getElementById("levelBar");
-const levelText = document.getElementById("levelText");
-const thresholdSlider = document.getElementById("thresholdSlider");
-const thresholdText = document.getElementById("thresholdText");
+const MIN_INTERVAL = 200;
+
+// 阈值（不用太大）
+const DELTA_THRESHOLD = 0.02;
+const HIGH_RATIO_THRESHOLD = 0.25;
+
 const btn = document.getElementById("startBtn");
-
-thresholdSlider.oninput = function(){
-	THRESHOLD = parseFloat(this.value);
-	thresholdText.innerText = THRESHOLD.toFixed(2);
-};
+const countEl = document.getElementById("count");
+const deltaBar = document.getElementById("deltaBar");
+const deltaText = document.getElementById("deltaText");
+const highBar = document.getElementById("highBar");
+const highText = document.getElementById("highText");
 
 btn.onclick = async function(){
 
-	if(audioContext){
-		return;
-	}
+	if(audioContext) return;
 
 	try{
 		const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-		
+
 		audioContext = new (window.AudioContext || window.webkitAudioContext)();
 		analyser = audioContext.createAnalyser();
-		analyser.fftSize = 2048;
+		analyser.fftSize = 1024;
 
-		microphone = audioContext.createMediaStreamSource(stream);
-		microphone.connect(analyser);
+		mic = audioContext.createMediaStreamSource(stream);
+		mic.connect(analyser);
 
-		dataArray = new Float32Array(analyser.fftSize);
+		timeData = new Float32Array(analyser.fftSize);
+		freqData = new Uint8Array(analyser.frequencyBinCount);
 
 		loop();
 
@@ -120,22 +117,52 @@ btn.onclick = async function(){
 
 function loop(){
 
-	analyser.getFloatTimeDomainData(dataArray);
+	// 获取时域数据
+	analyser.getFloatTimeDomainData(timeData);
 
-	let peak = 0;
-
-	for(let i = 0; i < dataArray.length; i++){
-		let v = Math.abs(dataArray[i]);
-		if(v > peak) peak = v;
+	let energy = 0;
+	for(let i = 0; i < timeData.length; i++){
+		energy += timeData[i] * timeData[i];
 	}
+	energy = Math.sqrt(energy / timeData.length);
+
+	// 计算瞬时变化
+	let delta = energy - lastEnergy;
+	lastEnergy = energy;
+
+	// 获取频域数据
+	analyser.getByteFrequencyData(freqData);
+
+	let highEnergy = 0;
+	let totalEnergy = 0;
+
+	// 高频区（后 40% 频段）
+	let split = Math.floor(freqData.length * 0.6);
+
+	for(let i = 0; i < freqData.length; i++){
+		totalEnergy += freqData[i];
+		if(i > split){
+			highEnergy += freqData[i];
+		}
+	}
+
+	let highRatio = totalEnergy ? highEnergy / totalEnergy : 0;
+
+	// 更新UI
+	deltaBar.style.width = Math.min(delta * 2000, 100) + "%";
+	deltaText.innerText = delta.toFixed(4);
+
+	highBar.style.width = Math.min(highRatio * 200, 100) + "%";
+	highText.innerText = highRatio.toFixed(3);
 
 	let now = Date.now();
 
-	// 更新UI
-	levelBar.style.width = Math.min(peak * 300, 100) + "%";
-	levelText.innerText = peak.toFixed(3);
-
-	if(peak > THRESHOLD && (now - lastTriggerTime > MIN_INTERVAL)){
+	// 三条件判断
+	if(
+		delta > DELTA_THRESHOLD &&
+		highRatio > HIGH_RATIO_THRESHOLD &&
+		(now - lastTriggerTime > MIN_INTERVAL)
+	){
 		count++;
 		lastTriggerTime = now;
 		countEl.innerText = count;
