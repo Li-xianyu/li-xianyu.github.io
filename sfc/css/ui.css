@@ -68,35 +68,98 @@
 	--dialog-muted:rgba(255,255,255,0.75);
 }
 
-/* 主题切换 */
-.theme-toggle{
+/* 快捷浮层：右侧贴边半圆 + 展开按钮组 */
+.quick-dock{
 	position:fixed;
 	top:16px;
-	right:16px;
-	width:44px;
-	height:44px;
-	border:none;
-	border-radius:999px;
-	cursor:pointer;
+	right:0;
+	z-index:9999;
+	display:block;
+	pointer-events:none;
+}
 
+.quick-dock-launcher{
+	pointer-events:auto;
+	border:none;
+	cursor:pointer;
+	width:22px;
+	height:40px;
+	border-radius:999px 0 0 999px;
 	display:flex;
 	align-items:center;
 	justify-content:center;
-
 	background:var(--black-cell);
+	background:color-mix(in srgb, var(--black-cell) 78%, transparent);
 	color:#fff;
-	box-shadow:0 6px 18px var(--shadow-color);
-	transition: transform .15s ease, filter .15s ease;
-	z-index:9999;
+	box-shadow:0 8px 20px var(--shadow-color);
+	backdrop-filter:blur(8px);
+	-webkit-backdrop-filter:blur(8px);
+	transition:transform .18s ease, filter .18s ease, opacity .18s ease;
 }
 
-.theme-toggle:hover{
-	transform:scale(1.05);
+.quick-dock-launcher:hover{
+	transform:translateX(-1px);
 	filter:brightness(1.05);
 }
-.theme-toggle:active{ transform:scale(.98); }
 
-.theme-toggle i{
-	font-size:18px;
+.quick-dock-launcher:active{
+	transform:translateX(0) scale(.98);
+}
+
+.quick-dock-launcher i{
+	font-size:12px;
+	line-height:1;
+}
+
+.quick-dock-panel{
+	position:absolute;
+	top:0;
+	right:calc(100% + 8px);
+	pointer-events:none;
+	opacity:0;
+	transform:translateX(12px);
+	transition:opacity .2s ease, transform .2s cubic-bezier(.16,1,.3,1);
+	display:flex;
+	gap:8px;
+}
+
+.quick-dock.open .quick-dock-panel{
+	pointer-events:auto;
+	opacity:1;
+	transform:translateX(0);
+}
+
+.quick-dock.open .quick-dock-launcher{
+	opacity:0;
+	pointer-events:none;
+	transform:translateX(8px);
+}
+
+.quick-action-btn{
+	border:none;
+	cursor:pointer;
+	width:40px;
+	height:40px;
+	border-radius:999px;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	background:var(--black-cell);
+	color:#fff;
+	box-shadow:0 8px 20px var(--shadow-color);
+	transition:transform .16s ease, filter .16s ease;
+}
+
+.quick-action-btn:hover{
+	transform:translateY(-1px);
+	filter:brightness(1.06);
+}
+
+.quick-action-btn:active{
+	transform:scale(.97);
+}
+
+.quick-action-btn i{
+	font-size:16px;
 	line-height:1;
 }

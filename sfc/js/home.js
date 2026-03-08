@@ -1,5 +1,77 @@
 "use strict";
 
+function track(eventName, payload){
+	if (typeof window.trackEvent === "function"){
+		window.trackEvent(eventName, payload);
+	}
+}
+
+function initHeroSubtitleTicker(){
+	const subtitle = document.querySelector('.hero-subtitle');
+	if (!subtitle) return;
+
+	const lines = [
+		"规则你定，骰子由命",
+		"棋盘已就位，就等你开始",
+		"看看今天谁最倒霉",
+		"棋盘已经摆好，怂的人是小狗",
+		"听作者一句，先设置再开局",
+		"骰子不会故意欺负你，运气不好就是运气不好"
+	];
+
+	let index = 0;
+	let isSliding = false;
+	const animationDuration = 500;
+	const intervalDuration = 3200;
+
+	const currentLine = document.createElement('span');
+	currentLine.className = 'hero-subtitle-line is-current';
+	currentLine.textContent = lines[index];
+
+	const nextLine = document.createElement('span');
+	nextLine.className = 'hero-subtitle-line is-next';
+
+	subtitle.textContent = '';
+	subtitle.append(currentLine, nextLine);
+
+	if (lines.length < 2) return;
+
+	const pickNextRandomIndex = () => {
+		if (lines.length < 2) return index;
+		let nextIndex = index;
+		while (nextIndex === index) {
+			nextIndex = Math.floor(Math.random() * lines.length);
+		}
+		return nextIndex;
+	};
+
+	const slideTo = (nextIndex) => {
+		if (isSliding) return;
+		isSliding = true;
+
+		nextLine.textContent = lines[nextIndex];
+		subtitle.classList.add('is-sliding');
+
+		window.setTimeout(() => {
+			subtitle.classList.add('is-resetting');
+			currentLine.textContent = lines[nextIndex];
+			nextLine.textContent = '';
+			subtitle.classList.remove('is-sliding');
+			index = nextIndex;
+
+			window.requestAnimationFrame(() => {
+				window.requestAnimationFrame(() => {
+					subtitle.classList.remove('is-resetting');
+					isSliding = false;
+				});
+			});
+		}, animationDuration);
+	};
+
+	window.setInterval(() => {
+		slideTo(pickNextRandomIndex());
+	}, intervalDuration);
+}
 
 function createManualDialog(){
 	const overlay = document.createElement('div');
@@ -20,7 +92,7 @@ function createManualDialog(){
 
 			1. 本程序为虚拟娱乐产品，所包含的情节、任务与互动设计均为虚构创作内容，不构成对任何现实行为的倡导或价值导向。<br><br>
 
-			2. 隐私保护条款：本程序不向服务器上传任何个人数据，所有设置与行为数据仅存储于用户本地浏览器。清除浏览器缓存数据即可删除相关信息。<br><br>
+			2. 隐私与数据说明：设置与棋盘等内容默认仅存储于本地浏览器；站点会采集匿名使用行为（如页面访问、功能点击）用于优化体验，不包含可直接识别个人身份的信息。清除浏览器缓存后，本地数据可被删除。<br><br>
 
 			继续使用本程序即表示您已阅读、理解并同意以上全部条款。
 		</div>
@@ -46,12 +118,15 @@ function createManualDialog(){
 
 	const handleConfirm = () => {
 		localStorage.setItem('manualAgreed','true');
+		track("manual_agreed");
 		overlay.remove();
+		window.dispatchEvent(new CustomEvent('home:manualAgreed'));
 		confirmBtn.removeEventListener('click', handleConfirm);
 		cancelBtn.removeEventListener('click', handleCancel);
 	};
 
 	const handleCancel = () => {
+		track("manual_rejected");
 		confirmBtn.removeEventListener('click', handleConfirm);
 		cancelBtn.removeEventListener('click', handleCancel);
 
@@ -170,12 +245,13 @@ function createBoardDialog(){
 	segmented.className = 'board-segmented';
 	segmented.innerHTML = `
 		<button class="board-seg-btn active" type="button" data-tab="builtin">官方棋盘</button>
-		<button class="board-seg-btn" type="button" data-tab="custom">自定义</button>
+		<button class="board-seg-btn" type="button" data-tab="custom">玩家工坊</button>
 		<div class="board-seg-indicator"></div>
 	`;
 
 	const listContainer = document.createElement('div');
 	listContainer.className = 'board-list';
+	track("board_picker_opened");
 
 	function renderBoardList(tab){
 		const list = tab === "custom" ? customBoards : builtInBoards;
@@ -203,6 +279,10 @@ function createBoardDialog(){
 			`;
 
 			el.addEventListener("click", () => {
+				track("board_selected", {
+					board_type: item.type,
+					board_steps: item.steps
+				});
 				overlay.remove();
 				document.body.appendChild(createModeDialog(item.token));
 			});
@@ -226,6 +306,7 @@ function createBoardDialog(){
 			btn.classList.add("active");
 			moveIndicator(btn);
 			renderBoardList(btn.dataset.tab);
+			track("board_tab_switched", { tab: btn.dataset.tab });
 		});
 	});
 
@@ -262,6 +343,7 @@ function createBoardDialog(){
 }
 
 function createModeDialog(boardToken){
+	const boardType = String(boardToken || "").startsWith("custom:") ? "custom" : "builtin";
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
 
@@ -292,6 +374,10 @@ function createModeDialog(boardToken){
 		`;
 
 		item.addEventListener('click', () => {
+			track("mode_selected", {
+				mode: m.key,
+				board_type: boardType
+			});
 			window.location.href = `game.html?id=${encodeURIComponent(boardToken)}&mode=${encodeURIComponent(m.key)}`;
 		});
 
@@ -318,30 +404,44 @@ function createModeDialog(boardToken){
 
 /* ========= 启动 ========= */
 document.addEventListener('DOMContentLoaded', () => {
+	initHeroSubtitleTicker();
+
 	// 首次自动弹免责声明
 	if (!localStorage.getItem('manualAgreed')){
 		document.body.appendChild(createManualDialog());
+		track("manual_shown_auto");
 	}else{
 		console.log('用户已同意须知');
 	}
 
 	// 手动打开免责声明
 	document.getElementById('gameManual').addEventListener('click', () => {
+		track("manual_opened");
 		document.body.appendChild(createManualDialog());
 	});
 
 	// 开始游戏：先棋盘后模式
 	document.getElementById('startGame').addEventListener('click', () => {
+		track("start_game_clicked");
 		document.body.appendChild(createBoardDialog());
 	});
 
 	// 设置页
 	document.getElementById('gameSettings').addEventListener('click', () => {
+		track("settings_opened");
 		window.location.href = 'setting.html';
 	});
 
 	// 开发日志
 	document.getElementById('devLog').addEventListener('click', () => {
+		track("devlog_opened");
 		window.location.href = 'devlog.html';
 	});
+
+	const xProfileLink = document.getElementById('xProfileLink');
+	if (xProfileLink){
+		xProfileLink.addEventListener('click', () => {
+			track("x_profile_opened");
+		});
+	}
 });

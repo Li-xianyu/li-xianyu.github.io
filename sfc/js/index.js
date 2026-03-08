@@ -1,5 +1,11 @@
 "use strict";
 
+function track(eventName, payload){
+	if (typeof window.trackEvent === "function"){
+		window.trackEvent(eventName, payload);
+	}
+}
+
 let mapData;
 let current_punishment_passive;
 let current_task_master;
@@ -36,10 +42,23 @@ const GAME_MODE = (String(window.GAME_MODE || new URLSearchParams(location.searc
 const IS_DUAL = !(GAME_MODE === 'solo' || GAME_MODE === 'single' || GAME_MODE === 'one');
 
 const roundInfo = document.getElementById('roundInfo');
+const zVetoBadge = document.getElementById('zVetoBadge');
 
 let roundNo = 1;
 let roundMasterDone = false;
 let roundPassiveDone = false;
+const zEffectState = {
+	countRule: null,
+	forcedPosture: "",
+	splitExecution: false,
+	restInvalidToken: 0
+};
+let roundPassiveSnapshot = null;
+
+function updateVetoBadge() {
+	if (!zVetoBadge) return;
+	zVetoBadge.hidden = zEffectState.restInvalidToken <= 0;
+}
 
 if (board) board.style.display = '';
 if (rolldice) rolldice.style.display = '';
@@ -56,6 +75,131 @@ function generateMasterTask() {
 	return item ? { text: item.name, type: 'master' } : { text: '无可用指令', type: 'master' };
 }
 
+function getRandomSelectedName(items) {
+	const active = (items || []).filter(item => item && item.selected);
+	if (!active.length) return "";
+	return active[Math.floor(Math.random() * active.length)].name || "";
+}
+
+function parseTrailingNumber(text) {
+	const source = String(text || "");
+	const match = source.match(/(\d+)(?!.*\d)/);
+	if (!match) return null;
+	return {
+		value: Number.parseInt(match[1], 10),
+		start: match.index,
+		end: match.index + match[1].length
+	};
+}
+
+function applyCountRule(value, rule) {
+	if (!rule || !Number.isFinite(value)) return value;
+	if (rule.type === "add") return Math.max(0, value + rule.value);
+	if (rule.type === "multiply") return Math.max(0, value * rule.value);
+	if (rule.type === "half") return Math.max(0, Math.ceil(value / 2));
+	return value;
+}
+
+function applyForcedPosture(text, forcedPosture) {
+	if (!forcedPosture) return text;
+	const source = String(text || "");
+	const postureNames = (GameData.posture?.items || [])
+		.map(item => String(item?.name || "").trim())
+		.filter(Boolean)
+		.sort((a, b) => b.length - a.length);
+
+	let remainder = source;
+	const matched = postureNames.find(name => source.startsWith(name));
+	if (matched) {
+		remainder = source.slice(matched.length);
+	}
+	return `${forcedPosture}${remainder}`;
+}
+
+function transformSpankByZEffects(rawText) {
+	let nextText = String(rawText || "");
+	const parsed = parseTrailingNumber(nextText);
+	const originalCount = parsed ? parsed.value : null;
+	let finalCount = originalCount;
+	let countExpr = "";
+
+	if (finalCount !== null && zEffectState.countRule) {
+		finalCount = applyCountRule(finalCount, zEffectState.countRule);
+		if (zEffectState.countRule.type === "add") {
+			const delta = zEffectState.countRule.value;
+			countExpr = delta >= 0 ? `（${originalCount} + ${delta}）` : `（${originalCount} - ${Math.abs(delta)}）`;
+		} else if (zEffectState.countRule.type === "multiply") {
+			countExpr = `（${originalCount} x${zEffectState.countRule.value}）`;
+		} else if (zEffectState.countRule.type === "half") {
+			countExpr = `（${originalCount} /2）`;
+		}
+		nextText = `${nextText.slice(0, parsed.start)}${finalCount}${countExpr}${nextText.slice(parsed.end)}`;
+	}
+
+	if (zEffectState.forcedPosture) {
+		nextText = applyForcedPosture(nextText, zEffectState.forcedPosture);
+	}
+
+	const splitEnabled = !!zEffectState.splitExecution;
+	const splitInfo = splitEnabled && finalCount !== null
+		? {
+			first: Math.ceil(finalCount / 2),
+			second: Math.floor(finalCount / 2)
+		}
+		: null;
+
+	zEffectState.countRule = null;
+	zEffectState.forcedPosture = "";
+	zEffectState.splitExecution = false;
+
+	return { text: nextText, splitInfo };
+}
+
+function tryApplyMasterEffectsToCurrentRound() {
+	if (!roundPassiveSnapshot) return;
+	if (!roundPassiveDone) return;
+	if (roundPassiveSnapshot.round !== roundNo) return;
+	if (roundPassiveSnapshot.type !== "spank") return;
+
+	const transformed = transformSpankByZEffects(roundPassiveSnapshot.baseText);
+	const splitText = transformed.splitInfo
+		? `；分期执行：先 ${transformed.splitInfo.first}，中间休息2分钟，再 ${transformed.splitInfo.second}`
+		: "";
+	const finalDisplay = `${transformed.text}${splitText}`;
+
+	roundPassiveSnapshot.displayText = finalDisplay;
+	if (roundPassiveSnapshot.targetNumber && current_punishment_passive[roundPassiveSnapshot.targetNumber]) {
+		current_punishment_passive[roundPassiveSnapshot.targetNumber].text = finalDisplay;
+	}
+	setTaskText("passive", `处理：${finalDisplay}`);
+	showTip("已对本回合 B 任务应用 Z 指令");
+}
+
+async function applyMasterInstruction(taskText) {
+	const text = String(taskText || "").trim();
+	if (!text) return;
+
+	if (text === "数量+5") zEffectState.countRule = { type: "add", value: 5 };
+	else if (text === "数量+10") zEffectState.countRule = { type: "add", value: 10 };
+	else if (text === "数量-5") zEffectState.countRule = { type: "add", value: -5 };
+	else if (text === "数量-10") zEffectState.countRule = { type: "add", value: -10 };
+	else if (text === "翻倍") zEffectState.countRule = { type: "multiply", value: 2 };
+	else if (text === "减半(向上取整)") zEffectState.countRule = { type: "half", value: 0 };
+	else if (text === "指定姿势") zEffectState.forcedPosture = getRandomSelectedName(GameData.posture?.items || []);
+	else if (text === "分期执行(中间休2分钟)") zEffectState.splitExecution = true;
+	else if (text === "休息无效") {
+		zEffectState.restInvalidToken = 1;
+		updateVetoBadge();
+		await showInfoDialog("🛡️ 一票否决", "已获得一次一票否决权。下次出现休息弹窗时可选择是否使用。");
+	}
+	else if (text === "强制休息(5分钟)") {
+		const blocked = await shouldConsumeRestVeto("强制休息5分钟");
+		if (!blocked) {
+			await showTimedCountdownDialog("rest", "强制休息5分钟");
+		}
+	}
+}
+
 function generatePunishment(options = {}) {
 	let allowedTypes;
 	if (typeof options === 'string') allowedTypes = [options];
@@ -69,6 +213,8 @@ function generatePunishment(options = {}) {
 			: null;
 	};
 
+	const hasActiveItems = (items) => Array.isArray(items) && items.some(item => item && item.selected);
+
 	const getRandomTens = (min, max) => {
 		const minTens = Math.ceil(min / 10);
 		const maxTens = Math.floor(max / 10);
@@ -79,6 +225,7 @@ function generatePunishment(options = {}) {
 		{
 			type: 'spank',
 			weight: GameData.prop.weight || 0,
+			available: () => hasActiveItems(GameData.prop.items),
 			handler: () => {
 				const postureName = getRandomActiveName(GameData.posture.items);
 				const propName = getRandomActiveName(GameData.prop.items);
@@ -96,24 +243,29 @@ function generatePunishment(options = {}) {
 		{
 			type: 'rest',
 			weight: GameData.reward.weight || 0,
+			available: () => hasActiveItems(GameData.reward.items),
 			handler: () => ({ text: getRandomActiveName(GameData.reward.items) || "无可用休息项" })
 		},
 		{
 			type: 'move',
 			weight: GameData.aod.weight || 0,
+			available: () => hasActiveItems(GameData.aod.items),
 			handler: () => ({ text: getRandomActiveName(GameData.aod.items) || "无可用移动项" })
 		},
 		{
 			type: 'sports',
 			weight: GameData.sports.weight || 0,
+			available: () => hasActiveItems(GameData.sports.items),
 			handler: () => ({ text: getRandomActiveName(GameData.sports.items) || "无可用运动项" })
 		}
 	];
 
-	const filteredModules = allowedTypes ? modules.filter(m => allowedTypes.includes(m.type)) : modules;
+	const filteredModules = (allowedTypes ? modules.filter(m => allowedTypes.includes(m.type)) : modules)
+		.filter(m => m.weight > 0 && m.available());
 	if (filteredModules.length === 0) return { text: "无可用类型", type: 'error' };
 
 	const totalWeight = filteredModules.reduce((sum, m) => sum + m.weight, 0);
+	if (totalWeight <= 0) return { text: "无可用类型", type: 'error' };
 	let random = Math.random() * totalWeight;
 	const selected = filteredModules.find(m => (random -= m.weight) <= 0);
 
@@ -189,6 +341,18 @@ function generateBoardFromData(boardData){
 		masterMap[num] = generateMasterTask();
 	}
 
+	// 体验约束：前 18 格不出现休息项，避免开局连续被打断。
+	const earlyCap = Math.min(18, nonZeroCount + 1);
+	for (let num = 2; num <= earlyCap; num++) {
+		const p = passiveMap[num];
+		if (!p || p.type !== "rest") continue;
+
+		const replacement = generatePunishment(['spank', 'move', 'sports']);
+		if (replacement && replacement.type !== "error") {
+			passiveMap[num] = replacement;
+		}
+	}
+
 	return { passiveMap, masterMap };
 }
 
@@ -243,6 +407,12 @@ function renderBoard(boardToken){
 			board.appendChild(cell);
 		}
 	}
+
+	track("game_started", {
+		mode: IS_DUAL ? "dual" : "solo",
+		board_type: payload.type,
+		board_steps: endNumber
+	});
 }
 
 function escapeHtml(str) {
@@ -255,6 +425,7 @@ function escapeHtml(str) {
 }
 
 const REST_COUNTDOWN_FALLBACK_SECONDS = 10;
+const DURATION_PATTERN = /(\d+(?:\.\d+)?|[零一二两三四五六七八九十半]+)\s*(分钟|分|秒钟|秒|minutes?|mins?|min|m|seconds?|secs?|sec|s)/i;
 
 function parseChineseNumber(rawValue) {
 	const value = String(rawValue || '').trim();
@@ -294,7 +465,7 @@ function parseChineseNumber(rawValue) {
 
 function getRestCountdownConfig(text) {
 	const content = String(text || '').trim();
-	const match = content.match(/(\d+(?:\.\d+)?|[零一二两三四五六七八九十半]+)\s*(小时|时|分钟|分|秒钟|秒|hours?|hrs?|hr|h|minutes?|mins?|min|m|seconds?|secs?|sec|s)/i);
+	const match = content.match(DURATION_PATTERN);
 
 	if (!match) {
 		return {
@@ -315,9 +486,7 @@ function getRestCountdownConfig(text) {
 	}
 
 	let multiplier = 1;
-	if (unit.includes('小时') || unit === '时' || unit.startsWith('h')) {
-		multiplier = 3600;
-	} else if (unit.includes('分钟') || unit === '分' || unit.startsWith('m')) {
+	if (unit.includes('分钟') || unit === '分' || unit.startsWith('m')) {
 		multiplier = 60;
 	}
 
@@ -325,6 +494,32 @@ function getRestCountdownConfig(text) {
 		seconds: Math.max(1, Math.round(value * multiplier)),
 		usedFallback: false
 	};
+}
+
+function hasDurationHint(text){
+	return DURATION_PATTERN.test(String(text || '').trim());
+}
+
+function normalizeDurationUnit(rawUnit) {
+	const unit = String(rawUnit || "").toLowerCase();
+	if (unit.includes('分钟') || unit === '分' || unit.startsWith('m')) return '分钟';
+	return '秒';
+}
+
+function normalizeDurationForDisplay(text) {
+	const content = String(text || '').trim();
+	const match = content.match(DURATION_PATTERN);
+	if (!match) return content;
+
+	const rawValue = match[1];
+	const parsedValue = /^\d/.test(rawValue) ? Number.parseFloat(rawValue) : parseChineseNumber(rawValue);
+	if (!Number.isFinite(parsedValue) || parsedValue <= 0) return content;
+
+	const numberText = Number.isInteger(parsedValue)
+		? String(parsedValue)
+		: String(parsedValue).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+
+	return content.replace(match[0], `${numberText}${normalizeDurationUnit(match[2])}`);
 }
 
 function formatCountdown(remainingMs) {
@@ -340,9 +535,21 @@ function formatCountdown(remainingMs) {
 	return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function showRestCountdownDialog(restText) {
-	const { seconds, usedFallback } = getRestCountdownConfig(restText);
+function showTimedCountdownDialog(taskType, taskText) {
+	const { seconds, usedFallback } = getRestCountdownConfig(taskText);
 	const totalMs = seconds * 1000;
+	const displayText = normalizeDurationForDisplay(taskText);
+	const isSports = taskType === "sports";
+	const title = isSports ? "🏃 B：运动计时" : "☕️ B：强制休息";
+	const badge = "倒计时结束后自动继续";
+	const noteText = usedFallback
+		? `未识别到时长，默认倒计时 ${seconds} 秒`
+		: `本次倒计时 ${formatCountdown(totalMs)}`;
+	const hintText = "支持：3分钟 / 三分钟 / 20min / 45s（仅分钟和秒）";
+	track(isSports ? "sports_countdown_started" : "rest_countdown_started", {
+		seconds,
+		used_fallback: usedFallback
+	});
 
 	return new Promise((resolve) => {
 		const overlay = document.createElement('div');
@@ -351,15 +558,16 @@ function showRestCountdownDialog(restText) {
 		const dialog = document.createElement('div');
 		dialog.className = 'punishment-dialog rest-countdown-dialog';
 		dialog.innerHTML = `
-			<h3 class="punishment-title">☕️ B：强制休息</h3>
+			<h3 class="punishment-title">${title}</h3>
 			<div class="punishment-content rest-countdown-content">
-				<div class="rest-countdown-badge">倒计时结束后自动继续</div>
-				<div class="rest-countdown-text">${escapeHtml(restText)}</div>
+				<div class="rest-countdown-badge">${badge}</div>
+				<div class="rest-countdown-text">${escapeHtml(displayText)}</div>
 				<div class="rest-countdown-number" id="restCountdownValue">${formatCountdown(totalMs)}</div>
 				<div class="rest-countdown-progress" aria-hidden="true">
 					<div class="rest-countdown-progress-bar" id="restCountdownBar"></div>
 				</div>
-				<div class="rest-countdown-note">${usedFallback ? `未识别到时长，默认强制休息 ${seconds} 秒` : `本次强制休息 ${formatCountdown(totalMs)}`}</div>
+				<div class="rest-countdown-note">${noteText}</div>
+				<div class="rest-countdown-note">${hintText}</div>
 			</div>
 		`;
 
@@ -375,6 +583,7 @@ function showRestCountdownDialog(restText) {
 			if (timerId) {
 				window.clearInterval(timerId);
 			}
+			track(isSports ? "sports_countdown_completed" : "rest_countdown_completed", { seconds });
 			overlay.remove();
 			resolve();
 		};
@@ -424,6 +633,70 @@ function showTip(msg) {
 		el.classList.remove('show');
 		setTimeout(() => el.remove(), 200);
 	}, 1200);
+}
+
+function showInfoDialog(title, message) {
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay';
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">${escapeHtml(title)}</h3>
+			<div class="punishment-content">${escapeHtml(message)}</div>
+			<button class="punishment-button" id="confirmBtn">👌 确认</button>
+		`;
+
+		const confirmBtn = dialog.querySelector('#confirmBtn');
+		confirmBtn.addEventListener('click', () => {
+			overlay.remove();
+			resolve();
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+	});
+}
+
+function showVetoDecisionDialog(restText) {
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay';
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">🛡️ 一票否决</h3>
+			<div class="punishment-content">检测到休息弹窗：${escapeHtml(restText)}<br><br>是否使用“一票否决”使本次休息无效？</div>
+			<div class="dialog-buttons">
+				<button class="punishment-button" id="useVetoBtn">使用</button>
+				<button class="punishment-button" id="keepVetoBtn">保留</button>
+			</div>
+		`;
+
+		const useBtn = dialog.querySelector('#useVetoBtn');
+		const keepBtn = dialog.querySelector('#keepVetoBtn');
+		useBtn.addEventListener('click', () => {
+			overlay.remove();
+			resolve(true);
+		});
+		keepBtn.addEventListener('click', () => {
+			overlay.remove();
+			resolve(false);
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+	});
+}
+
+async function shouldConsumeRestVeto(restText) {
+	if (zEffectState.restInvalidToken <= 0) return false;
+	const useVeto = await showVetoDecisionDialog(restText);
+	if (!useVeto) return false;
+	zEffectState.restInvalidToken -= 1;
+	updateVetoBadge();
+	await showInfoDialog("🛡️ 休息无效", "已使用一次一票否决权，本次休息无效。");
+	return true;
 }
 
 function updateRoundInfo() {
@@ -478,6 +751,7 @@ if (!IS_DUAL) {
 
 updateRoundInfo();
 setButtonsState();
+updateVetoBadge();
 
 function moveStep(from, to, role, stepDuration){
 	return new Promise(resolve => {
@@ -532,6 +806,15 @@ async function handleSpecialMove(moveType) {
 	}
 }
 
+function resolveMoveInstruction(text) {
+	const content = String(text || "");
+	if (content.includes('直达终点')) return { kind: 'toEnd' };
+	if (content.includes('回到起点')) return { kind: 'toStart' };
+	if (content.includes('前进1-3格')) return { kind: 'forwardRange' };
+	if (content.includes('后退1-3格')) return { kind: 'backwardRange' };
+	return { kind: 'none' };
+}
+
 async function moveBySteps(steps, role) {
 	if (isMoving) return;
 	isMoving = true;
@@ -580,9 +863,17 @@ async function moveBySteps(steps, role) {
 	}
 }
 
-function showPassiveResult(targetNumber) {
+async function showPassiveResult(targetNumber) {
 	const punishment = current_punishment_passive[targetNumber];
 	if (!punishment) return Promise.resolve();
+	track("passive_result_shown", { type: punishment.type || "unknown" });
+	roundPassiveSnapshot = {
+		round: roundNo,
+		type: punishment.type,
+		targetNumber,
+		baseText: String(punishment.text || ""),
+		displayText: String(punishment.text || "")
+	};
 
 	const typeMap = {
 		spank: '⛔️ B：处理项',
@@ -600,10 +891,26 @@ function showPassiveResult(targetNumber) {
 		end: '终点'
 	};
 
-	setTaskText('passive', `${panelPrefix[punishment.type] || '内容'}：${punishment.text}`);
+	let displayText = punishment.text;
+	let splitInfo = null;
+	if (punishment.type === "spank") {
+		const transformed = transformSpankByZEffects(punishment.text);
+		displayText = transformed.text;
+		splitInfo = transformed.splitInfo;
+	}
+	setTaskText('passive', `${panelPrefix[punishment.type] || '内容'}：${displayText}`);
 
 	if (punishment.type === 'rest') {
-		return showRestCountdownDialog(punishment.text);
+		const blocked = await shouldConsumeRestVeto(displayText);
+		if (blocked) return;
+	}
+
+	if (punishment.type === 'rest' && hasDurationHint(displayText)) {
+		return showTimedCountdownDialog('rest', displayText);
+	}
+
+	if (punishment.type === 'sports' && hasDurationHint(displayText)) {
+		return showTimedCountdownDialog('sports', displayText);
 	}
 
 	return new Promise((resolve) => {
@@ -615,7 +922,7 @@ function showPassiveResult(targetNumber) {
 
 		dialog.innerHTML = `
 			<h3 class="punishment-title">${typeMap[punishment.type] || '提示'}</h3>
-			<div class="punishment-content">${escapeHtml(punishment.text)}</div>
+			<div class="punishment-content">${escapeHtml(displayText)}${splitInfo ? `<br><br>分期执行：先 ${splitInfo.first}，中间休息2分钟，再 ${splitInfo.second}` : ''}</div>
 			<button class="punishment-button" id="confirmBtn">👌 确认</button>
 		`;
 
@@ -633,8 +940,18 @@ function showPassiveResult(targetNumber) {
 			await new Promise((innerResolve) => requestAnimationFrame(innerResolve));
 
 			if (punishment.type === 'move') {
-				const isToEnd = punishment.text.includes('直达终点');
-				await handleSpecialMove(isToEnd ? 'toEnd' : 'toStart');
+				const instruction = resolveMoveInstruction(displayText);
+				if (instruction.kind === 'toEnd' || instruction.kind === 'toStart') {
+					track("special_move_triggered", { move: instruction.kind === 'toEnd' ? "to_end" : "to_start" });
+					await handleSpecialMove(instruction.kind);
+				} else if (instruction.kind === 'forwardRange' || instruction.kind === 'backwardRange') {
+					const offset = Math.floor(Math.random() * 3) + 1;
+					const signed = instruction.kind === 'forwardRange' ? offset : -offset;
+					const label = instruction.kind === 'forwardRange' ? `前进 ${offset} 格` : `后退 ${offset} 格`;
+					track("special_move_triggered", { move: instruction.kind, steps: offset });
+					await showInfoDialog("🚶 位移判定", `本次${label}`);
+					await moveBySteps(signed, 'passive');
+				}
 			}
 
 			resolve();
@@ -654,6 +971,7 @@ function showPassiveResult(targetNumber) {
 function showMasterResult(targetNumber) {
 	const task = current_task_master[targetNumber];
 	if (!task) return Promise.resolve();
+	track("master_result_shown");
 
 	setTaskText('master', task.text);
 
@@ -670,8 +988,10 @@ function showMasterResult(targetNumber) {
 		`;
 
 		const confirmBtn = dialog.querySelector('#confirmBtn');
-		confirmBtn.addEventListener('click', () => {
+		confirmBtn.addEventListener('click', async () => {
 			overlay.remove();
+			await applyMasterInstruction(task.text);
+			tryApplyMasterEffectsToCurrentRound();
 			resolve();
 		});
 
@@ -801,11 +1121,13 @@ function showEndGameDialog() {
 		btnWrap.style.marginTop = '20px';
 
 		dialog.querySelector('#confirmRestart').addEventListener('click', () => {
+			track("endgame_restart_confirmed");
 			overlay.remove();
 			resolve(true);
 		});
 
 		dialog.querySelector('#cancelRestart').addEventListener('click', () => {
+			track("endgame_restart_cancelled");
 			overlay.remove();
 			resolve(false);
 		});
@@ -834,6 +1156,12 @@ async function handleRoll(role) {
 	isProcessing = true;
 
 	try {
+		if (!roundMasterDone && !roundPassiveDone) {
+			// 新回合第一掷：清理上回合残留任务显示。
+			setTaskText('master', '—');
+			setTaskText('passive', '—');
+		}
+
 		if (role === 'passive' && passive_location === endNumber) {
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
@@ -846,6 +1174,12 @@ async function handleRoll(role) {
 		}
 
 		const randomSteps = Math.floor(Math.random() * 6) + 1;
+		track("dice_rolled", {
+			role,
+			steps: randomSteps,
+			mode: IS_DUAL ? "dual" : "solo",
+			round: roundNo
+		});
 
 		await showDice(randomSteps);
 		await moveBySteps(randomSteps, role);

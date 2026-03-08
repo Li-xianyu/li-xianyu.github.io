@@ -8,30 +8,29 @@
 	<link rel="icon" href="img/favicon.png" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css">
 	<link rel="stylesheet" href="css/ui.css">
 	<link rel="stylesheet" href="css/index.css">
 
-	<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=3PBO9GOtpK0bSeXz&ck=3PBO9GOtpK0bSeXz"></script>
+	<script defer src="https://cloud.umami.is/script.js" data-website-id="6ec19ab0-90c0-423c-86f5-f88666777765"></script>
 </head>
 <body class="home-page">
 	<main class="menu-container">
 		<section class="hero-panel">
 			<div class="hero-chip-row" aria-hidden="true">
-				<span class="hero-chip">本地优先</span>
-				<span class="hero-chip">Dual / Solo</span>
-				<span class="hero-chip">可选棋盘</span>
+				<span class="hero-chip">Local-First</span>
+				<span class="hero-chip">Dual & Solo</span>
 			</div>
 
-			<p class="hero-kicker">Private Board Experience</p>
 			<h1 class="game-title">Dual Protocol</h1>
-			<p class="hero-subtitle">将设置、棋盘与流程都留在本地，在更安静克制的界面里开始一局。</p>
+			<p class="hero-subtitle">规则你定，骰子由命</p>
 
 			<div class="menu-buttons">
 				<button class="menu-btn menu-btn-primary" id="startGame" type="button">
 					<span class="menu-btn-icon" aria-hidden="true">🎮</span>
 					<span class="menu-btn-copy">
 						<span class="menu-btn-title">开始游戏</span>
-						<span class="menu-btn-desc">选择棋盘与模式后进入当前对局</span>
+						<span class="menu-btn-desc">掷下第一颗骰子，今天这局就开了</span>
 					</span>
 					<span class="menu-btn-arrow" aria-hidden="true">→</span>
 				</button>
@@ -41,7 +40,7 @@
 						<span class="menu-btn-icon" aria-hidden="true">⚙️</span>
 						<span class="menu-btn-copy">
 							<span class="menu-btn-title">游戏设置</span>
-							<span class="menu-btn-desc">调整项目权重与规则参数</span>
+							<span class="menu-btn-desc">调整项目权重与规则参数、自绘制棋盘路径</span>
 						</span>
 					</button>
 
@@ -49,7 +48,7 @@
 						<span class="menu-btn-icon" aria-hidden="true">📖</span>
 						<span class="menu-btn-copy">
 							<span class="menu-btn-title">使用须知</span>
-							<span class="menu-btn-desc">查看说明与本地使用条款</span>
+							<span class="menu-btn-desc">查看说明与隐私及使用条款</span>
 						</span>
 					</button>
 
@@ -57,7 +56,7 @@
 						<span class="menu-btn-icon" aria-hidden="true">📝</span>
 						<span class="menu-btn-copy">
 							<span class="menu-btn-title">开发日志</span>
-							<span class="menu-btn-desc">快速查看版本调整与更新记录</span>
+							<span class="menu-btn-desc">看看我一路踩坑，顺便围观进化史</span>
 						</span>
 					</button>
 				</div>
@@ -65,7 +64,14 @@
 
 			<div class="home-note">
 				<span class="home-note-dot" aria-hidden="true"></span>
-				<p>所有设置与棋盘默认仅存储在当前浏览器本地。</p>
+				<p>支持自定义棋盘与规则参数，开局前可自由调整。</p>
+			</div>
+
+			<div class="home-social">
+				<a id="xProfileLink" class="home-social-link" href="https://x.com/yunshanlxy" target="_blank" rel="noopener noreferrer">
+					<i class="bi bi-twitter-x" aria-hidden="true"></i>
+					<span>李咸鱼 (@yunshanlxy)</span>
+				</a>
 			</div>
 		</section>
 	</main>
@@ -73,5 +79,7 @@
 	<script src="js/ui.js"></script>
 	<script src="js/Data.js"></script>
 	<script src="js/home.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.min.js"></script>
+	<script src="js/home_onboarding_intro.js"></script>
 </body>
 </html>

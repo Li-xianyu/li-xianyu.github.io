@@ -1,5 +1,11 @@
 "use strict";
 
+function track(eventName, payload){
+	if (typeof window.trackEvent === "function"){
+		window.trackEvent(eventName, payload);
+	}
+}
+
 (function(){
 	const BOARD_SIZE = 10;
 	const STORAGE_KEY = "CUSTOM_BOARDS";
@@ -297,6 +303,7 @@
 		state.path = [];
 		renderAll();
 		saveDraft();
+		track("custom_board_cleared");
 		showToast("已清空棋盘");
 	}
 
@@ -313,16 +320,19 @@
 
 		renderAll();
 		saveDraft();
+		track("custom_board_demo_loaded");
 		showToast("已加载示例");
 	}
 
 	async function copyBoardCode(){
 		try{
 			await navigator.clipboard.writeText(outputEl.value);
+			track("custom_board_code_copied");
 			showToast("board 已复制");
 		}catch(err){
 			outputEl.select();
 			document.execCommand("copy");
+			track("custom_board_code_copied");
 			showToast("board 已复制");
 		}
 	}
@@ -388,6 +398,7 @@
 		setSavedBoards(list);
 		saveDraft("");
 		renderSavedBoards();
+		track("custom_board_saved", { steps: state.path.length });
 		showToast("已保存到本地");
 	}
 
@@ -450,6 +461,7 @@
 		state.path = matrixToPath(item.board);
 		saveDraft(id);
 		renderAll();
+		track("custom_board_loaded");
 		showToast("已载入棋盘");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
@@ -462,6 +474,7 @@
 		const code = formatBoardCode(item.board);
 		try{
 			await navigator.clipboard.writeText(code);
+			track("custom_board_saved_code_copied");
 			showToast("已复制已存档棋盘代码");
 		}catch(err){
 			showToast("复制失败");
@@ -478,6 +491,7 @@
 		}
 
 		renderSavedBoards();
+		track("custom_board_deleted");
 		showToast("已删除");
 	}
 
@@ -558,6 +572,7 @@
 		boardDescEl.value = draft.desc || "";
 		state.path = Array.isArray(draft.path) ? draft.path : [];
 		renderAll();
+		track("custom_board_draft_loaded");
 		showToast("已载入草稿");
 	}
 

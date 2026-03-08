@@ -149,20 +149,33 @@ body.home-page[data-theme="dark"] .hero-panel::after{
 	display:flex;
 	flex-wrap:wrap;
 	justify-content:center;
-	gap:10px;
-	margin-bottom:18px;
+	gap:8px;
+	margin:0 0 10px;
 }
 
 .hero-chip{
-	padding:7px 12px;
+	padding:6px 12px;
 	border-radius:999px;
-	font-size:12px;
+	font-size:11px;
 	line-height:1;
 	letter-spacing:.08em;
 	color:var(--dialog-text);
-	background:rgba(255,255,255,.48);
-	border:1px solid rgba(255,255,255,.38);
-	box-shadow:0 6px 18px rgba(0,0,0,.04);
+	background:rgba(255,255,255,.58);
+	border:1px solid rgba(120,90,200,.18);
+	box-shadow:
+		0 1px 0 rgba(255,255,255,.6) inset,
+		0 6px 14px rgba(120,90,200,.14),
+		0 0 10px rgba(120,90,200,.10);
+	opacity:.96;
+}
+
+body.home-page[data-theme="dark"] .hero-chip{
+	background:rgba(157,122,255,.14);
+	border-color:rgba(157,122,255,.30);
+	box-shadow:
+		0 1px 0 rgba(255,255,255,.14) inset,
+		0 8px 16px rgba(0,0,0,.28),
+		0 0 12px rgba(157,122,255,.20);
 }
 
 body.home-page[data-theme="dark"] .hero-chip{
@@ -190,17 +203,47 @@ body.home-page[data-theme="dark"] .hero-chip{
 }
 
 .hero-subtitle{
-	width:min(100%, 34rem);
-	margin:18px auto 0;
-	font-size:clamp(15px, 2.4vw, 18px);
-	line-height:1.75;
+	width:min(100%, 24rem);
+	margin:8px auto 0;
+	font-size:clamp(14px, 2.1vw, 16px);
+	line-height:1.55;
+	height:1.55em;
+	position:relative;
+	overflow:hidden;
 	color:var(--dialog-muted);
+}
+
+.hero-subtitle-line{
+	position:absolute;
+	inset:0;
+	display:block;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	transform:translateY(0);
+	transition:transform .5s cubic-bezier(.22,.61,.36,1);
+}
+
+.hero-subtitle.is-resetting .hero-subtitle-line{
+	transition:none !important;
+}
+
+.hero-subtitle-line.is-next{
+	transform:translateY(100%);
+}
+
+.hero-subtitle.is-sliding .hero-subtitle-line.is-current{
+	transform:translateY(-100%);
+}
+
+.hero-subtitle.is-sliding .hero-subtitle-line.is-next{
+	transform:translateY(0);
 }
 
 .menu-buttons{
 	display:grid;
 	gap:14px;
-	margin-top:28px;
+	margin-top:18px;
 }
 
 .menu-secondary-grid{
@@ -383,6 +426,235 @@ body.home-page[data-theme="dark"] .home-note{
 	border-top-color:rgba(255,255,255,.10);
 }
 
+.home-social{
+	margin-top:10px;
+	display:flex;
+	justify-content:center;
+}
+
+.home-social-link{
+	display:inline-flex;
+	align-items:center;
+	gap:8px;
+	padding:8px 12px;
+	border-radius:999px;
+	font-size:13px;
+	line-height:1;
+	text-decoration:none;
+	color:var(--dialog-muted);
+	background:rgba(255,255,255,.46);
+	border:1px solid rgba(255,255,255,.35);
+	transition:transform var(--transition-speed), color var(--transition-speed), background var(--transition-speed);
+}
+
+.home-social-link:hover{
+	transform:translateY(-1px);
+	color:var(--text-color);
+}
+
+body.home-page[data-theme="dark"] .home-social-link{
+	background:rgba(255,255,255,.08);
+	border-color:rgba(255,255,255,.12);
+}
+
+/* ===== Intro.js Home Skin ===== */
+.introjs-overlay{
+	background:rgba(15, 8, 34, .50) !important;
+}
+
+.introjs-helperLayer{
+	background:transparent !important;
+	border-radius:20px !important;
+	box-shadow:
+		0 0 0 1px rgba(127,71,255,.45),
+		0 14px 34px rgba(22,14,44,.28) !important;
+}
+
+.home-intro-highlight{
+	border-radius:20px;
+}
+
+.introjs-tooltipReferenceLayer{
+	/* Keep tooltip layer above overlay; low z-index can turn Next click into overlay click (exit). */
+	z-index:100000001 !important;
+	pointer-events:none !important;
+}
+
+.introjs-tooltip.home-intro-tooltip{
+	pointer-events:auto !important;
+	min-width:0 !important;
+	width:min(320px, calc(100vw - 28px)) !important;
+	max-width:min(320px, calc(100vw - 28px)) !important;
+	background:var(--dialog-bg) !important;
+	border:1px solid var(--dialog-border) !important;
+	border-radius:16px !important;
+	backdrop-filter:blur(18px);
+	-webkit-backdrop-filter:blur(18px);
+	box-shadow:0 18px 44px rgba(30,20,60,.22) !important;
+	color:var(--dialog-text) !important;
+	padding:0 !important;
+}
+
+.home-intro-tooltip .introjs-tooltip-header{
+	padding:14px 14px 0 !important;
+}
+
+.home-intro-tooltip .introjs-tooltip-title{
+	font-size:16px !important;
+	line-height:1.35 !important;
+	font-weight:700 !important;
+	color:var(--dialog-text) !important;
+	margin:0 !important;
+}
+
+.home-intro-tooltip .introjs-tooltiptext{
+	padding:8px 14px 12px !important;
+	font-size:14px !important;
+	line-height:1.6 !important;
+	color:var(--dialog-muted) !important;
+}
+
+.home-intro-tooltip .introjs-tooltipbuttons{
+	padding:10px 12px 12px !important;
+	border-top:1px solid rgba(127,71,255,.12) !important;
+	display:flex !important;
+	gap:8px !important;
+}
+
+.home-intro-tooltip .introjs-button{
+	flex:1 1 0;
+	display:inline-flex !important;
+	align-items:center !important;
+	justify-content:center !important;
+	float:none !important;
+	min-width:0 !important;
+	min-height:34px !important;
+	border-radius:10px !important;
+	padding:7px 10px !important;
+	font-size:13px !important;
+	line-height:1.2 !important;
+	text-align:center !important;
+	border:1px solid rgba(127,71,255,.20) !important;
+	background:rgba(255,255,255,.72) !important;
+	color:var(--dialog-text) !important;
+	text-shadow:none !important;
+	box-shadow:none !important;
+}
+
+.home-intro-tooltip .introjs-skipbutton{
+	font-size:11px !important;
+	font-weight:600 !important;
+	line-height:1 !important;
+	padding:6px 8px !important;
+	color:var(--dialog-muted) !important;
+}
+
+.introjs-tooltip.home-intro-tooltip .introjs-tooltipbuttons .introjs-prevbutton,
+.introjs-tooltip.home-intro-tooltip .introjs-tooltipbuttons .introjs-nextbutton,
+.introjs-tooltip.home-intro-tooltip .introjs-tooltipbuttons .introjs-donebutton{
+	display:inline-flex !important;
+	align-items:center !important;
+	justify-content:center !important;
+	text-align:center !important;
+}
+
+.home-intro-tooltip .introjs-button:hover{
+	background:rgba(255,255,255,.90) !important;
+	border-color:rgba(127,71,255,.32) !important;
+}
+
+.home-intro-tooltip .introjs-button:focus-visible{
+	outline:2px solid var(--current-color) !important;
+	outline-offset:1px !important;
+}
+
+.home-intro-tooltip .introjs-nextbutton{
+	background:linear-gradient(135deg, var(--black-cell) 0%, var(--current-color) 100%) !important;
+	color:#fff !important;
+	border-color:transparent !important;
+}
+
+.home-intro-tooltip .introjs-nextbutton:hover{
+	background:linear-gradient(135deg, var(--black-cell) 0%, var(--current-color) 100%) !important;
+	color:#fff !important;
+	filter:brightness(1.05);
+}
+
+.home-intro-tooltip .introjs-donebutton{
+	background:linear-gradient(135deg, var(--black-cell) 0%, var(--current-color) 100%) !important;
+	color:#fff !important;
+	border-color:transparent !important;
+}
+
+.home-intro-tooltip .introjs-donebutton:hover{
+	background:linear-gradient(135deg, var(--black-cell) 0%, var(--current-color) 100%) !important;
+	color:#fff !important;
+	filter:brightness(1.05);
+}
+
+.home-intro-tooltip .introjs-bullets{
+	margin:0 12px 8px !important;
+}
+
+.home-intro-tooltip .introjs-bullets ul li a{
+	width:7px !important;
+	height:7px !important;
+	background:rgba(127,71,255,.22) !important;
+}
+
+.home-intro-tooltip .introjs-bullets ul li a.active{
+	background:var(--current-color) !important;
+}
+
+.home-intro-tooltip .introjs-progress{
+	height:4px !important;
+	margin:0 14px 8px !important;
+	background:rgba(127,71,255,.10) !important;
+	border-radius:999px !important;
+}
+
+.home-intro-tooltip .introjs-progressbar{
+	background:linear-gradient(90deg, var(--black-cell), var(--current-color)) !important;
+	border-radius:inherit !important;
+}
+
+body.home-page[data-theme="dark"] .introjs-overlay{
+	background:rgba(5, 3, 12, .62) !important;
+}
+
+body.home-page[data-theme="dark"] .introjs-helperLayer{
+	box-shadow:
+		0 0 0 1px rgba(157,122,255,.50),
+		0 16px 36px rgba(0,0,0,.44) !important;
+}
+
+body.home-page[data-theme="dark"] .introjs-tooltip.home-intro-tooltip{
+	box-shadow:0 20px 50px rgba(0,0,0,.40) !important;
+}
+
+body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-tooltipbuttons{
+	border-top:1px solid rgba(255,255,255,.10) !important;
+}
+
+body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-button{
+	background:rgba(255,255,255,.08) !important;
+	border-color:rgba(255,255,255,.14) !important;
+	color:var(--dialog-text) !important;
+}
+
+body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-button:hover{
+	background:rgba(255,255,255,.14) !important;
+	border-color:rgba(157,122,255,.36) !important;
+}
+
+body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-bullets ul li a{
+	background:rgba(157,122,255,.30) !important;
+}
+
+body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-progress{
+	background:rgba(255,255,255,.08) !important;
+}
+
 @keyframes homePanelIn{
 	0%{
 		opacity:0;
@@ -432,6 +704,7 @@ body.home-page[data-theme="dark"] .home-note{
 	.hero-subtitle{
 		margin-top:16px;
 		line-height:1.65;
+		height:1.65em;
 	}
 
 	.menu-secondary-grid{
@@ -486,14 +759,15 @@ body.home-page[data-theme="dark"] .home-note{
 
 /* ===== 棋盘 ===== */
 .board{
-	width:70vmin;
-	height:70vmin;
+	width:min(92vw, 400px);
+	height:auto;
+	aspect-ratio:1 / 1;
 	max-width:400px;
 	max-height:400px;
 	display:grid;
-	grid-template-columns:repeat(10,1fr);
-	gap:3px;
-	padding:12px;
+	grid-template-columns:repeat(10, minmax(0, 1fr));
+	gap:clamp(2px, 0.7vw, 4px);
+	padding:clamp(8px, 2vw, 12px);
 	background:var(--board-color);
 	border-radius:12px;
 	box-shadow:0 4px 20px var(--shadow-color);
@@ -616,6 +890,28 @@ body.home-page[data-theme="dark"] .home-note{
 	font-size:12px;
 	opacity:.7;
 	margin-bottom:6px;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	gap:6px;
+}
+
+.task-badge{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	padding:2px 8px;
+	border-radius:999px;
+	font-size:10px;
+	line-height:1.2;
+	font-weight:700;
+	opacity:1;
+	color:#fff;
+	background:linear-gradient(135deg, #ff6b8b 0%, #6a45b8 100%);
+}
+
+.task-badge[hidden]{
+	display:none !important;
 }
 
 .task-content{
@@ -635,6 +931,9 @@ body.home-page[data-theme="dark"] .home-note{
 	display:flex;
 	align-items:stretch;
 	justify-content:stretch;
+	min-width:0;
+	min-height:0;
+	aspect-ratio:1 / 1;
 	font-size:12px;
 	color:var(--text-color);
 	transition: transform var(--transition-speed), background var(--transition-speed);
@@ -1341,13 +1640,18 @@ body.dice-focus .task-panel{
 	font-weight:700;
 	color:var(--dialog-text);
 	font-size:16px;
-	white-space:nowrap;
+	white-space:normal;
+	word-break:break-word;
+	overflow-wrap:anywhere;
 }
 .board-desc{
 	color:var(--dialog-muted);
 	font-size:13px;
 	line-height:1.4;
 	margin-top:4px;
+	white-space:normal;
+	word-break:break-word;
+	overflow-wrap:anywhere;
 }
 .board-size{
 	font-size:14px;

@@ -39,6 +39,7 @@
 			width:min(980px, calc(100vw - 28px));
 			margin:0 auto;
 			padding:28px 0 42px;
+			animation:pageFadeIn .45s cubic-bezier(.16,1,.3,1) both;
 		}
 
 		.topbar{
@@ -79,6 +80,7 @@
 			backdrop-filter:blur(14px);
 			-webkit-backdrop-filter:blur(14px);
 			margin-bottom:16px;
+			animation:cardRiseIn .5s cubic-bezier(.16,1,.3,1) .06s both;
 		}
 
 		.hero::before{
@@ -117,6 +119,38 @@
 			line-height:1.8;
 			opacity:.88;
 			font-size:15px;
+		}
+
+		.ack-card{
+			padding:16px;
+			border-radius:18px;
+			background:linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.62));
+			border:1px solid rgba(127,71,255,.16);
+			box-shadow:0 12px 30px rgba(0,0,0,.07);
+			line-height:1.8;
+			font-size:14px;
+			animation:cardRiseIn .5s cubic-bezier(.16,1,.3,1) .12s both;
+		}
+
+		.ack-line{
+			margin:0 0 8px;
+		}
+
+		.ack-line:last-child{
+			margin-bottom:0;
+		}
+
+		.chatgpt-badge{
+			display:inline-flex;
+			align-items:center;
+			padding:2px 10px;
+			border-radius:999px;
+			font-size:12px;
+			font-weight:800;
+			color:#fff;
+			background:linear-gradient(135deg, #111 0%, #00a37f 100%);
+			box-shadow:0 8px 16px rgba(0,163,127,.32);
+			transform:translateY(-1px);
 		}
 
 		.meta-grid{
@@ -197,6 +231,8 @@
 			background:var(--board-color);
 			box-shadow:0 10px 28px rgba(0,0,0,.06);
 			border:1px solid rgba(255,255,255,.35);
+			animation:cardRiseIn .48s cubic-bezier(.16,1,.3,1) both;
+			animation-delay:calc(var(--item-delay, 0) * 1ms);
 		}
 
 		.log-item::before{
@@ -264,6 +300,27 @@
 			border:1px solid rgba(127,71,255,.08);
 			line-height:1.9;
 			font-size:14px;
+			animation:cardRiseIn .5s cubic-bezier(.16,1,.3,1) .16s both;
+		}
+
+		@keyframes pageFadeIn{
+			from{
+				opacity:0;
+			}
+			to{
+				opacity:1;
+			}
+		}
+
+		@keyframes cardRiseIn{
+			from{
+				opacity:0;
+				transform:translateY(10px) scale(.99);
+			}
+			to{
+				opacity:1;
+				transform:none;
+			}
 		}
 
 		@media (max-width:780px){
@@ -304,7 +361,7 @@
 			}
 		}
 	</style>
-    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=3PBO9GOtpK0bSeXz&ck=3PBO9GOtpK0bSeXz"></script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="6ec19ab0-90c0-423c-86f5-f88666777765"></script>
 </head>
 <body>
 	<div class="page">
@@ -318,9 +375,8 @@
 	<section class="hero">
 		<h1 class="hero-title">Dual Protocol 开发日志</h1>
 		<p class="hero-sub">
-			从最初的“给自己和伴侣玩”，到现在的“想把这个东西做好”，
-			Dual Protocol 的开发思路经历了几个阶段的升级。
-			这个日志里，写下了这些阶段，以及每个阶段的核心思路和关键节点。
+			这页不整官方话术了，直接记我这一路怎么把它从“能玩”折腾到“更像个产品”。
+			很多地方都是边做边改，踩坑不少，但每一版都更顺手一点。
 		</p>
 	</section>
 
@@ -337,8 +393,8 @@
 					<span class="log-time">2024 年中前后</span>
 				</div>
 				<p class="log-desc">
-					最开始并不是棋盘游戏，而是偏“网页规则本”的形态。
-					当时主要是在整理规则内容、做展开收起交互，让玩法先有一个能承载内容的壳。
+					最开始根本不是棋盘，基本就是个“网页版规则手册”。
+					先把内容塞进去、能展开收起、能看明白，算是把骨架先搭起来。
 				</p>
 				<div class="tag-row">
 					<span class="tag">规则列表</span>
@@ -353,8 +409,8 @@
 					<span class="log-time">2024 年 10 月</span>
 				</div>
 				<p class="log-desc">
-					这是第一个真正意义上的大转向。
-					项目从静态规则页面，开始往固定路线、格子推进、事件触发的方向发展，第一次有了“游戏骨架”。
+					这里是第一个大转弯：不做纯文档页了，直接上棋盘路线。
+					从这一步开始，才有“走格子 + 触发事件 + 推进回合”的游戏味。
 				</p>
 				<div class="tag-row">
 					<span class="tag">固定路线</span>
@@ -369,8 +425,8 @@
 					<span class="log-time">2025 年上半年</span>
 				</div>
 				<p class="log-desc">
-					只堆任务内容已经不够了，真正让玩法活起来的是流程感。
-					于是开始逐步补上回合、骰子、移动、位置状态这些东西，项目开始像个完整玩法。
+					只加条目已经不够用了，流程感才是关键。
+					所以把回合、骰子、移动、位置状态这些都补齐，玩起来才不散。
 				</p>
 				<div class="tag-row">
 					<span class="tag">回合制</span>
@@ -385,8 +441,8 @@
 					<span class="log-time">2025 年中后期</span>
 				</div>
 				<p class="log-desc">
-					随着内容变多，最头疼的已经不是页面，而是数据管理。
-					于是开始把任务内容逐步拆分、分类，让不同玩法和任务池能更清晰地被控制。
+					内容多起来之后，页面还好说，数据是真难管。
+					所以把任务池按模块拆开，后面做权重、开关、自定义都省心很多。
 				</p>
 				<div class="tag-row">
 					<span class="tag">Data.js</span>
@@ -401,8 +457,8 @@
 					<span class="log-time">2025 年下半年</span>
 				</div>
 				<p class="log-desc">
-					这一步让项目不再只是“作者自己写来自己玩”的版本。
-					用户开始可以通过设置页控制玩法和内容类别，飞行棋也正式有了可配置工具的味道。
+					这一步之后它就不只是“我自己能玩”了。
+					设置页上线后，能自己配规则、调权重、改内容，整个项目才真正活起来。
 				</p>
 				<div class="tag-row">
 					<span class="tag">设置页</span>
@@ -417,8 +473,8 @@
 					<span class="log-time">2026 年 2 月</span>
 				</div>
 				<p class="log-desc">
-					项目开始往公开部署方向靠拢。为了顺利上线，也对一些文本表达做了收敛和优化。
-					说白了就是想发出来，又不想一上来就把自己送走。
+					准备公开部署的时候，文案必须收敛，不然没法往外发。
+					目标很现实：既要保留玩法核心，也得让外部读起来更友好。
 				</p>
 				<div class="tag-row">
 					<span class="tag">GitHub Pages</span>
@@ -433,8 +489,8 @@
 					<span class="log-time">2026 年 2 月下旬 - 3 月上旬</span>
 				</div>
 				<p class="log-desc">
-					这是技术结构上的关键节点。棋盘移动逐渐独立给引擎层处理，回合、弹窗、任务触发等逻辑交给规则层。
-					项目开始从“能跑”升级为“能维护、能扩展”。
+					这是技术上最关键的一次重构。
+					把“移动引擎”和“规则触发”拆开以后，代码终于从“能跑”变成“能继续迭代”。
 				</p>
 				<div class="tag-row">
 					<span class="tag">引擎层</span>
@@ -447,18 +503,35 @@
 
 	<section class="section">
 		<h2 class="section-title">
+			<i class="bi bi-stars"></i>
+			致谢
+		</h2>
+		<div class="ack-card">
+			<p class="ack-line">首先致谢我的女友兼小圈 partner，一路陪我磨细节、提反馈、和我一起实践测试、顶住我开发时思维的反复横跳。</p>
+			<p class="ack-line">也感谢一位因为 IT 认识、一路做了很多年朋友的老兄。从技术聊到生活，聊到本项目时，甚至还被我硬生生带着了解了一点小圈。</p>
+			<p class="ack-line">再谢一路帮我试玩和提意见的朋友们，每次“这块不太好”的提醒都很关键。</p>
+			<p class="ack-line">最后特别谢 <span class="chatgpt-badge">狂霸酷炫拽 ChatGPT</span>，高强度陪我改到半夜。</p>
+		</div>
+	</section>
+
+	<section class="section">
+		<h2 class="section-title">
 			<i class="bi bi-lightning-charge"></i>
 			To You
 		</h2>
 		<div class="footer-box">
-			能看到这里，很谢谢你的停留<br><br>
-			与君共勉
+			能看到这里，真的谢谢你。<br><br>
+			前路漫漫，与君共勉。
 		</div>
 	</section>
 </div>
 	<script src="js/ui.js"></script>
 	<script>
 		"use strict";
+
+		document.querySelectorAll(".log-item").forEach((item, index) => {
+			item.style.setProperty("--item-delay", String(120 + (index * 55)));
+		});
 
 		document.getElementById("backHome").addEventListener("click", function(){
 			window.location.href = "index.html";

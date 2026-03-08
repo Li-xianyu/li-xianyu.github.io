@@ -9,7 +9,7 @@ function toggleTheme() {
 
 	updateThemeColor(newTheme);
 
-	const icon = document.querySelector('.theme-toggle i');
+	const icon = document.querySelector('.quick-action-theme i');
 	if (icon) {
 		icon.className = newTheme === 'dark'
 			? 'bi bi-sun-fill'
@@ -72,6 +72,21 @@ function playDialogShake(element) {
 
 window.playDialogShake = playDialogShake;
 
+function trackEvent(eventName, payload) {
+	if (!eventName || !window.umami || typeof window.umami.track !== 'function') return;
+	try {
+		if (payload && typeof payload === 'object') {
+			window.umami.track(eventName, payload);
+			return;
+		}
+		window.umami.track(eventName);
+	} catch (err) {
+		console.warn('[Analytics] track failed:', eventName, err);
+	}
+}
+
+window.trackEvent = trackEvent;
+
 // 初始化
 function initTheme() {
 	const savedTheme = localStorage.getItem('theme') || 'light';
@@ -80,19 +95,73 @@ function initTheme() {
 	// 初始化时同步浏览器顶部控制栏颜色
 	updateThemeColor(savedTheme);
 
-	const toggleBtn = document.createElement('button');
-	toggleBtn.className = 'theme-toggle';
+	const dock = document.createElement('div');
+	dock.className = 'quick-dock';
 
+	const launcher = document.createElement('button');
+	launcher.type = 'button';
+	launcher.className = 'quick-dock-launcher';
+	launcher.setAttribute('aria-label', '打开快捷按钮');
+	launcher.setAttribute('aria-expanded', 'false');
+	launcher.innerHTML = '<i class="bi bi-grid-fill" aria-hidden="true"></i>';
 
-	const icon = document.createElement('i');
-	icon.className = savedTheme === 'dark'
-		? 'bi bi-sun-fill'
-		: 'bi bi-moon-fill';
+	const panel = document.createElement('div');
+	panel.className = 'quick-dock-panel';
+	panel.setAttribute('aria-hidden', 'true');
 
-	toggleBtn.addEventListener('click', toggleTheme);
+	const themeBtn = document.createElement('button');
+	themeBtn.type = 'button';
+	themeBtn.className = 'quick-action-btn quick-action-theme';
+	themeBtn.setAttribute('aria-label', '切换主题');
+	themeBtn.innerHTML = `<i class="${savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill'}" aria-hidden="true"></i>`;
+	themeBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		toggleTheme();
+	});
 
-	toggleBtn.appendChild(icon);
-	document.body.appendChild(toggleBtn);
+	const settingBtn = document.createElement('button');
+	settingBtn.type = 'button';
+	settingBtn.className = 'quick-action-btn quick-action-setting';
+	settingBtn.setAttribute('aria-label', '打开设置');
+	settingBtn.innerHTML = '<i class="bi bi-sliders" aria-hidden="true"></i>';
+	settingBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		window.location.href = 'setting.html';
+	});
+
+	panel.append(themeBtn, settingBtn);
+	dock.append(launcher, panel);
+	document.body.appendChild(dock);
+
+	const closeDock = () => {
+		dock.classList.remove('open');
+		launcher.setAttribute('aria-expanded', 'false');
+		panel.setAttribute('aria-hidden', 'true');
+	};
+
+	launcher.addEventListener('click', (e) => {
+		e.stopPropagation();
+		const willOpen = !dock.classList.contains('open');
+		if (willOpen) {
+			dock.classList.add('open');
+			launcher.setAttribute('aria-expanded', 'true');
+			panel.setAttribute('aria-hidden', 'false');
+		} else {
+			closeDock();
+		}
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!dock.contains(e.target)) {
+			closeDock();
+		}
+	});
+
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') {
+			closeDock();
+		}
+	});
 }
 
 // 在页面加载时初始化

@@ -10,7 +10,7 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css">
 	<link rel="stylesheet" href="css/setting.css">
-	<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=3PBO9GOtpK0bSeXz&ck=3PBO9GOtpK0bSeXz"></script>
+	<script defer src="https://cloud.umami.is/script.js" data-website-id="6ec19ab0-90c0-423c-86f5-f88666777765"></script>
 </head>
 <body>
 	<div class="page-wrap">
@@ -63,7 +63,7 @@
 					<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
 				</div>
 				<div class="input-container">
-					<label for="weight-reward">恢复模块权重：</label>
+					<label for="weight-reward">休息模块权重：</label>
 					<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
 				</div>
 				<div class="input-container">
@@ -76,7 +76,13 @@
 				</div>
 			</fieldset>
 
-			<div id="settings-container"></div>
+			<section class="module-card" aria-labelledby="modulePoolTitle">
+				<div class="module-card-head">
+					<h2 class="module-card-title" id="modulePoolTitle">执行内容池</h2>
+					<p class="module-card-tip">点击选项即可切换启用/禁用（深色=启用，浅色=禁用）。带 <span class="plus-badge">+</span> 的分类支持自定义添加。</p>
+				</div>
+				<div id="settings-container"></div>
+			</section>
 		</section>
 
 		<!-- ========== Z：指令模块（ActiveData）========== -->
@@ -106,6 +112,11 @@
 	</div>
 <script src="js/ui.js"></script>
 <script>
+function track(eventName, payload){
+	if (typeof window.trackEvent === "function"){
+		window.trackEvent(eventName, payload);
+	}
+}
 
 document.addEventListener("DOMContentLoaded", () => {
 	initSegmented();
@@ -124,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const backHomeBtn = document.getElementById("backHomeBtn");
 	if (backHomeBtn){
 		backHomeBtn.addEventListener("click", () => {
+			track("settings_back_home");
 			window.location.href = "index.html";
 		});
 	}
@@ -131,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const goCreateBoardsBtn = document.getElementById("goCreateBoardsBtn");
 	if (goCreateBoardsBtn){
 		goCreateBoardsBtn.addEventListener("click", () => {
+			track("settings_open_create_boards");
 			window.location.href = "create_boards.html";
 		});
 	}
@@ -165,6 +178,7 @@ function initSegmented(){
 			z.style.display = "";
 			resetPanelAnimations(z);
 		}
+		track("settings_tab_switched", { tab: tabKey });
 
 		observeFieldsets();
 	}
@@ -225,19 +239,19 @@ function fillWeightInputsFromGameData(){
 }
 
 const CATEGORY_LABELS = {
-	posture: "形式",
-	prop: "执行方式",
-	reward: "恢复选项",
-	aod: "特殊位移",
-	sports: "运动选项",
+	posture: "姿势",
+	prop: "工具",
+	reward: "休息",
+	aod: "位移",
+	sports: "运动",
 	active: "指令池（Z）"
 };
 
 const EDITABLE_SCOPE_META = {
-	posture: { title: "新增形式", placeholder: "输入新的形式内容" },
-	prop: { title: "新增执行方式", placeholder: "输入新的执行方式" },
-	reward: { title: "新增恢复选项", placeholder: "输入新的恢复选项" },
-	sports: { title: "新增运动选项", placeholder: "输入新的运动选项" },
+	posture: { title: "新增姿势", placeholder: "输入新的姿势" },
+	prop: { title: "新增工具", placeholder: "输入新的工具名称" },
+	reward: { title: "新增休息", placeholder: "示例：休息3分钟（纯文本也可以）" },
+	sports: { title: "新增运动", placeholder: "示例：平板支撑3分钟（纯文本也可以）" },
 	active: { title: "新增 Z 指令", placeholder: "输入新的 Z 指令" }
 };
 
@@ -546,6 +560,7 @@ async function promptCreateCustomItem(scopeKey){
 
 	getScopeItems(scopeKey).push(createCustomItem(scopeKey, name, true));
 	persistScopeState(scopeKey);
+	track("settings_custom_item_added", { scope: scopeKey });
 	rerenderScope(scopeKey);
 }
 
@@ -566,6 +581,7 @@ async function removeCustomItem(scopeKey, item){
 
 	items.splice(targetIndex, 1);
 	persistScopeState(scopeKey);
+	track("settings_custom_item_removed", { scope: scopeKey });
 	rerenderScope(scopeKey);
 }
 
@@ -578,6 +594,27 @@ function renderSettingsB() {
 		const legend = document.createElement("legend");
 		legend.textContent = CATEGORY_LABELS[category] || category;
 		fieldset.appendChild(legend);
+
+		if (category === "sports") {
+			const tip = document.createElement("p");
+			tip.className = "tip";
+			tip.textContent = "提示：支持中英文数字 + 秒/分钟单位（如“平板支撑3分钟”“拉伸20min”）会触发倒计时；纯文本也可正常使用。";
+			fieldset.appendChild(tip);
+		}
+
+		if (category === "reward") {
+			const tip = document.createElement("p");
+			tip.className = "tip";
+			tip.textContent = "提示：支持中英文数字 + 秒/分钟单位（如“休息3分钟”“休息45s”“休息20min”）会触发倒计时；纯文本也可正常使用。";
+			fieldset.appendChild(tip);
+		}
+
+		if (category === "aod") {
+			const tip = document.createElement("p");
+			tip.className = "tip";
+			tip.textContent = "提示：当前“前进1-3格/后退1-3格”仅执行位移，不触发落点格子的额外内容。";
+			fieldset.appendChild(tip);
+		}
 
 		const buttonGroup = document.createElement("div");
 		buttonGroup.className = "button-group";
@@ -740,6 +777,15 @@ function saveAllSettings(){
 
 	ActiveData.weight = getNumericInputValue("weight-active", ActiveData.weight);
 	localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
+	track("settings_saved", {
+		min_count: minVal,
+		max_count: maxVal,
+		weight_prop: GameData.prop.weight,
+		weight_reward: GameData.reward.weight,
+		weight_aod: GameData.aod.weight,
+		weight_sports: GameData.sports.weight,
+		weight_active: ActiveData.weight
+	});
 
 	showModal("设置已保存", "你的配置已经成功保存。");
 }

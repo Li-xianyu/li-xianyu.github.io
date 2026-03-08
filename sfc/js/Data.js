@@ -82,21 +82,16 @@ let GameData = {
         weight: 60,
         items: [
             { name: 'OTK', selected: true },
-			{ name: 'OTK(脚离地)', selected: true },
             { name: '平趴', selected: true },
-			{ name: '换尿布式', selected: true },
-			{ name: 'HEAD AND KNEES', selected: true },
-            { name: 'SPANKEE', selected: true },
+            { name: 'HEAD AND KNEES', selected: true },
             { name: '弯腰抱膝', selected: true },
-			{ name: '弯腰抱膝(脚离地)', selected: true },
             { name: '站立', selected: true },
             { name: '跪立', selected: true },
-            { name: '狗趴式', selected: true },
             { name: '垫脚扶墙', selected: true }
         ]
     },
     prop: {
-        description: '道具',
+        description: '工具',
         weight: 80,
         items: [
             { name: '戒尺', selected: true },
@@ -131,15 +126,17 @@ let GameData = {
         ]
     },
     aod: {
-        description: '特殊移动',
+        description: '位移',
         weight: 5,
         items: [
             { name: '直达终点', selected: true },
-            { name: '回到起点', selected: true }
+            { name: '回到起点', selected: true },
+            { name: '前进1-3格', selected: true },
+            { name: '后退1-3格', selected: true }
         ]
     },
     sports: {
-        description: '额外运动',
+        description: '运动',
         weight: 10,
         items: [
             { name: '跪立五分钟', selected: true },
@@ -161,19 +158,10 @@ let ActiveData = {
         { name: '数量-10', selected: true },
         { name: '翻倍', selected: true },
         { name: '减半(向上取整)', selected: true },
-        { name: '下一项减半', selected: true },
-        { name: '重复上一轮z指令', selected: true },
-        { name: '换道具', selected: true },
-        { name: '换体位', selected: true },
-        { name: '指定道具', selected: true },
-        { name: '指定体位', selected: true },
+        { name: '指定姿势', selected: true },
         { name: '分期执行(中间休2分钟)', selected: true },
-        { name: '连击两轮(只重抽数量)', selected: true },
-        { name: '无效保护(休息无效重抽)', selected: true },
-        { name: '强制休息(5分钟/揉2分钟)', selected: true },
-        { name: '罚站/罚跪追加5分钟', selected: true },
-        { name: '奖励加码(抱抱/揉+1分钟)', selected: true },
-        { name: '情绪校准(喝水/深呼吸/拥抱30秒)', selected: true }
+        { name: '强制休息(5分钟)', selected: true },
+        { name: '休息无效', selected: true }
     ]
 };
 
