@@ -69,10 +69,13 @@ const boardNames = [
 ];
 
 
-const SPANK_COUNT_RANGE = {
+const ACTION_COUNT_RANGE = {
     min: 20, 
     max: 50 
 };
+
+const ACTION_COUNT_RANGE_STORAGE_KEY = "ACTION_COUNT_RANGE";
+const LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = "SPANK_COUNT_RANGE";
 
 
 
@@ -81,9 +84,7 @@ let GameData = {
         description: '姿势',
         weight: 60,
         items: [
-            { name: 'OTK', selected: true },
             { name: '平趴', selected: true },
-            { name: 'HEAD AND KNEES', selected: true },
             { name: '弯腰抱膝', selected: true },
             { name: '站立', selected: true },
             { name: '跪立', selected: true },
@@ -98,18 +99,15 @@ let GameData = {
             { name: '藤条', selected: true },
             { name: '热熔胶棒', selected: true },
             { name: '木勺', selected: true },
-            { name: '皮鞭', selected: true },
             { name: '竹条', selected: true },
             { name: '小绿', selected: true },   
             { name: '小红', selected: true },
             { name: '巴掌', selected: true },
             { name: '数据线', selected: true },
-            { name: '皮带', selected: true },
             { name: '猫爪拍', selected: true },
             { name: '树脂棒', selected: true },
-            { name: '柳叶鞭', selected: true },
-			{ name: '散鞭', selected: true },
-			{ name: '硅胶鞭', selected: true }
+            { name: '柳叶拍', selected: true },
+			{ name: '散鞭', selected: true }
 
         ]
     },
@@ -121,8 +119,8 @@ let GameData = {
             { name: '休息5分钟', selected: true },
             { name: '揉2分钟', selected: true },
             { name: '温柔的抱抱', selected: true },
-            { name: '免罚一轮', selected: true },
-            { name: '免罚两轮', selected: true }
+            { name: '免挨一轮', selected: true },
+            { name: '免挨两轮', selected: true }
         ]
     },
     aod: {
@@ -139,7 +137,7 @@ let GameData = {
         description: '运动',
         weight: 10,
         items: [
-            { name: '跪立五分钟', selected: true },
+            { name: '平板支撑三分钟', selected: true },
             { name: '墙角罚站五分钟', selected: true }
         ]
     }
@@ -317,3 +315,6 @@ window.CUSTOMIZABLE_GAME_CATEGORIES = CUSTOMIZABLE_GAME_CATEGORIES;
 window.createCustomItem = createCustomItem;
 window.normalizeGameData = normalizeGameData;
 window.normalizeActiveData = normalizeActiveData;
+window.ACTION_COUNT_RANGE = ACTION_COUNT_RANGE;
+window.ACTION_COUNT_RANGE_STORAGE_KEY = ACTION_COUNT_RANGE_STORAGE_KEY;
+window.LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY;

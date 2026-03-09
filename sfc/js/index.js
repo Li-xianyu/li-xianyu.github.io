@@ -20,10 +20,14 @@ window.MOVE_ANIM_DURATION = window.MOVE_ANIM_DURATION || 500;
 const size = 10;
 
 // localStorage 读设置
-const storedSettings = JSON.parse(localStorage.getItem('SPANK_COUNT_RANGE'));
+const storedSettings = JSON.parse(
+	localStorage.getItem(ACTION_COUNT_RANGE_STORAGE_KEY) ||
+	localStorage.getItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY) ||
+	'null'
+);
 if (storedSettings) {
-	SPANK_COUNT_RANGE.min = storedSettings.min;
-	SPANK_COUNT_RANGE.max = storedSettings.max;
+	ACTION_COUNT_RANGE.min = storedSettings.min;
+	ACTION_COUNT_RANGE.max = storedSettings.max;
 }
 
 const storedGameData = JSON.parse(localStorage.getItem('GameData'));
@@ -116,7 +120,7 @@ function applyForcedPosture(text, forcedPosture) {
 	return `${forcedPosture}${remainder}`;
 }
 
-function transformSpankByZEffects(rawText) {
+function transformActionByZEffects(rawText) {
 	let nextText = String(rawText || "");
 	const parsed = parseTrailingNumber(nextText);
 	const originalCount = parsed ? parsed.value : null;
@@ -159,9 +163,9 @@ function tryApplyMasterEffectsToCurrentRound() {
 	if (!roundPassiveSnapshot) return;
 	if (!roundPassiveDone) return;
 	if (roundPassiveSnapshot.round !== roundNo) return;
-	if (roundPassiveSnapshot.type !== "spank") return;
+	if (roundPassiveSnapshot.type !== "action") return;
 
-	const transformed = transformSpankByZEffects(roundPassiveSnapshot.baseText);
+	const transformed = transformActionByZEffects(roundPassiveSnapshot.baseText);
 	const splitText = transformed.splitInfo
 		? `；分期执行：先 ${transformed.splitInfo.first}，中间休息2分钟，再 ${transformed.splitInfo.second}`
 		: "";
@@ -223,13 +227,13 @@ function generatePunishment(options = {}) {
 
 	const modules = [
 		{
-			type: 'spank',
+			type: 'action',
 			weight: GameData.prop.weight || 0,
 			available: () => hasActiveItems(GameData.prop.items),
 			handler: () => {
 				const postureName = getRandomActiveName(GameData.posture.items);
 				const propName = getRandomActiveName(GameData.prop.items);
-				const count = getRandomTens(SPANK_COUNT_RANGE.min, SPANK_COUNT_RANGE.max);
+				const count = getRandomTens(ACTION_COUNT_RANGE.min, ACTION_COUNT_RANGE.max);
 
 				if (!propName) return { text: "无可用工具", type: 'error' };
 
@@ -337,7 +341,7 @@ function generateBoardFromData(boardData){
 
 	for (let i = 0; i < nonZeroCount; i++){
 		const num = i + 2;
-		passiveMap[num] = generatePunishment(['spank', 'rest', 'move', 'sports']);
+		passiveMap[num] = generatePunishment(['action', 'rest', 'move', 'sports']);
 		masterMap[num] = generateMasterTask();
 	}
 
@@ -347,7 +351,7 @@ function generateBoardFromData(boardData){
 		const p = passiveMap[num];
 		if (!p || p.type !== "rest") continue;
 
-		const replacement = generatePunishment(['spank', 'move', 'sports']);
+		const replacement = generatePunishment(['action', 'move', 'sports']);
 		if (replacement && replacement.type !== "error") {
 			passiveMap[num] = replacement;
 		}
@@ -876,7 +880,7 @@ async function showPassiveResult(targetNumber) {
 	};
 
 	const typeMap = {
-		spank: '⛔️ B：处理项',
+		action: '⛔️ B：处理项',
 		rest: '☕️ B：休息项',
 		move: '🚶 B：移动',
 		sports: '🏃 B：运动项',
@@ -884,7 +888,7 @@ async function showPassiveResult(targetNumber) {
 	};
 
 	const panelPrefix = {
-		spank: '处理',
+		action: '处理',
 		rest: '休息',
 		move: '移动',
 		sports: '运动',
@@ -893,8 +897,8 @@ async function showPassiveResult(targetNumber) {
 
 	let displayText = punishment.text;
 	let splitInfo = null;
-	if (punishment.type === "spank") {
-		const transformed = transformSpankByZEffects(punishment.text);
+	if (punishment.type === "action") {
+		const transformed = transformActionByZEffects(punishment.text);
 		displayText = transformed.text;
 		splitInfo = transformed.splitInfo;
 	}

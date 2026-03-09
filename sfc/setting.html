@@ -207,13 +207,17 @@ function initSegmented(){
    B：执行模块
 ========================= */
 function loadSettingsB() {
-	const storedSettings = JSON.parse(localStorage.getItem("SPANK_COUNT_RANGE"));
+	const storedSettings = JSON.parse(
+		localStorage.getItem(ACTION_COUNT_RANGE_STORAGE_KEY) ||
+		localStorage.getItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY) ||
+		"null"
+	);
 	if (storedSettings) {
 		document.getElementById("minCount").value = storedSettings.min;
 		document.getElementById("maxCount").value = storedSettings.max;
 	} else {
-		document.getElementById("minCount").value = SPANK_COUNT_RANGE.min;
-		document.getElementById("maxCount").value = SPANK_COUNT_RANGE.max;
+		document.getElementById("minCount").value = ACTION_COUNT_RANGE.min;
+		document.getElementById("maxCount").value = ACTION_COUNT_RANGE.max;
 	}
 }
 
@@ -754,8 +758,8 @@ function getNumericInputValue(id, fallbackValue){
    保存
 ========================= */
 function saveAllSettings(){
-	const minVal = getNumericInputValue("minCount", SPANK_COUNT_RANGE.min);
-	const maxVal = getNumericInputValue("maxCount", SPANK_COUNT_RANGE.max);
+	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
+	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
 
 	if (minVal % 10 !== 0 || maxVal % 10 !== 0) {
 		showModal("错误", "请输入 10 的倍数！");
@@ -766,7 +770,8 @@ function saveAllSettings(){
 		return;
 	}
 
-	localStorage.setItem("SPANK_COUNT_RANGE", JSON.stringify({ min: minVal, max: maxVal }));
+	localStorage.setItem(ACTION_COUNT_RANGE_STORAGE_KEY, JSON.stringify({ min: minVal, max: maxVal }));
+	localStorage.removeItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY);
 
 	GameData.prop.weight = getNumericInputValue("weight-prop", GameData.prop.weight);
 	GameData.reward.weight = getNumericInputValue("weight-reward", GameData.reward.weight);
