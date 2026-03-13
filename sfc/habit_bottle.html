@@ -1,0 +1,652 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bottle Studio</title>
+    <link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
+    <link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/ui.css?v=20260308-1">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text-color);
+            background:
+                radial-gradient(circle at 12% 12%, rgba(255, 255, 255, .75), transparent 26%),
+                radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--black-cell) 20%, transparent), transparent 28%),
+                linear-gradient(165deg, color-mix(in srgb, var(--bg-color) 88%, #fff) 0%, var(--bg-color) 100%);
+            min-height: 100vh;
+            min-height: 100svh;
+            padding: 20px 14px 28px;
+        }
+
+        .shell {
+            width: min(980px, 100%);
+            margin: 0 auto;
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero,
+        .panel,
+        .board {
+            background: var(--dialog-bg);
+            border: 1px solid var(--dialog-border);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 16px 34px var(--shadow-color);
+        }
+
+        .hero {
+            padding: 16px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-title {
+            margin: 0;
+            font-size: clamp(22px, 5vw, 34px);
+            line-height: 1.05;
+        }
+
+        .hero-sub {
+            margin: 0;
+            color: var(--dialog-muted);
+            font-size: 14px;
+        }
+
+        .back-home {
+            border: 0;
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: color-mix(in srgb, var(--black-cell) 85%, transparent);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .panel {
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 74px;
+            resize: vertical;
+            border-radius: 14px;
+            border: 1px solid color-mix(in srgb, var(--black-cell) 24%, transparent);
+            background: color-mix(in srgb, var(--board-color) 88%, transparent);
+            color: var(--text-color);
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .cta {
+            border: 0;
+            border-radius: 14px;
+            padding: 0 16px;
+            min-width: 124px;
+            background: linear-gradient(135deg, var(--black-cell), var(--current-color));
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-mini {
+            width: 84px;
+            border-radius: 10px;
+            border: 1px solid color-mix(in srgb, var(--black-cell) 20%, transparent);
+            background: color-mix(in srgb, var(--board-color) 92%, transparent);
+            color: var(--text-color);
+            padding: 6px 8px;
+        }
+
+        .chip-btn {
+            border: 1px solid color-mix(in srgb, var(--black-cell) 22%, transparent);
+            background: color-mix(in srgb, var(--board-color) 90%, transparent);
+            color: var(--text-color);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .palette-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--black-cell) 18%, transparent);
+            background: color-mix(in srgb, var(--board-color) 86%, transparent);
+        }
+
+        .palette-label {
+            font-size: 12px;
+            color: var(--dialog-muted);
+            line-height: 1;
+        }
+
+        .palette {
+            display: inline-flex;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .palette-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            position: relative;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28);
+        }
+
+        .palette-swatch.selected::after {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border-radius: 999px;
+            border: 1.8px solid color-mix(in srgb, var(--black-cell) 62%, transparent);
+        }
+
+        .board {
+            padding: 14px;
+        }
+
+        .stat {
+            font-size: 13px;
+            color: var(--dialog-muted);
+            margin-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+            gap: 10px;
+        }
+
+        .empty {
+            border: 1px dashed color-mix(in srgb, var(--black-cell) 28%, transparent);
+            border-radius: 14px;
+            padding: 18px;
+            color: var(--dialog-muted);
+            text-align: center;
+        }
+
+        .bottle-card {
+            border-radius: 16px;
+            padding: 8px 8px 10px;
+            background: color-mix(in srgb, var(--board-color) 88%, transparent);
+            border: 1px solid color-mix(in srgb, var(--black-cell) 16%, transparent);
+            display: grid;
+            gap: 6px;
+        }
+
+        .bottle-name {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+            width: 100%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bottle-hit {
+            width: 64px;
+            height: 148px;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+
+        .bottle-svg {
+            width: 64px;
+            height: 148px;
+            display: block;
+            overflow: visible;
+        }
+
+        .bottle-outline {
+            fill: none;
+            stroke: color-mix(in srgb, var(--black-cell) 58%, #9f86d8);
+            stroke-width: 2;
+        }
+
+        .bottle-glass-fill {
+            opacity: .95;
+        }
+
+        .bottle-rim {
+            fill: none;
+            stroke: rgba(255, 255, 255, .48);
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            opacity: .9;
+        }
+
+        .bottle-glass-highlight {
+            fill: none;
+            stroke: rgba(255, 255, 255, .58);
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+
+        .bottle-glass-highlight-soft {
+            fill: none;
+            stroke: rgba(255, 255, 255, .28);
+            stroke-width: 1.4;
+            stroke-linecap: round;
+        }
+
+        .liquid-svg {
+            transition: y .24s cubic-bezier(.16, 1, .3, 1), height .24s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .liquid-surface {
+            fill: none;
+            stroke: rgba(255, 255, 255, .46);
+            stroke-width: 1.3;
+            stroke-linecap: round;
+        }
+
+        .flash {
+            position: fixed;
+            left: 50%;
+            top: 14px;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--black-cell) 84%, transparent);
+            color: #fff;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease;
+            z-index: 99999;
+        }
+
+        .flash.show { opacity: 1; }
+
+        @media (max-width: 640px) {
+            .input-row { grid-template-columns: 1fr; }
+            .cta { min-height: 42px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="hero">
+            <div class="hero-top">
+                <h1 class="hero-title">Bottle Studio</h1>
+                <button class="back-home" id="goHome" type="button"><i class="bi bi-house"></i> Home</button>
+            </div>
+            <p class="hero-sub">更整洁的瓶子管理面板，风格与棋盘 UI 对齐。</p>
+        </section>
+
+        <section class="panel">
+            <div class="input-row">
+                <textarea id="itemInput" placeholder="输入名称，用空格 / 换行 / 逗号分隔。例如：喝水 冥想 英语 俯卧撑"></textarea>
+                <button id="buildBtn" class="cta" type="button">生成瓶子</button>
+            </div>
+            <div class="toolbar">
+                <label>最大等级 <input id="maxLevelInput" class="input-mini" type="number" min="3" max="20" step="1"></label>
+                <div class="palette-wrap">
+                    <span class="palette-label">液体</span>
+                    <div class="palette" id="palette" aria-label="液体颜色预设"></div>
+                </div>
+                <button class="chip-btn" id="fillAllBtn" type="button">全部 +1</button>
+                <button class="chip-btn" id="resetAllBtn" type="button">全部清零</button>
+                <button class="chip-btn" id="sortBtn" type="button">按等级排序</button>
+            </div>
+        </section>
+
+        <section class="board">
+            <div id="stats" class="stat"></div>
+            <div id="grid" class="grid"></div>
+        </section>
+    </main>
+
+    <div id="flash" class="flash"></div>
+
+    <script src="js/ui.js?v=20260308-1"></script>
+    <script>
+        const STORAGE_KEY = "habitBottleState.v1";
+        const PRESET_COLORS = [
+            "#59d8ff",
+            "#a68dff",
+            "#ff62ae",
+            "#ff9a4d",
+            "#73dd8a",
+            "#f1cb63"
+        ];
+        const state = {
+            maxLevel: 8,
+            color: PRESET_COLORS[2],
+            items: []
+        };
+
+        const itemInput = document.getElementById("itemInput");
+        const buildBtn = document.getElementById("buildBtn");
+        const maxLevelInput = document.getElementById("maxLevelInput");
+        const palette = document.getElementById("palette");
+        const fillAllBtn = document.getElementById("fillAllBtn");
+        const resetAllBtn = document.getElementById("resetAllBtn");
+        const sortBtn = document.getElementById("sortBtn");
+        const grid = document.getElementById("grid");
+        const stats = document.getElementById("stats");
+        const flash = document.getElementById("flash");
+        const goHome = document.getElementById("goHome");
+
+        function loadState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+                if (!saved) return;
+                if (Number.isFinite(saved.maxLevel)) state.maxLevel = clamp(saved.maxLevel, 3, 20);
+                if (typeof saved.color === "string" && PRESET_COLORS.includes(saved.color)) {
+                    state.color = saved.color;
+                }
+                if (Array.isArray(saved.items)) {
+                    state.items = saved.items
+                        .map(item => ({
+                            name: String(item.name || "").trim(),
+                            level: clamp(Number(item.level) || 0, 0, state.maxLevel)
+                        }))
+                        .filter(item => item.name.length > 0);
+                }
+            } catch (err) {
+                console.warn("load state failed", err);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+
+        function parseNames(raw) {
+            const chunks = raw
+                .split(/[\s,，、;；]+/)
+                .map(token => token.trim())
+                .filter(Boolean);
+
+            const unique = [];
+            const seen = new Set();
+            for (const name of chunks) {
+                const key = name.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                unique.push(name);
+            }
+            return unique;
+        }
+
+        function showFlash(message) {
+            flash.textContent = message;
+            flash.classList.add("show");
+            clearTimeout(showFlash._timer);
+            showFlash._timer = setTimeout(() => flash.classList.remove("show"), 1600);
+        }
+
+        function updateStats() {
+            if (state.items.length === 0) {
+                stats.textContent = "暂无瓶子。请先输入名称并生成。";
+                return;
+            }
+
+            const total = state.items.reduce((sum, item) => sum + item.level, 0);
+            const maxTotal = state.maxLevel * state.items.length;
+            const percent = maxTotal ? Math.round(total / maxTotal * 100) : 0;
+            stats.textContent = `共 ${state.items.length} 个瓶子，总进度 ${total}/${maxTotal} (${percent}%)`;
+        }
+
+        function createBottleCard(item, index) {
+            const card = document.createElement("article");
+            card.className = "bottle-card";
+
+            const liquidBottomY = 170;
+            const liquidTopY = 16;
+            const liquidMaxHeight = liquidBottomY - liquidTopY;
+            const liquidHeight = Math.round(item.level / state.maxLevel * liquidMaxHeight);
+            const liquidY = liquidBottomY - liquidHeight;
+            const clipId = `bottle-clip-${index}`;
+            const liquidGradId = `bottle-liquid-grad-${index}`;
+            const glassGradId = `bottle-glass-grad-${index}`;
+            const glassSpotId = `bottle-glass-spot-${index}`;
+            const safeName = escapeHtml(item.name);
+            const liquidTop = tintHex(state.color, 0.4);
+            const liquidBottom = tintHex(state.color, -0.1);
+            const surfaceLayer = liquidHeight > 0
+                ? `<path class="liquid-surface" d="M12 ${liquidY + 1} Q38 ${liquidY - 2} 64 ${liquidY + 1}" clip-path="url(#${clipId})"></path>`
+                : "";
+
+            card.innerHTML = `
+                <div class="bottle-hit" data-action="plus">
+                    <svg class="bottle-svg" viewBox="0 0 76 190" aria-hidden="true">
+                        <defs>
+                            <clipPath id="${clipId}">
+                                <path d="M10 10 L10 146 Q10 170 28 170 L48 170 Q66 170 66 146 L66 10 Z"></path>
+                            </clipPath>
+                            <linearGradient id="${liquidGradId}" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="${liquidTop}"></stop>
+                                <stop offset="100%" stop-color="${liquidBottom}"></stop>
+                            </linearGradient>
+                            <linearGradient id="${glassGradId}" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(255,255,255,.30)"></stop>
+                                <stop offset="45%" stop-color="rgba(255,255,255,.10)"></stop>
+                                <stop offset="100%" stop-color="rgba(255,255,255,.18)"></stop>
+                            </linearGradient>
+                            <radialGradient id="${glassSpotId}" cx="30%" cy="22%" r="60%">
+                                <stop offset="0%" stop-color="rgba(255,255,255,.38)"></stop>
+                                <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
+                            </radialGradient>
+                        </defs>
+                        <path class="bottle-glass-fill" d="M10 10 L10 146 Q10 170 28 170 L48 170 Q66 170 66 146 L66 10 Z" fill="url(#${glassGradId})"></path>
+                        <path d="M10 10 L10 146 Q10 170 28 170 L48 170 Q66 170 66 146 L66 10 Z" fill="url(#${glassSpotId})"></path>
+                        <path class="bottle-outline" d="M8 8 L8 146 Q8 176 28 176 L48 176 Q68 176 68 146 L68 8 Z"></path>
+                        <path class="bottle-rim" d="M12 10 H64"></path>
+                        <rect class="liquid-svg" x="10" y="${liquidY}" width="56" height="${liquidHeight}" fill="url(#${liquidGradId})" clip-path="url(#${clipId})"></rect>
+                        ${surfaceLayer}
+                        <path class="bottle-glass-highlight" d="M18 24 C14 58 14 98 16 136 C16 150 18 160 20 166"></path>
+                        <path class="bottle-glass-highlight-soft" d="M56 32 C58 60 58 98 56 136"></path>
+                    </svg>
+                </div>
+                <div class="bottle-name" title="${safeName}">${safeName}</div>
+            `;
+
+            card.addEventListener("click", (event) => {
+                const action = event.target.closest("[data-action]")?.dataset.action;
+                if (!action) return;
+                actOnBottle(index, action);
+            });
+
+            return card;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function tintHex(hex, amount) {
+            const clean = String(hex || "").replace("#", "");
+            if (!/^[0-9a-fA-F]{6}$/.test(clean)) return PRESET_COLORS[2];
+
+            const toChannel = (idx) => Number.parseInt(clean.slice(idx, idx + 2), 16);
+            const shift = (value) => {
+                const next = amount >= 0
+                    ? value + (255 - value) * amount
+                    : value * (1 + amount);
+                return Math.max(0, Math.min(255, Math.round(next)));
+            };
+            const toHex = (value) => value.toString(16).padStart(2, "0");
+
+            const r = shift(toChannel(0));
+            const g = shift(toChannel(2));
+            const b = shift(toChannel(4));
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+
+        function renderPalette() {
+            palette.innerHTML = "";
+            PRESET_COLORS.forEach((color) => {
+                const swatch = document.createElement("button");
+                swatch.type = "button";
+                swatch.className = `palette-swatch ${state.color === color ? "selected" : ""}`;
+                swatch.style.background = color;
+                swatch.title = color;
+                swatch.setAttribute("aria-label", `选择液体颜色 ${color}`);
+                swatch.addEventListener("click", () => {
+                    state.color = color;
+                    renderPalette();
+                    render();
+                    saveState();
+                });
+                palette.appendChild(swatch);
+            });
+        }
+
+        function actOnBottle(index, action) {
+            const item = state.items[index];
+            if (!item) return;
+
+            if (action === "plus") {
+                item.level = item.level >= state.maxLevel ? 0 : item.level + 1;
+            }
+
+            render();
+            saveState();
+        }
+
+        function render() {
+            grid.innerHTML = "";
+
+            if (state.items.length === 0) {
+                grid.innerHTML = '<div class="empty">输入名称后点击“生成瓶子”。</div>';
+                updateStats();
+                return;
+            }
+
+            state.items.forEach((item, idx) => {
+                grid.appendChild(createBottleCard(item, idx));
+            });
+
+            updateStats();
+        }
+
+        function applyMaxLevel(rawValue) {
+            const numeric = Number.parseInt(rawValue, 10);
+            if (!Number.isFinite(numeric)) return;
+
+            const newMax = clamp(numeric, 3, 20);
+            if (newMax !== numeric) {
+                showFlash("最大等级范围：3 - 20");
+            }
+            state.maxLevel = newMax;
+            maxLevelInput.value = String(newMax);
+
+            for (const item of state.items) {
+                item.level = clamp(item.level, 0, newMax);
+            }
+
+            render();
+            saveState();
+        }
+
+        buildBtn.addEventListener("click", () => {
+            const names = parseNames(itemInput.value.trim());
+            if (names.length === 0) {
+                showFlash("请先输入名称");
+                return;
+            }
+
+            state.items = names.map(name => ({ name, level: 0 }));
+            render();
+            saveState();
+            showFlash(`已生成 ${names.length} 个瓶子`);
+        });
+
+        fillAllBtn.addEventListener("click", () => {
+            if (state.items.length === 0) return;
+            for (const item of state.items) {
+                item.level = item.level >= state.maxLevel ? 0 : item.level + 1;
+            }
+            render();
+            saveState();
+        });
+
+        resetAllBtn.addEventListener("click", () => {
+            if (state.items.length === 0) return;
+            for (const item of state.items) {
+                item.level = 0;
+            }
+            render();
+            saveState();
+            showFlash("已清空全部进度");
+        });
+
+        sortBtn.addEventListener("click", () => {
+            if (state.items.length === 0) return;
+            state.items.sort((a, b) => b.level - a.level || a.name.localeCompare(b.name, "zh-Hans-CN"));
+            render();
+            saveState();
+        });
+
+        maxLevelInput.addEventListener("change", (event) => {
+            applyMaxLevel(event.target.value);
+        });
+
+        goHome.addEventListener("click", () => {
+            window.location.href = "index.html";
+        });
+
+        loadState();
+        maxLevelInput.value = String(state.maxLevel);
+        renderPalette();
+
+        if (state.items.length > 0) {
+            itemInput.value = state.items.map(item => item.name).join(" ");
+        }
+
+        render();
+    </script>
+</body>
+</html>
