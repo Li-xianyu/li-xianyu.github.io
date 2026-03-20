@@ -389,81 +389,33 @@
 		<div class="timeline">
 			<article class="log-item">
 				<div class="log-head">
-					<h3 class="log-title">最早期原型：规则列表化</h3>
-					<span class="log-time">2024 年中前后</span>
+					<h3 class="log-title">体验增强：新增棋盘自定义 + 每局预估与实际累计</h3>
+					<span class="log-time">2026 年 3 月下旬</span>
 				</div>
 				<p class="log-desc">
-					最开始根本不是棋盘，基本就是个“网页版规则手册”。
-					先把内容塞进去、能展开收起、能看明白，算是把骨架先搭起来。
+					这一版把可玩性和反馈闭环补上了。
+					支持自定义棋盘，同时新增每局预估触达总数与实时/结算实际累计，玩法和数据反馈都更完整。
 				</p>
 				<div class="tag-row">
-					<span class="tag">规则列表</span>
-					<span class="tag">前端交互</span>
-					<span class="tag">最初雏形</span>
+					<span class="tag">自定义棋盘</span>
+					<span class="tag">局内预估</span>
+					<span class="tag">实际累计</span>
 				</div>
 			</article>
 
 			<article class="log-item">
 				<div class="log-head">
-					<h3 class="log-title">路线成型：决定做固定路线飞行棋</h3>
-					<span class="log-time">2024 年 10 月</span>
+					<h3 class="log-title">结构升级：引擎层与规则层开始分家</h3>
+					<span class="log-time">2026 年 2 月下旬 - 3 月上旬</span>
 				</div>
 				<p class="log-desc">
-					这里是第一个大转弯：不做纯文档页了，直接上棋盘路线。
-					从这一步开始，才有“走格子 + 触发事件 + 推进回合”的游戏味。
+					这是技术上最关键的一次重构。
+					把“移动引擎”和“规则触发”拆开以后，代码终于从“能跑”变成“能继续迭代”。
 				</p>
 				<div class="tag-row">
-					<span class="tag">固定路线</span>
-					<span class="tag">棋盘化</span>
-					<span class="tag">方向确认</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">双核思路：不止内容，还要有流程</h3>
-					<span class="log-time">2025 年上半年</span>
-				</div>
-				<p class="log-desc">
-					只加条目已经不够用了，流程感才是关键。
-					所以把回合、骰子、移动、位置状态这些都补齐，玩起来才不散。
-				</p>
-				<div class="tag-row">
-					<span class="tag">回合制</span>
-					<span class="tag">骰子逻辑</span>
-					<span class="tag">流程推进</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">数据拆分：任务内容开始模块化</h3>
-					<span class="log-time">2025 年中后期</span>
-				</div>
-				<p class="log-desc">
-					内容多起来之后，页面还好说，数据是真难管。
-					所以把任务池按模块拆开，后面做权重、开关、自定义都省心很多。
-				</p>
-				<div class="tag-row">
-					<span class="tag">Data.js</span>
-					<span class="tag">模块化</span>
-					<span class="tag">可扩展</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">设置系统上线：用户体验 ++</h3>
-					<span class="log-time">2025 年下半年</span>
-				</div>
-				<p class="log-desc">
-					这一步之后它就不只是“我自己能玩”了。
-					设置页上线后，能自己配规则、调权重、改内容，整个项目才真正活起来。
-				</p>
-				<div class="tag-row">
-					<span class="tag">设置页</span>
-					<span class="tag">本地存储</span>
-					<span class="tag">可配置</span>
+					<span class="tag">引擎层</span>
+					<span class="tag">规则层</span>
+					<span class="tag">结构分离</span>
 				</div>
 			</article>
 
@@ -485,17 +437,81 @@
 
 			<article class="log-item">
 				<div class="log-head">
-					<h3 class="log-title">结构升级：引擎层与规则层开始分家</h3>
-					<span class="log-time">2026 年 2 月下旬 - 3 月上旬</span>
+					<h3 class="log-title">设置系统上线：用户体验 ++</h3>
+					<span class="log-time">2025 年下半年</span>
 				</div>
 				<p class="log-desc">
-					这是技术上最关键的一次重构。
-					把“移动引擎”和“规则触发”拆开以后，代码终于从“能跑”变成“能继续迭代”。
+					这一步之后它就不只是“我自己能玩”了。
+					设置页上线后，能自己配规则、调权重、改内容，整个项目才真正活起来。
 				</p>
 				<div class="tag-row">
-					<span class="tag">引擎层</span>
-					<span class="tag">规则层</span>
-					<span class="tag">结构分离</span>
+					<span class="tag">设置页</span>
+					<span class="tag">本地存储</span>
+					<span class="tag">可配置</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">数据拆分：任务内容开始模块化</h3>
+					<span class="log-time">2025 年中后期</span>
+				</div>
+				<p class="log-desc">
+					内容多起来之后，页面还好说，数据是真难管。
+					所以把任务池按模块拆开，后面做权重、开关、自定义都省心很多。
+				</p>
+				<div class="tag-row">
+					<span class="tag">Data.js</span>
+					<span class="tag">模块化</span>
+					<span class="tag">可扩展</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">双核思路：不止内容，还要有流程</h3>
+					<span class="log-time">2025 年上半年</span>
+				</div>
+				<p class="log-desc">
+					只加条目已经不够用了，流程感才是关键。
+					所以把回合、骰子、移动、位置状态这些都补齐，玩起来才不散。
+				</p>
+				<div class="tag-row">
+					<span class="tag">回合制</span>
+					<span class="tag">骰子逻辑</span>
+					<span class="tag">流程推进</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">路线成型：决定做固定路线飞行棋</h3>
+					<span class="log-time">2024 年 10 月</span>
+				</div>
+				<p class="log-desc">
+					这里是第一个大转弯：不做纯文档页了，直接上棋盘路线。
+					从这一步开始，才有“走格子 + 触发事件 + 推进回合”的游戏味。
+				</p>
+				<div class="tag-row">
+					<span class="tag">固定路线</span>
+					<span class="tag">棋盘化</span>
+					<span class="tag">方向确认</span>
+				</div>
+			</article>
+
+			<article class="log-item">
+				<div class="log-head">
+					<h3 class="log-title">最早期原型：规则列表化</h3>
+					<span class="log-time">2024 年中前后</span>
+				</div>
+				<p class="log-desc">
+					最开始根本不是棋盘，基本就是个“网页版规则手册”。
+					先把内容塞进去、能展开收起、能看明白，算是把骨架先搭起来。
+				</p>
+				<div class="tag-row">
+					<span class="tag">规则列表</span>
+					<span class="tag">前端交互</span>
+					<span class="tag">最初雏形</span>
 				</div>
 			</article>
 		</div>

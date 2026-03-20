@@ -47,10 +47,17 @@ const IS_DUAL = !(GAME_MODE === 'solo' || GAME_MODE === 'single' || GAME_MODE ==
 
 const roundInfo = document.getElementById('roundInfo');
 const zVetoBadge = document.getElementById('zVetoBadge');
+const bTaskStatsBtn = document.getElementById('bTaskStatsBtn');
+const bTaskLiveCount = document.getElementById('bTaskLiveCount');
 
 let roundNo = 1;
 let roundMasterDone = false;
 let roundPassiveDone = false;
+let actualActionTotal = 0;
+let actualActionTriggerCount = 0;
+let lastRecordedActionRound = 0;
+let lastRecordedActionCount = 0;
+let lastRecordedActionAdjusted = false;
 const zEffectState = {
 	countRule: null,
 	forcedPosture: "",
@@ -156,7 +163,7 @@ function transformActionByZEffects(rawText) {
 	zEffectState.forcedPosture = "";
 	zEffectState.splitExecution = false;
 
-	return { text: nextText, splitInfo };
+	return { text: nextText, splitInfo, finalCount };
 }
 
 function tryApplyMasterEffectsToCurrentRound() {
@@ -170,6 +177,16 @@ function tryApplyMasterEffectsToCurrentRound() {
 		? `；分期执行：先 ${transformed.splitInfo.first}，中间休息2分钟，再 ${transformed.splitInfo.second}`
 		: "";
 	const finalDisplay = `${transformed.text}${splitText}`;
+
+	if (lastRecordedActionRound === roundNo && !lastRecordedActionAdjusted) {
+		const nextCount = extractActionCountForRecord(transformed.text, transformed.finalCount);
+		if (nextCount > 0) {
+			actualActionTotal += (nextCount - lastRecordedActionCount);
+			lastRecordedActionCount = nextCount;
+			lastRecordedActionAdjusted = true;
+			updateBTaskLiveCount();
+		}
+	}
 
 	roundPassiveSnapshot.displayText = finalDisplay;
 	if (roundPassiveSnapshot.targetNumber && current_punishment_passive[roundPassiveSnapshot.targetNumber]) {
@@ -286,6 +303,257 @@ function getNonZeroCount(board) {
 	return count;
 }
 
+function getBTaskTypeLabel(type) {
+	const fallback = {
+		action: '处理项',
+		rest: '休息',
+		move: '位移',
+		sports: '运动',
+		unknown: '其他'
+	};
+
+	if (type === 'action') {
+		const postureDesc = String(GameData.posture?.description || '').trim();
+		const propDesc = String(GameData.prop?.description || '').trim();
+		if (postureDesc && propDesc) {
+			return `${fallback.action}（${postureDesc}+${propDesc}）`;
+		}
+		return fallback.action;
+	}
+	if (type === 'rest') {
+		return String(GameData.reward?.description || '').trim() || fallback.rest;
+	}
+	if (type === 'move') {
+		return String(GameData.aod?.description || '').trim() || fallback.move;
+	}
+	if (type === 'sports') {
+		return String(GameData.sports?.description || '').trim() || fallback.sports;
+	}
+	return fallback.unknown;
+}
+
+function countBTaskModules(passiveMap) {
+	const counts = {
+		action: 0,
+		rest: 0,
+		move: 0,
+		sports: 0,
+		unknown: 0
+	};
+	const entries = Object.values(passiveMap || {});
+	for (const item of entries) {
+		const type = String(item?.type || '').trim();
+		if (type in counts) {
+			counts[type] += 1;
+		} else {
+			counts.unknown += 1;
+		}
+	}
+	return counts;
+}
+
+function formatCountRatio(count, total) {
+	if (!Number.isFinite(total) || total <= 0) return `${count}/0（0.0%）`;
+	const percent = ((count / total) * 100).toFixed(1);
+	return `${count}/${total}（${percent}%）`;
+}
+
+function projectMoveTargetForSimulation(position, end, punishment, randomFn = Math.random) {
+	if (!punishment || punishment.type !== 'move') return position;
+
+	const instruction = resolveMoveInstruction(punishment.text);
+	if (instruction.kind === 'toEnd') return end;
+	if (instruction.kind === 'toStart') return 1;
+	if (instruction.kind === 'forwardRange' || instruction.kind === 'backwardRange') {
+		const offset = Math.floor(randomFn() * 3) + 1;
+		const signed = instruction.kind === 'forwardRange' ? offset : -offset;
+		return Math.max(1, Math.min(end, position + signed));
+	}
+
+	return position;
+}
+
+function getActionCountFromTaskText(taskText) {
+	const parsed = parseTrailingNumber(taskText);
+	const count = Number(parsed && parsed.value);
+	return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+function extractMasterCountRuleForSimulation(taskText) {
+	const text = String(taskText || "").trim();
+	if (!text) return null;
+	if (text.includes("数量+5")) return { type: "add", value: 5 };
+	if (text.includes("数量+10")) return { type: "add", value: 10 };
+	if (text.includes("数量-5")) return { type: "add", value: -5 };
+	if (text.includes("数量-10")) return { type: "add", value: -10 };
+	if (text.includes("翻倍")) return { type: "multiply", value: 2 };
+	if (text.includes("减半")) return { type: "half", value: 0 };
+	return null;
+}
+
+function applyMasterRuleToActionCount(count, rule) {
+	if (!Number.isFinite(count) || count <= 0 || !rule) return Math.max(0, count || 0);
+	return applyCountRule(count, rule);
+}
+
+function simulateReachableBTaskCellsOnce(passiveMap, end, maxTurns, randomFn = Math.random, options = {}) {
+	let passivePosition = 1;
+	let masterPosition = 1;
+	const visited = new Set();
+	let totalActionHits = 0;
+	const isDual = !!options.isDual;
+	const masterMap = options.masterMap || {};
+
+	for (let turn = 0; turn < maxTurns; turn++) {
+		let roundActionCount = null;
+		let roundActionTriggered = false;
+		let roundMasterRule = null;
+
+		const actorOrder = isDual
+			? (randomFn() < 0.5 ? ["master", "passive"] : ["passive", "master"])
+			: ["passive"];
+
+		const finalizeRound = () => {
+			if (!roundActionTriggered || !Number.isFinite(roundActionCount) || roundActionCount <= 0) return;
+			totalActionHits += roundActionCount;
+		};
+
+		for (const actor of actorOrder) {
+			if (actor === "master") {
+				masterPosition = Math.min(end, masterPosition + Math.floor(randomFn() * 6) + 1);
+				if (masterPosition >= end) {
+					finalizeRound();
+					return { visitedCount: visited.size, totalActionHits, finished: true };
+				}
+
+				const masterTask = masterMap[masterPosition];
+				roundMasterRule = extractMasterCountRuleForSimulation(masterTask && masterTask.text);
+				if (roundActionTriggered && roundMasterRule && roundActionCount !== null) {
+					roundActionCount = applyMasterRuleToActionCount(roundActionCount, roundMasterRule);
+				}
+				continue;
+			}
+
+			passivePosition = Math.min(end, passivePosition + Math.floor(randomFn() * 6) + 1);
+			if (passivePosition >= end) {
+				finalizeRound();
+				return { visitedCount: visited.size, totalActionHits, finished: true };
+			}
+
+			if (passivePosition > 1 && passivePosition < end) {
+				visited.add(passivePosition);
+			}
+
+			const passiveTask = passiveMap[passivePosition];
+			if (passiveTask && passiveTask.type === "action") {
+				roundActionTriggered = true;
+				roundActionCount = getActionCountFromTaskText(passiveTask.text);
+				if (roundMasterRule) {
+					roundActionCount = applyMasterRuleToActionCount(roundActionCount, roundMasterRule);
+				}
+			}
+
+			if (passiveTask && passiveTask.type === "move") {
+				passivePosition = projectMoveTargetForSimulation(passivePosition, end, passiveTask, randomFn);
+				if (passivePosition >= end) {
+					finalizeRound();
+					return { visitedCount: visited.size, totalActionHits, finished: true };
+				}
+			}
+		}
+
+		finalizeRound();
+	}
+
+	return { visitedCount: visited.size, totalActionHits, finished: false };
+}
+
+function pickQuantile(sortedValues, quantile) {
+	if (!sortedValues.length) return 0;
+	const clampedQ = Math.max(0, Math.min(1, quantile));
+	const index = Math.round((sortedValues.length - 1) * clampedQ);
+	return sortedValues[index];
+}
+
+function estimateReachableBTaskCells(passiveMap, end, taskCellCount, options = {}) {
+	if (!passiveMap || !Number.isFinite(end) || end <= 2 || taskCellCount <= 0) {
+		return {
+			reachableMean: 0,
+			reachableLow: 0,
+			reachableHigh: 0,
+			hitsMean: 0,
+			hitsLow: 0,
+			hitsHigh: 0,
+			runs: 0,
+			ci95: 0,
+			maxTurns: 0,
+			truncatedRuns: 0
+		};
+	}
+
+	const minRuns = 1200;
+	const maxRuns = 7200;
+	const batchSize = 300;
+	const maxTurns = Math.max(90, end * 8);
+	const stopCiThreshold = Math.max(0.25, taskCellCount * 0.01);
+
+	let runs = 0;
+	let reachableMean = 0;
+	let hitsMean = 0;
+	let hitsM2 = 0;
+	let truncatedRuns = 0;
+	const reachableSamples = [];
+	const hitsSamples = [];
+
+	while (runs < maxRuns) {
+		const currentBatch = Math.min(batchSize, maxRuns - runs);
+		for (let i = 0; i < currentBatch; i++) {
+			const result = simulateReachableBTaskCellsOnce(passiveMap, end, maxTurns, Math.random, options);
+			const reachableValue = result.visitedCount;
+			const hitsValue = result.totalActionHits;
+			runs += 1;
+			reachableSamples.push(reachableValue);
+			hitsSamples.push(hitsValue);
+			if (!result.finished) truncatedRuns += 1;
+
+			const deltaReachable = reachableValue - reachableMean;
+			reachableMean += deltaReachable / runs;
+
+			const deltaHits = hitsValue - hitsMean;
+			hitsMean += deltaHits / runs;
+			hitsM2 += deltaHits * (hitsValue - hitsMean);
+		}
+
+		if (runs >= minRuns) {
+			const variance = runs > 1 ? (hitsM2 / (runs - 1)) : 0;
+			const stdErr = Math.sqrt(variance / Math.max(runs, 1));
+			const ci95 = 1.96 * stdErr;
+			if (ci95 <= stopCiThreshold) {
+				break;
+			}
+		}
+	}
+
+	const variance = runs > 1 ? (hitsM2 / (runs - 1)) : 0;
+	const stdErr = Math.sqrt(variance / Math.max(runs, 1));
+	const ci95 = 1.96 * stdErr;
+	const sortedReachable = reachableSamples.slice().sort((a, b) => a - b);
+	const sortedHits = hitsSamples.slice().sort((a, b) => a - b);
+
+	return {
+		reachableMean,
+		reachableLow: pickQuantile(sortedReachable, 0.1),
+		reachableHigh: pickQuantile(sortedReachable, 0.9),
+		hitsMean,
+		hitsLow: pickQuantile(sortedHits, 0.1),
+		hitsHigh: pickQuantile(sortedHits, 0.9),
+		runs,
+		ci95,
+		maxTurns,
+		truncatedRuns
+	};
+}
+
 function getCustomBoardsFromStorage(){
 	try{
 		const raw = JSON.parse(localStorage.getItem("CUSTOM_BOARDS") || "[]");
@@ -377,6 +645,12 @@ function renderBoard(boardToken){
 	const startNumber = 1;
 	passive_location = 1;
 	master_location = 1;
+	actualActionTotal = 0;
+	actualActionTriggerCount = 0;
+	lastRecordedActionRound = 0;
+	lastRecordedActionCount = 0;
+	lastRecordedActionAdjusted = false;
+	updateBTaskLiveCount();
 	endNumber = Math.max(...mapData.flat());
 
 	const size = mapData.length;
@@ -627,6 +901,154 @@ function setTaskText(role, text) {
 	el.textContent = text || '—';
 }
 
+function updateBTaskLiveCount() {
+	if (!bTaskLiveCount) return;
+	bTaskLiveCount.textContent = `累计 ${actualActionTotal}`;
+}
+
+function extractActionCountForRecord(displayText, transformedCount) {
+	if (Number.isFinite(transformedCount) && transformedCount > 0) {
+		return transformedCount;
+	}
+	const matches = String(displayText || "").match(/\d+/g);
+	if (!matches || !matches.length) return 0;
+	const first = Number.parseInt(matches[0], 10);
+	return Number.isFinite(first) && first > 0 ? first : 0;
+}
+
+function showReachEstimateHelpDialog(reachEstimate) {
+	const overlay = document.createElement('div');
+	overlay.className = 'punishment-overlay';
+
+	const dialog = document.createElement('div');
+	dialog.className = 'punishment-dialog';
+	dialog.innerHTML = `
+		<h3 class="punishment-title">预估说明</h3>
+		<div class="punishment-content b-task-stats-content">
+			<div class="b-task-stats-section">
+				<div class="b-task-stats-row">
+					<span>预估可触达格子（均值）</span>
+					<strong>${reachEstimate.reachableMean.toFixed(1)} 格</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>预估可触达格子区间（P10-P90）</span>
+					<strong>${reachEstimate.reachableLow} - ${reachEstimate.reachableHigh} 格</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>预估触达总数（均值）</span>
+					<strong>${reachEstimate.hitsMean.toFixed(1)}</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>预估触达总数区间（P10-P90）</span>
+					<strong>${reachEstimate.hitsLow} - ${reachEstimate.hitsHigh}</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>估计精度（95% 置信区间）</span>
+					<strong>±${reachEstimate.ci95.toFixed(2)}</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>模拟次数</span>
+					<strong>${reachEstimate.runs}</strong>
+				</div>
+			</div>
+			<p class="b-task-stats-note">算法：基于当前棋盘已生成内容，结合位移规则与骰子 1-6 的随机过程进行蒙特卡洛模拟；双人模式下按本局主任务棋盘实际随机出的数量指令动态修正；“触达总数”表示每次落到处理项时对应次数的累计值。</p>
+		</div>
+	`;
+	overlay.addEventListener('click', (e) => {
+		if (e.target === overlay) overlay.remove();
+	});
+	dialog.addEventListener('click', (e) => e.stopPropagation());
+
+	overlay.appendChild(dialog);
+	document.body.appendChild(overlay);
+}
+
+function showBTaskStatsDialog() {
+	if (!mapData || !current_punishment_passive || !endNumber) {
+		showInfoDialog('B任务统计', '棋盘正在初始化，请稍后再试。');
+		return;
+	}
+
+	const bTaskCells = Object.keys(current_punishment_passive).length;
+	const moduleCounts = countBTaskModules(current_punishment_passive);
+	const reachEstimate = estimateReachableBTaskCells(current_punishment_passive, endNumber, bTaskCells, {
+		isDual: IS_DUAL,
+		masterMap: current_task_master
+	});
+
+	const rows = [
+		{ label: getBTaskTypeLabel('action'), value: formatCountRatio(moduleCounts.action, bTaskCells) },
+		{ label: getBTaskTypeLabel('rest'), value: formatCountRatio(moduleCounts.rest, bTaskCells) },
+		{ label: getBTaskTypeLabel('move'), value: formatCountRatio(moduleCounts.move, bTaskCells) },
+		{ label: getBTaskTypeLabel('sports'), value: formatCountRatio(moduleCounts.sports, bTaskCells) }
+	];
+	if (moduleCounts.unknown > 0) {
+		rows.push({ label: getBTaskTypeLabel('unknown'), value: formatCountRatio(moduleCounts.unknown, bTaskCells) });
+	}
+
+	const hitsRangeText = `${reachEstimate.hitsLow} - ${reachEstimate.hitsHigh}（均值 ${reachEstimate.hitsMean.toFixed(1)}）`;
+
+	const moduleRowsHtml = rows.map(row => `
+		<div class="b-task-stats-row">
+			<span>${escapeHtml(row.label)}</span>
+			<strong>${escapeHtml(row.value)}</strong>
+		</div>
+	`).join('');
+
+	const overlay = document.createElement('div');
+	overlay.className = 'punishment-overlay';
+
+	const dialog = document.createElement('div');
+	dialog.className = 'punishment-dialog';
+	dialog.innerHTML = `
+		<h3 class="punishment-title">B任务统计</h3>
+		<div class="punishment-content b-task-stats-content">
+			<div class="b-task-stats-section">
+				${moduleRowsHtml}
+			</div>
+			<div class="b-task-stats-divider"></div>
+			<div class="b-task-stats-section">
+				<div class="b-task-stats-stack">
+					<span>预估触达总数</span>
+					<div class="b-task-stats-value-wrap">
+						<strong>${hitsRangeText}</strong>
+						<button class="b-task-stats-info-btn" id="bTaskStatsInfoBtn" type="button" aria-label="查看预估说明" title="查看预估说明">
+							<i class="bi bi-exclamation-lg" aria-hidden="true"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<button class="punishment-button" id="confirmBtn">确认</button>
+	`;
+
+	const confirmBtn = dialog.querySelector('#confirmBtn');
+	const infoBtn = dialog.querySelector('#bTaskStatsInfoBtn');
+	confirmBtn.addEventListener('click', () => {
+		overlay.remove();
+	});
+	if (infoBtn) {
+		infoBtn.addEventListener('click', () => {
+			showReachEstimateHelpDialog(reachEstimate);
+		});
+	}
+
+	overlay.addEventListener('click', (e) => {
+		if (e.target === overlay) {
+			playDialogShake(confirmBtn);
+		}
+	});
+
+	overlay.appendChild(dialog);
+	document.body.appendChild(overlay);
+
+	track("b_task_stats_opened", {
+		task_cells: bTaskCells,
+		estimate_hits_mean: Number(reachEstimate.hitsMean.toFixed(2)),
+		estimate_runs: reachEstimate.runs
+	});
+}
+
 function showTip(msg) {
 	const el = document.createElement('div');
 	el.className = 'tmp-tip';
@@ -756,6 +1178,7 @@ if (!IS_DUAL) {
 updateRoundInfo();
 setButtonsState();
 updateVetoBadge();
+updateBTaskLiveCount();
 
 function moveStep(from, to, role, stepDuration){
 	return new Promise(resolve => {
@@ -897,10 +1320,12 @@ async function showPassiveResult(targetNumber) {
 
 	let displayText = punishment.text;
 	let splitInfo = null;
+	let actionCountForRecord = 0;
 	if (punishment.type === "action") {
 		const transformed = transformActionByZEffects(punishment.text);
 		displayText = transformed.text;
 		splitInfo = transformed.splitInfo;
+		actionCountForRecord = extractActionCountForRecord(displayText, transformed.finalCount);
 	}
 	setTaskText('passive', `${panelPrefix[punishment.type] || '内容'}：${displayText}`);
 
@@ -940,6 +1365,15 @@ async function showPassiveResult(targetNumber) {
 			this.disabled = true;
 
 			overlay.remove();
+
+			if (punishment.type === 'action' && actionCountForRecord > 0) {
+				actualActionTotal += actionCountForRecord;
+				actualActionTriggerCount += 1;
+				lastRecordedActionRound = roundNo;
+				lastRecordedActionCount = actionCountForRecord;
+				lastRecordedActionAdjusted = false;
+				updateBTaskLiveCount();
+			}
 
 			await new Promise((innerResolve) => requestAnimationFrame(innerResolve));
 
@@ -1110,9 +1544,21 @@ function showEndGameDialog() {
 
 		const dialog = document.createElement('div');
 		dialog.className = 'punishment-dialog';
+		const summaryHtml = `
+			<div class="b-task-stats-section" style="margin-bottom:8px;">
+				<div class="b-task-stats-row">
+					<span>本局真实触达总数</span>
+					<strong>${actualActionTotal}</strong>
+				</div>
+				<div class="b-task-stats-row">
+					<span>处理项触发次数</span>
+					<strong>${actualActionTriggerCount}</strong>
+				</div>
+			</div>
+		`;
 		dialog.innerHTML = `
 			<h3 class="punishment-title">🏁 结束</h3>
-			<div class="punishment-content">开始新局？</div>
+			<div class="punishment-content">${summaryHtml}开始新局？</div>
 			<div class="dialog-buttons">
 				<button class="punishment-button" id="confirmRestart">确定</button>
 				<button class="punishment-button" id="cancelRestart">取消</button>
@@ -1234,3 +1680,4 @@ async function handleRoll(role) {
 
 rolldice.addEventListener('click', () => handleRoll('passive'));
 if (rollmaster) rollmaster.addEventListener('click', () => handleRoll('master'));
+if (bTaskStatsBtn) bTaskStatsBtn.addEventListener('click', showBTaskStatsDialog);
