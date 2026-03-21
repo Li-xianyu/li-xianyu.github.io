@@ -76,6 +76,11 @@ const ACTION_COUNT_RANGE = {
 
 const ACTION_COUNT_RANGE_STORAGE_KEY = "ACTION_COUNT_RANGE";
 const LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = "SPANK_COUNT_RANGE";
+const GAME_UI_SETTINGS_STORAGE_KEY = "GAME_UI_SETTINGS";
+const DEFAULT_GAME_UI_SETTINGS = {
+    showBTaskPrediction: true,
+    showBTaskLiveCount: true
+};
 
 
 
@@ -308,6 +313,22 @@ function normalizeActiveData(storedActiveData){
 	return base;
 }
 
+function normalizeGameUiSettings(storedGameUiSettings){
+	const base = { ...DEFAULT_GAME_UI_SETTINGS };
+	const stored = storedGameUiSettings && typeof storedGameUiSettings === 'object'
+		? storedGameUiSettings
+		: {};
+
+	if (stored.showBTaskPrediction !== undefined) {
+		base.showBTaskPrediction = !!stored.showBTaskPrediction;
+	}
+	if (stored.showBTaskLiveCount !== undefined) {
+		base.showBTaskLiveCount = !!stored.showBTaskLiveCount;
+	}
+
+	return base;
+}
+
 GameData = normalizeGameData(GameData);
 ActiveData = normalizeActiveData(ActiveData);
 
@@ -318,3 +339,6 @@ window.normalizeActiveData = normalizeActiveData;
 window.ACTION_COUNT_RANGE = ACTION_COUNT_RANGE;
 window.ACTION_COUNT_RANGE_STORAGE_KEY = ACTION_COUNT_RANGE_STORAGE_KEY;
 window.LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY;
+window.GAME_UI_SETTINGS_STORAGE_KEY = GAME_UI_SETTINGS_STORAGE_KEY;
+window.DEFAULT_GAME_UI_SETTINGS = DEFAULT_GAME_UI_SETTINGS;
+window.normalizeGameUiSettings = normalizeGameUiSettings;

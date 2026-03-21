@@ -214,7 +214,7 @@ body{
 	-webkit-backdrop-filter:blur(14px);
 
 	display:grid;
-	grid-template-columns:1fr 1fr;
+	grid-template-columns:repeat(3, 1fr);
 	gap:6px;
 }
 
@@ -244,7 +244,7 @@ body{
 }
 
 .seg-btn.active{
-	color:var(--dialog-text);
+	color:#fff;
 }
 
 .seg-indicator{
@@ -252,7 +252,7 @@ body{
 	top:6px;
 	left:6px;
 	height:calc(100% - 12px);
-	width:calc(50% - 6px);
+	width:calc(33.333% - 6px);
 	border-radius:12px;
 	z-index:1;
 
@@ -266,10 +266,43 @@ body{
 	transition:transform .22s cubic-bezier(.16,1,.3,1), width .22s cubic-bezier(.16,1,.3,1);
 }
 
+#segmented[data-active="b"] .seg-indicator{
+	background:color-mix(in srgb, var(--passive-color) 78%, #fff);
+	border-color:color-mix(in srgb, var(--passive-color) 65%, #fff);
+	box-shadow:0 10px 26px rgba(255,107,154,.25);
+}
+
+#segmented[data-active="z"] .seg-indicator{
+	background:color-mix(in srgb, var(--master-color) 78%, #fff);
+	border-color:color-mix(in srgb, var(--master-color) 65%, #fff);
+	box-shadow:0 10px 26px rgba(139,164,248,.24);
+}
+
+#segmented[data-active="x"] .seg-indicator{
+	background:color-mix(in srgb, var(--ok) 80%, #fff);
+	border-color:color-mix(in srgb, var(--ok) 62%, #fff);
+	box-shadow:0 10px 26px rgba(88,216,163,.22);
+}
+
 [data-theme="dark"] .seg-indicator{
 	background:rgba(255,255,255,0.10);
 	border:1px solid rgba(255,255,255,0.14);
 	box-shadow:0 10px 26px rgba(0,0,0,0.28);
+}
+
+[data-theme="dark"] #segmented[data-active="b"] .seg-indicator{
+	background:color-mix(in srgb, var(--passive-color) 55%, #1d153d);
+	border-color:color-mix(in srgb, var(--passive-color) 50%, #1d153d);
+}
+
+[data-theme="dark"] #segmented[data-active="z"] .seg-indicator{
+	background:color-mix(in srgb, var(--master-color) 55%, #1d153d);
+	border-color:color-mix(in srgb, var(--master-color) 50%, #1d153d);
+}
+
+[data-theme="dark"] #segmented[data-active="x"] .seg-indicator{
+	background:color-mix(in srgb, var(--ok) 55%, #1d153d);
+	border-color:color-mix(in srgb, var(--ok) 50%, #1d153d);
 }
 
 /* =========================
@@ -466,6 +499,110 @@ label{
 
 fieldset.weight-settings-container{
 	background:var(--card-bg);
+}
+
+.game-ui-settings-container{
+	display:flex;
+	flex-direction:column;
+	gap:12px;
+}
+
+.switch-setting-row{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:18px;
+	padding:14px 16px;
+	border-radius:16px;
+	border:1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+	background:color-mix(in srgb, var(--accent) 6%, rgba(255,255,255,0.32));
+	cursor:pointer;
+}
+
+.switch-setting-copy{
+	display:flex;
+	flex-direction:column;
+	gap:4px;
+	flex:1 1 auto;
+	min-width:0;
+}
+
+.switch-setting-title{
+	font-size:14px;
+	font-weight:800;
+	color:var(--dialog-text);
+}
+
+.switch-setting-desc{
+	font-size:12px;
+	line-height:1.55;
+	color:var(--dialog-muted);
+}
+
+.switch-control{
+	position:relative;
+	display:inline-flex;
+	flex:0 0 auto;
+}
+
+.switch-control input{
+	position:absolute;
+	opacity:0;
+	pointer-events:none;
+}
+
+.switch-slider{
+	position:relative;
+	width:52px;
+	height:30px;
+	border-radius:999px;
+	background:rgba(148,163,184,0.38);
+	border:1px solid rgba(148,163,184,0.45);
+	box-shadow:inset 0 1px 2px rgba(15,23,42,0.12);
+	transition:background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.switch-slider::after{
+	content:"";
+	position:absolute;
+	top:3px;
+	left:3px;
+	width:22px;
+	height:22px;
+	border-radius:50%;
+	background:#fff;
+	box-shadow:0 4px 10px rgba(15,23,42,0.18);
+	transition:transform .18s ease;
+}
+
+.switch-control input:checked + .switch-slider{
+	background:color-mix(in srgb, var(--accent) 78%, #fff);
+	border-color:color-mix(in srgb, var(--accent) 84%, #fff);
+	box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.switch-control input:checked + .switch-slider::after{
+	transform:translateX(22px);
+}
+
+.switch-control input:focus-visible + .switch-slider{
+	outline:2px solid color-mix(in srgb, var(--accent) 68%, #fff);
+	outline-offset:3px;
+}
+
+[data-theme="dark"] .switch-setting-row{
+	background:color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,0.04));
+	border-color:color-mix(in srgb, var(--accent) 22%, rgba(255,255,255,0.08));
+}
+
+@media (max-width:640px){
+	.switch-setting-row{
+		align-items:flex-start;
+	}
+
+	.switch-control{
+		margin-top:2px;
+	}
 }
 
 /* =========================

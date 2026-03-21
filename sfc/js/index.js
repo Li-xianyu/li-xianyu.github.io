@@ -35,6 +35,8 @@ GameData = normalizeGameData(storedGameData);
 
 const storedActiveData = JSON.parse(localStorage.getItem('ActiveData'));
 ActiveData = normalizeActiveData(storedActiveData);
+const storedGameUiSettings = JSON.parse(localStorage.getItem(GAME_UI_SETTINGS_STORAGE_KEY) || 'null');
+const gameUiSettings = normalizeGameUiSettings(storedGameUiSettings);
 
 const board = document.getElementById('board');
 const rolldice = document.getElementById('rolldice');
@@ -66,6 +68,17 @@ const zEffectState = {
 };
 let roundPassiveSnapshot = null;
 
+function applyGameUiSettings() {
+	if (bTaskStatsBtn) {
+		bTaskStatsBtn.hidden = !gameUiSettings.showBTaskPrediction;
+		bTaskStatsBtn.style.display = gameUiSettings.showBTaskPrediction ? "" : "none";
+	}
+	if (bTaskLiveCount) {
+		bTaskLiveCount.hidden = !gameUiSettings.showBTaskLiveCount;
+		bTaskLiveCount.style.display = gameUiSettings.showBTaskLiveCount ? "" : "none";
+	}
+}
+
 function updateVetoBadge() {
 	if (!zVetoBadge) return;
 	zVetoBadge.hidden = zEffectState.restInvalidToken <= 0;
@@ -74,6 +87,7 @@ function updateVetoBadge() {
 if (board) board.style.display = '';
 if (rolldice) rolldice.style.display = '';
 if (rollmaster) rollmaster.style.display = IS_DUAL ? '' : 'none';
+applyGameUiSettings();
 
 function getRandomSelected(items) {
 	const active = items.filter(i => i.selected);
@@ -903,6 +917,13 @@ function setTaskText(role, text) {
 
 function updateBTaskLiveCount() {
 	if (!bTaskLiveCount) return;
+	if (!gameUiSettings.showBTaskLiveCount) {
+		bTaskLiveCount.hidden = true;
+		bTaskLiveCount.style.display = "none";
+		return;
+	}
+	bTaskLiveCount.hidden = false;
+	bTaskLiveCount.style.display = "";
 	bTaskLiveCount.textContent = `累计 ${actualActionTotal}`;
 }
 
@@ -964,6 +985,7 @@ function showReachEstimateHelpDialog(reachEstimate) {
 }
 
 function showBTaskStatsDialog() {
+	if (!gameUiSettings.showBTaskPrediction) return;
 	if (!mapData || !current_punishment_passive || !endNumber) {
 		showInfoDialog('B任务统计', '棋盘正在初始化，请稍后再试。');
 		return;

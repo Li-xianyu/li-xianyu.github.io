@@ -33,6 +33,7 @@
 		<div class="segmented" id="segmented">
 			<button class="seg-btn active" type="button" data-tab="b">B：执行模块</button>
 			<button class="seg-btn" type="button" data-tab="z">Z：指令模块</button>
+			<button class="seg-btn" type="button" data-tab="x">扩展功能</button>
 			<div class="seg-indicator" id="segIndicator"></div>
 		</div>
 
@@ -98,6 +99,34 @@
 
 			<div id="active-container"></div>
 		</section>
+		<section class="tab-panel" id="panel-x" style="display:none;">
+			<fieldset class="game-ui-settings-container">
+				<legend>局内显示</legend>
+				<p class="tip">控制 game 页面里 B 任务预测入口和实时累计是否显示，默认都开启。</p>
+
+				<label class="switch-setting-row" for="toggleBTaskPrediction">
+					<span class="switch-setting-copy">
+						<span class="switch-setting-title">B任务预测指标</span>
+						<span class="switch-setting-desc">显示任务面板里的感叹号按钮，点击后可查看预测与统计。</span>
+					</span>
+					<span class="switch-control">
+						<input type="checkbox" id="toggleBTaskPrediction" checked>
+						<span class="switch-slider" aria-hidden="true"></span>
+					</span>
+				</label>
+
+				<label class="switch-setting-row" for="toggleBTaskLiveCount">
+					<span class="switch-setting-copy">
+						<span class="switch-setting-title">实时累计实际数量</span>
+						<span class="switch-setting-desc">在任务面板中持续显示本局已累计的实际数量。</span>
+					</span>
+					<span class="switch-control">
+						<input type="checkbox" id="toggleBTaskLiveCount" checked>
+						<span class="switch-slider" aria-hidden="true"></span>
+					</span>
+				</label>
+			</fieldset>
+		</section>
 
 		<button class="save-btn" id="saveBtn">保存设置</button>
 
@@ -122,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initSegmented();
 
 	loadSettingsB();
+	loadGameUiSettings();
 	loadGameDataB();
 	loadActiveDataZ();
 
@@ -166,18 +196,20 @@ function initSegmented(){
 	}
 
 	function switchTab(tabKey){
-		const b = document.getElementById("panel-b");
-		const z = document.getElementById("panel-z");
+		const panels = {
+			b: document.getElementById("panel-b"),
+			z: document.getElementById("panel-z"),
+			x: document.getElementById("panel-x")
+		};
 
-		if (tabKey === "b"){
-			b.style.display = "";
-			z.style.display = "none";
-			resetPanelAnimations(b);
-		}else{
-			b.style.display = "none";
-			z.style.display = "";
-			resetPanelAnimations(z);
-		}
+		Object.keys(panels).forEach((key) => {
+			const panel = panels[key];
+			if (!panel) return;
+			panel.style.display = (key === tabKey) ? "" : "none";
+			if (key === tabKey) resetPanelAnimations(panel);
+		});
+
+		root.dataset.active = tabKey;
 		track("settings_tab_switched", { tab: tabKey });
 
 		observeFieldsets();
@@ -185,6 +217,7 @@ function initSegmented(){
 
 	btns.forEach(btn => {
 		btn.addEventListener("click", () => {
+			if (btn.classList.contains("active")) return;
 			btns.forEach(x => x.classList.remove("active"));
 			btn.classList.add("active");
 			moveIndicatorTo(btn);
@@ -194,6 +227,7 @@ function initSegmented(){
 
 	// 默认定位到 active 的按钮
 	const act = root.querySelector(".seg-btn.active") || btns[0];
+	root.dataset.active = act.dataset.tab;
 	requestAnimationFrame(() => moveIndicatorTo(act));
 
 	// 旋转/缩放时也保持位置
@@ -225,6 +259,15 @@ function loadGameDataB() {
 	const storedGameData = JSON.parse(localStorage.getItem("GameData"));
 	GameData = normalizeGameData(storedGameData);
 	fillWeightInputsFromGameData();
+}
+
+function loadGameUiSettings(){
+	const storedGameUiSettings = JSON.parse(localStorage.getItem(GAME_UI_SETTINGS_STORAGE_KEY) || "null");
+	const gameUiSettings = normalizeGameUiSettings(storedGameUiSettings);
+	const predictionToggle = document.getElementById("toggleBTaskPrediction");
+	const liveCountToggle = document.getElementById("toggleBTaskLiveCount");
+	if (predictionToggle) predictionToggle.checked = gameUiSettings.showBTaskPrediction;
+	if (liveCountToggle) liveCountToggle.checked = gameUiSettings.showBTaskLiveCount;
 }
 
 function fillWeightInputsFromGameData(){
@@ -719,8 +762,13 @@ function resetPanelAnimations(panel){
 function observeFieldsets(){
 	if (_fsObserver) _fsObserver.disconnect();
 
-	const bHidden = document.getElementById("panel-b").style.display === "none";
-	const visiblePanel = bHidden ? document.getElementById("panel-z") : document.getElementById("panel-b");
+		const panels = [
+		document.getElementById("panel-b"),
+		document.getElementById("panel-z"),
+		document.getElementById("panel-x")
+	].filter(Boolean);
+
+	const visiblePanel = panels.find(panel => panel.style.display !== "none") || panels[0];
 
 	const allFieldsets = visiblePanel.querySelectorAll("fieldset");
 	if (!allFieldsets.length) return;
@@ -782,6 +830,12 @@ function saveAllSettings(){
 
 	ActiveData.weight = getNumericInputValue("weight-active", ActiveData.weight);
 	localStorage.setItem("ActiveData", JSON.stringify(ActiveData));
+
+	const gameUiSettings = normalizeGameUiSettings({
+		showBTaskPrediction: !!document.getElementById("toggleBTaskPrediction")?.checked,
+		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked
+	});
+	localStorage.setItem(GAME_UI_SETTINGS_STORAGE_KEY, JSON.stringify(gameUiSettings));
 	track("settings_saved", {
 		min_count: minVal,
 		max_count: maxVal,
@@ -789,7 +843,9 @@ function saveAllSettings(){
 		weight_reward: GameData.reward.weight,
 		weight_aod: GameData.aod.weight,
 		weight_sports: GameData.sports.weight,
-		weight_active: ActiveData.weight
+		weight_active: ActiveData.weight,
+		show_b_task_prediction: gameUiSettings.showBTaskPrediction,
+		show_b_task_live_count: gameUiSettings.showBTaskLiveCount
 	});
 
 	showModal("设置已保存", "你的配置已经成功保存。");
