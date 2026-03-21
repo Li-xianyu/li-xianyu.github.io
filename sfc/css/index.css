@@ -977,10 +977,12 @@ body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-progress{
 
 /* ===== 任务面板：避免“边框跳变” ===== */
 .task-panel{
-	width:min(92vw,520px);
+	width:min(100%,520px);
+	max-width:calc(100vw - 24px);
 	margin:14px auto 0;
 	padding:12px;
 	border-radius:14px;
+	box-sizing:border-box;
 
 	background:var(--bg-color);
 	border:1px solid transparent;

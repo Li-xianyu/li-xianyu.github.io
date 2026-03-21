@@ -9,7 +9,7 @@
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260308-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260308-1">
+	<link rel="stylesheet" href="css/setting.css?v=20260321-5">
 	<script defer src="https://cloud.umami.is/script.js" data-website-id="6ec19ab0-90c0-423c-86f5-f88666777765"></script>
 </head>
 <body>
@@ -31,9 +31,9 @@
 
 		<!-- iOS 分段选择器 -->
 		<div class="segmented" id="segmented">
-			<button class="seg-btn active" type="button" data-tab="b">B：执行模块</button>
-			<button class="seg-btn" type="button" data-tab="z">Z：指令模块</button>
-			<button class="seg-btn" type="button" data-tab="x">扩展功能</button>
+			<button class="seg-btn active" type="button" data-tab="b">B Module</button>
+			<button class="seg-btn" type="button" data-tab="z">Z Module</button>
+			<button class="seg-btn" type="button" data-tab="x">Extensions</button>
 			<div class="seg-indicator" id="segIndicator"></div>
 		</div>
 
@@ -192,7 +192,7 @@ function initSegmented(){
 		const pr = root.getBoundingClientRect();
 		const left = r.left - pr.left;
 		indicator.style.width = r.width + "px";
-		indicator.style.transform = "translateX(" + left + "px)";
+		indicator.style.left = left + "px";
 	}
 
 	function switchTab(tabKey){
