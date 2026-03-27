@@ -73,6 +73,62 @@ function initHeroSubtitleTicker(){
 	}, intervalDuration);
 }
 
+function initPwaInstallSpotlight(){
+	const spotlight = document.getElementById('installSpotlight');
+	const stateEl = document.getElementById('installSpotlightState');
+	const descEl = document.getElementById('installSpotlightDesc');
+	const actionBtn = document.getElementById('installSpotlightAction');
+	const guideBtn = document.getElementById('installSpotlightGuide');
+
+	if (!spotlight || !stateEl || !descEl || !actionBtn || !guideBtn || !window.PWAInstall){
+		return;
+	}
+
+	function applyState(state){
+		if (!state || state.isStandalone){
+			spotlight.hidden = true;
+			return;
+		}
+
+		spotlight.hidden = false;
+
+		if (state.canInstall){
+			stateEl.textContent = '可安装';
+			descEl.textContent = '已经满足安装条件了。点一下就能装到手机或电脑本地，之后打开更快，也更像 App。';
+			actionBtn.textContent = '立即安装';
+			return;
+		}
+
+		if (state.isIosSafari){
+			stateEl.textContent = '手动安装';
+			descEl.textContent = 'Safari 不会弹系统安装窗，但可以通过分享菜单把它添加到主屏幕，用起来和本地应用差不多。';
+			actionBtn.textContent = '查看安装方式';
+			return;
+		}
+
+		stateEl.textContent = '可手动安装';
+		descEl.textContent = '如果浏览器这次没直接弹安装窗，也可以从浏览器菜单里安装到本地，桌面打开会更顺手。';
+		actionBtn.textContent = '查看安装方式';
+	}
+
+	actionBtn.addEventListener('click', async () => {
+		track('pwa_hero_action_clicked');
+		const result = await window.PWAInstall.promptInstall('hero_spotlight');
+		if (!result.ok && typeof window.PWAInstall.showInstallHelp === 'function'){
+			window.PWAInstall.showInstallHelp('hero_spotlight');
+		}
+	});
+
+	guideBtn.addEventListener('click', () => {
+		track('pwa_hero_help_clicked');
+		if (typeof window.PWAInstall.showInstallHelp === 'function'){
+			window.PWAInstall.showInstallHelp('hero_spotlight');
+		}
+	});
+
+	window.PWAInstall.onChange(applyState);
+}
+
 function createManualDialog(){
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
@@ -405,6 +461,7 @@ function createModeDialog(boardToken){
 /* ========= 启动 ========= */
 document.addEventListener('DOMContentLoaded', () => {
 	initHeroSubtitleTicker();
+	initPwaInstallSpotlight();
 
 	// 首次自动弹免责声明
 	if (!localStorage.getItem('manualAgreed')){

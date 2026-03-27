@@ -180,3 +180,30 @@
 		box-shadow:0 10px 28px color-mix(in srgb, var(--primary) 42%, transparent);
 	}
 }
+
+.legal-disclaimer{
+	font-size:14px;
+	line-height:1.6;
+	color:var(--dialog-muted);
+}
+
+.legal-disclaimer strong{
+	display:block;
+	text-align:center;
+	font-size:16px;
+	color:var(--dialog-text);
+	margin-bottom:6px;
+}
+
+.legal-disclaimer a{
+	font-weight:600;
+}
+
+.install-help-list{
+	margin:12px 0 0;
+	padding-left:20px;
+}
+
+.install-help-list li{
+	margin-bottom:8px;
+}
