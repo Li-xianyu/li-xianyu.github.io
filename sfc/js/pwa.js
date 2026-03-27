@@ -8,6 +8,8 @@
 	let deferredPrompt = null;
 	let installButton = null;
 	const stateListeners = new Set();
+	const hadServiceWorkerControllerAtBoot = !!navigator.serviceWorker?.controller;
+	let swReloadTriggered = false;
 
 	function track(eventName, payload) {
 		if (typeof window.trackEvent === "function") {
@@ -299,7 +301,23 @@
 		}
 
 		try {
-			await navigator.serviceWorker.register("./sw.js");
+			const registration = await navigator.serviceWorker.register("./sw.js", {
+				updateViaCache: "none"
+			});
+
+			if (typeof registration.update === "function") {
+				registration.update().catch((error) => {
+					console.warn("[PWA] service worker update check failed", error);
+				});
+			}
+
+			if (hadServiceWorkerControllerAtBoot && !swReloadTriggered) {
+				navigator.serviceWorker.addEventListener("controllerchange", () => {
+					if (swReloadTriggered) return;
+					swReloadTriggered = true;
+					window.location.reload();
+				}, { once: true });
+			}
 		} catch (error) {
 			console.warn("[PWA] service worker registration failed", error);
 		}

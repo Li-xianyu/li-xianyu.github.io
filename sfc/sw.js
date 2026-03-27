@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260327-1";
+const CACHE_VERSION = "20260327-2";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
@@ -16,6 +16,7 @@ const PRECACHE_PATHS = [
 	"./css/index.css",
 	"./css/setting.css",
 	"./css/create_boards.css",
+	"./js/i18n.js",
 	"./js/ui.js",
 	"./js/pwa.js",
 	"./js/index.js",
@@ -23,6 +24,8 @@ const PRECACHE_PATHS = [
 	"./js/home_onboarding_intro.js",
 	"./js/Data.js",
 	"./js/create_boards.js",
+	"./lang/zh.js",
+	"./lang/en.js",
 	"./img/favicon.png",
 	"./img/pwa-192.png",
 	"./img/pwa-512.png"
@@ -70,8 +73,6 @@ self.addEventListener("fetch", (event) => {
 		event.respondWith(handleSameOriginRequest(request));
 		return;
 	}
-
-	event.respondWith(handleCrossOriginRequest(request));
 });
 
 async function handleNavigationRequest(request) {
@@ -92,39 +93,63 @@ async function handleNavigationRequest(request) {
 }
 
 async function handleSameOriginRequest(request) {
-	const cachedResponse = await caches.match(request, { ignoreSearch: true });
-	const networkPromise = fetch(request)
-		.then(async (response) => {
-			if (response && response.ok) {
-				const cache = await caches.open(RUNTIME_CACHE);
-				cache.put(request, response.clone());
-			}
-			return response;
-		})
-		.catch(() => null);
+	if (shouldUseNetworkFirst(request)) {
+		return networkFirstSameOrigin(request);
+	}
 
+	const cachedResponse = await matchSameOriginCache(request);
 	if (cachedResponse) {
 		return cachedResponse;
 	}
 
-	const networkResponse = await networkPromise;
-	if (networkResponse) {
-		return networkResponse;
-	}
-
-	return Response.error();
-}
-
-async function handleCrossOriginRequest(request) {
 	try {
 		const response = await fetch(request);
-		if (response && (response.ok || response.type === "opaque")) {
+		if (response && response.ok) {
 			const cache = await caches.open(RUNTIME_CACHE);
 			cache.put(request, response.clone());
 		}
 		return response;
 	} catch (error) {
-		const cachedResponse = await caches.match(request);
+		return Response.error();
+	}
+}
+
+function shouldUseNetworkFirst(request) {
+	const url = new URL(request.url);
+	const destination = String(request.destination || "");
+	const pathname = url.pathname || "";
+
+	if (destination === "script" || destination === "style" || destination === "document" || destination === "manifest") {
+		return true;
+	}
+
+	return (
+		pathname.endsWith(".html") ||
+		pathname.endsWith(".js") ||
+		pathname.endsWith(".css") ||
+		pathname.endsWith(".webmanifest")
+	);
+}
+
+async function matchSameOriginCache(request) {
+	const exact = await caches.match(request);
+	if (exact) {
+		return exact;
+	}
+
+	return caches.match(request, { ignoreSearch: true });
+}
+
+async function networkFirstSameOrigin(request) {
+	try {
+		const response = await fetch(request);
+		if (response && response.ok) {
+			const cache = await caches.open(RUNTIME_CACHE);
+			cache.put(request, response.clone());
+		}
+		return response;
+	} catch (error) {
+		const cachedResponse = await matchSameOriginCache(request);
 		if (cachedResponse) {
 			return cachedResponse;
 		}
