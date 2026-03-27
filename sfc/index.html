@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="theme-color" content="#f8f4ff">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>Dual Protocol</title>
+	<title data-i18n="home.title">Dual Protocol</title>
 	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
 	<link rel="manifest" href="manifest.webmanifest">
-	<meta name="application-name" content="Dual Protocol">
+	<meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
-	<meta name="apple-mobile-web-app-title" content="Dual Protocol">
+	<meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260308-1">
@@ -23,26 +23,26 @@
 	<main class="menu-container">
 		<section class="hero-panel">
 			<div class="hero-chip-row" aria-hidden="true">
-				<span class="hero-chip">Local-First</span>
-				<span class="hero-chip">Dual & Solo</span>
+				<span class="hero-chip" data-i18n="home.chips.localFirst">Local-First</span>
+				<span class="hero-chip" data-i18n="home.chips.dualSolo">Dual & Solo</span>
 			</div>
 
-			<h1 class="game-title">Dual Protocol</h1>
-			<p class="hero-subtitle">规则你定，骰子由命</p>
+			<h1 class="game-title" data-i18n="common.appName">Dual Protocol</h1>
+			<p class="hero-subtitle" data-i18n="home.hero.subtitle">Rules are yours, dice are destiny</p>
 
 			<div class="install-spotlight" id="installSpotlight" hidden>
 				<div class="install-spotlight-head">
 					<span class="install-spotlight-badge">
 						<i class="bi bi-phone-fill" aria-hidden="true"></i>
-						App
+						<span data-i18n="home.installSpotlight.badge">App</span>
 					</span>
-					<button class="install-spotlight-dismiss" id="installSpotlightDismiss" type="button">不再提示</button>
+					<button class="install-spotlight-dismiss" id="installSpotlightDismiss" type="button" data-i18n="home.installSpotlight.dismiss">Hide this</button>
 				</div>
-				<h2 class="install-spotlight-title">右上角菜单支持安装</h2>
-				<p class="install-spotlight-desc" id="installSpotlightDesc">右上角固定悬浮菜单里有安装入口。装到桌面后，打开更快，也更像本地 App。</p>
+				<h2 class="install-spotlight-title" data-i18n="home.installSpotlight.title">Install is available from the top-right menu</h2>
+				<p class="install-spotlight-desc" id="installSpotlightDesc" data-i18n="home.installSpotlight.desc">There is an install entry in the fixed floating menu at the top right. Once added to your desktop, it opens faster and feels more like a native app.</p>
 				<div class="install-spotlight-actions">
-					<button class="install-spotlight-btn install-spotlight-btn-primary" id="installSpotlightAction" type="button">立即安装</button>
-					<button class="install-spotlight-btn install-spotlight-btn-secondary" id="installSpotlightGuide" type="button">浏览器建议</button>
+					<button class="install-spotlight-btn install-spotlight-btn-primary" id="installSpotlightAction" type="button" data-i18n="home.installSpotlight.action">Install now</button>
+					<button class="install-spotlight-btn install-spotlight-btn-secondary" id="installSpotlightGuide" type="button" data-i18n="home.installSpotlight.guide">Browser advice</button>
 				</div>
 			</div>
 
@@ -50,8 +50,8 @@
 				<button class="menu-btn menu-btn-primary" id="startGame" type="button">
 					<span class="menu-btn-icon" aria-hidden="true">🎮</span>
 					<span class="menu-btn-copy">
-						<span class="menu-btn-title">开始游戏</span>
-						<span class="menu-btn-desc">掷下第一颗骰子，今天这局就开了</span>
+						<span class="menu-btn-title" data-i18n="home.buttons.start.title">Start Game</span>
+						<span class="menu-btn-desc" data-i18n="home.buttons.start.desc">Throw the first die and today’s round begins</span>
 					</span>
 					<span class="menu-btn-arrow" aria-hidden="true">→</span>
 				</button>
@@ -60,24 +60,24 @@
 					<button class="menu-btn menu-btn-secondary" id="gameSettings" type="button">
 						<span class="menu-btn-icon" aria-hidden="true">⚙️</span>
 						<span class="menu-btn-copy">
-							<span class="menu-btn-title">游戏设置</span>
-							<span class="menu-btn-desc">调整项目权重与规则参数、自绘制棋盘路径</span>
+							<span class="menu-btn-title" data-i18n="home.buttons.settings.title">Game Settings</span>
+							<span class="menu-btn-desc" data-i18n="home.buttons.settings.desc">Tune weights and rule parameters, then draw custom board routes</span>
 						</span>
 					</button>
 
 					<button class="menu-btn menu-btn-secondary" id="gameManual" type="button">
 						<span class="menu-btn-icon" aria-hidden="true">📖</span>
 						<span class="menu-btn-copy">
-							<span class="menu-btn-title">使用须知</span>
-							<span class="menu-btn-desc">查看说明与隐私及使用条款</span>
+							<span class="menu-btn-title" data-i18n="home.buttons.manual.title">Usage Notes</span>
+							<span class="menu-btn-desc" data-i18n="home.buttons.manual.desc">Read the guide, privacy notes, and terms</span>
 						</span>
 					</button>
 
 					<button class="menu-btn menu-btn-secondary" id="devLog" type="button">
 						<span class="menu-btn-icon" aria-hidden="true">📝</span>
 						<span class="menu-btn-copy">
-							<span class="menu-btn-title">开发日志</span>
-							<span class="menu-btn-desc">看看我一路踩坑，顺便围观进化史</span>
+							<span class="menu-btn-title" data-i18n="home.buttons.devlog.title">Dev Log</span>
+							<span class="menu-btn-desc" data-i18n="home.buttons.devlog.desc">See the iteration trail and how this thing evolved</span>
 						</span>
 					</button>
 				</div>
@@ -85,21 +85,24 @@
 
 			<div class="home-note">
 				<span class="home-note-dot" aria-hidden="true"></span>
-				<p>支持自定义棋盘与规则参数，开局前可自由调整。</p>
+				<p data-i18n="home.note">Supports custom boards and rule parameters, so you can tune things before each session.</p>
 			</div>
 
 			<div class="home-social">
 				<a id="xProfileLink" class="home-social-link" href="https://x.com/yunshanlxy" target="_blank" rel="noopener noreferrer">
 					<i class="bi bi-twitter-x" aria-hidden="true"></i>
 					<span class="x-rant-copy">
-						<span class="x-rant-name"><s>@yunshanlxy</s> <strong>（被资本做局）</strong></span>
-						<span class="x-rant-line">X我去你大爷的，那么多黄片不封，封我一个做小工具的开发者。有本事来把我github也封了！！！啊啊啊</span>
+						<span class="x-rant-name" data-i18n-html="home.social.nameHtml"><s>@yunshanlxy</s> <strong>(capital got me)</strong></span>
+						<span class="x-rant-line" data-i18n="home.social.line">X, seriously? You leave all that trash up but suspend one indie tool maker. If you have the guts, go block my GitHub too.</span>
 					</span>
 				</a>
 			</div>
 		</section>
 	</main>
 
+	<script src="lang/zh.js?v=20260327-1"></script>
+	<script src="lang/en.js?v=20260327-1"></script>
+	<script src="js/i18n.js?v=20260327-1"></script>
 	<script src="js/ui.js?v=20260308-1"></script>
 	<script src="js/pwa.js?v=20260327-1"></script>
 	<script src="js/Data.js?v=20260308-1"></script>

@@ -18,14 +18,9 @@ function initHeroSubtitleTicker(){
 	const subtitle = document.querySelector('.hero-subtitle');
 	if (!subtitle) return;
 
-	const lines = [
-		"规则你定，骰子由命",
-		"棋盘已就位，就等你开始",
-		"看看今天谁最倒霉",
-		"棋盘已经摆好，怂的人是小狗",
-		"听作者一句，先设置再开局",
-		"骰子不会故意欺负你，运气不好就是运气不好"
-	];
+	const lines = getI18nValue("home.hero.lines", {
+		fallback: [t("home.hero.subtitle")]
+	});
 
 	let index = 0;
 	let isSliding = false;
@@ -99,28 +94,28 @@ function initPwaInstallSpotlight(){
 		}
 
 		spotlight.hidden = false;
-		guideBtn.textContent = '浏览器建议';
+		guideBtn.textContent = t("home.installSpotlight.guide");
 
 		if (state.canInstall){
-			descEl.textContent = '右上角固定悬浮菜单里会出现安装按钮，也可以直接点下面安装。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 请用 Safari。';
-			actionBtn.textContent = '立即安装';
+			descEl.textContent = t("home.installSpotlight.descCanInstall");
+			actionBtn.textContent = t("home.installSpotlight.actionInstall");
 			return;
 		}
 
 		if (state.hasInstallEntry && state.needsManualInstall){
-			descEl.textContent = '当前是 Chrome / Edge 这一系浏览器。右上角固定悬浮菜单里的安装按钮会保留；点了如果没弹系统安装窗，就去浏览器菜单里选“安装”，不要选“快捷方式”。';
-			actionBtn.textContent = '查看安装步骤';
+			descEl.textContent = t("home.installSpotlight.descManualInstall");
+			actionBtn.textContent = t("home.installSpotlight.actionHelp");
 			return;
 		}
 
 		if (state.isIosSafari){
-			descEl.textContent = 'iPhone / iPad 推荐直接用 Safari。Safari 一般不弹系统安装窗，请用“分享 -> 添加到主屏幕”安装。';
-			actionBtn.textContent = '查看安装步骤';
+			descEl.textContent = t("home.installSpotlight.descIosSafari");
+			actionBtn.textContent = t("home.installSpotlight.actionHelp");
 			return;
 		}
 
-		descEl.textContent = '如果右上角固定悬浮菜单里没出现安装按钮，通常是当前浏览器不支持。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 用 Safari。';
-		actionBtn.textContent = '查看安装步骤';
+		descEl.textContent = t("home.installSpotlight.descUnsupported");
+		actionBtn.textContent = t("home.installSpotlight.actionHelp");
 	}
 
 	actionBtn.addEventListener('click', async () => {
@@ -209,15 +204,15 @@ function createInstallEntryHintDialog(trigger){
 
 	const title = document.createElement("h3");
 	title.className = "punishment-title";
-	title.textContent = "右上角菜单可以安装";
+	title.textContent = t("home.installHint.title");
 
 	const content = document.createElement("div");
 	content.className = "punishment-content";
 	content.innerHTML = `
 		<div class="legal-disclaimer">
-			<strong>安装入口提示</strong>
-			<div>右上角固定悬浮菜单按钮里有安装图标，点一下即可尝试安装。Chrome / Edge 这一系浏览器如果没弹系统安装窗，就去浏览器菜单里选“安装”，不要选“快捷方式”。</div>
-			<div style="margin-top:8px;">如果你在微信、QQ 这类内置浏览器里，建议先用系统浏览器打开，再安装。</div>
+			<strong>${t("home.installHint.heading")}</strong>
+			<div>${t("home.installHint.body1")}</div>
+			<div style="margin-top:8px;">${t("home.installHint.body2")}</div>
 		</div>
 	`;
 
@@ -227,12 +222,12 @@ function createInstallEntryHintDialog(trigger){
 	const openMenuBtn = document.createElement("button");
 	openMenuBtn.className = "punishment-button";
 	openMenuBtn.id = "confirmRestart";
-	openMenuBtn.textContent = "打开菜单";
+	openMenuBtn.textContent = t("common.actions.openMenu");
 
 	const closeBtn = document.createElement("button");
 	closeBtn.className = "punishment-button";
 	closeBtn.id = "cancelRestart";
-	closeBtn.textContent = "知道了";
+	closeBtn.textContent = t("common.actions.knowIt");
 
 	openMenuBtn.addEventListener("click", () => {
 		track("pwa_install_entry_hint_open_menu", { trigger });
@@ -320,23 +315,13 @@ function createManualDialog(){
 	const dialog = document.createElement('div');
 	dialog.className = 'punishment-dialog';
 
-	
 	const title = document.createElement('h3');
 	title.className = 'punishment-title';
-	title.textContent = '免责声明与使用条款';
+	title.textContent = t("home.manualDialog.title");
 
 	const content = document.createElement('div');
 	content.className = 'punishment-content';
-	content.innerHTML = `
-		<div class="legal-disclaimer">
-
-			1. 本程序为虚拟娱乐产品，所包含的情节、任务与互动设计均为虚构创作内容，不构成对任何现实行为的倡导或价值导向。<br><br>
-
-			2. 隐私与数据说明：设置与棋盘等内容默认仅存储于本地浏览器；站点会采集匿名使用行为（如页面访问、功能点击）用于优化体验，不包含可直接识别个人身份的信息。清除浏览器缓存后，本地数据可被删除。<br><br>
-
-			继续使用本程序即表示您已阅读、理解并同意以上全部条款。
-		</div>
-	`;
+	content.innerHTML = `<div class="legal-disclaimer">${t("home.manualDialog.bodyHtml")}</div>`;
 
 
 	const buttonContainer = document.createElement('div');
@@ -345,12 +330,12 @@ function createManualDialog(){
 	const confirmBtn = document.createElement('button');
 	confirmBtn.className = 'punishment-button';
 	confirmBtn.id = 'confirmRestart';
-	confirmBtn.textContent = '同意并继续';
+	confirmBtn.textContent = t("home.manualDialog.accept");
 
 	const cancelBtn = document.createElement('button');
 	cancelBtn.className = 'punishment-button';
 	cancelBtn.id = 'cancelRestart';
-	cancelBtn.textContent = '拒绝并退出';
+	cancelBtn.textContent = t("home.manualDialog.reject");
 
 	buttonContainer.append(confirmBtn, cancelBtn);
 	dialog.append(title, content, buttonContainer);
@@ -386,7 +371,6 @@ function createManualDialog(){
 	confirmBtn.addEventListener('click', handleConfirm);
 	cancelBtn.addEventListener('click', handleCancel);
 
-	// 点遮罩不关，只抖一下提示
 	overlay.addEventListener('click', (e) => {
 		if (e.target === overlay){
 			playDialogShake(confirmBtn);
@@ -396,7 +380,7 @@ function createManualDialog(){
 	return overlay;
 }
 
-/* ========= 清屏退出 ========= */
+/* ========= Exit cleanup ========= */
 function clearPageContent(){
 	localStorage.clear();
 	sessionStorage.clear();
@@ -418,8 +402,8 @@ function clearPageContent(){
 	exitOverlay.innerHTML = `
 		<div class="exit-overlay">
 			<div class="exit-message">
-				<h3>已终止访问</h3>
-				<p>已经清除页面...</p>
+				<h3>${t("home.exit.title")}</h3>
+				<p>${t("home.exit.desc")}</p>
 			</div>
 		</div>
 	`;
@@ -430,7 +414,7 @@ function clearPageContent(){
 	window.stop();
 }
 
-/* ========= 棋盘 / 模式 ========= */
+/* ========= Boards / modes ========= */
 function getMaxGrid(board){
 	return Math.max(...board.flat(2).filter(n => n > 0));
 }
@@ -440,7 +424,7 @@ function getCustomBoards(){
 		const raw = JSON.parse(localStorage.getItem("CUSTOM_BOARDS") || "[]");
 		return Array.isArray(raw) ? raw : [];
 	}catch(err){
-		console.error("[Home] 读取自定义棋盘失败", err);
+		console.error("[Home] Failed to read custom boards", err);
 		return [];
 	}
 }
@@ -449,8 +433,8 @@ function getBuiltInBoardOptions(){
 	return Boards.map((board, index) => ({
 		type: "builtin",
 		token: `builtin:${index + 1}`,
-		name: (boardNames[index] && boardNames[index].name) || `官方棋盘 ${index + 1}`,
-		desc: (boardNames[index] && boardNames[index].desc) || "",
+		name: getLocalizedBoardMeta(index).name || `Board ${index + 1}`,
+		desc: getLocalizedBoardMeta(index).desc || "",
 		steps: getMaxGrid(board),
 		board
 	}));
@@ -460,7 +444,7 @@ function getCustomBoardOptions(){
 	return getCustomBoards().map(item => ({
 		type: "custom",
 		token: `custom:${item.id}`,
-		name: item.name || "未命名棋盘",
+		name: item.name || t("createBoards.defaultBoardName"),
 		desc: item.desc || "",
 		steps: item.steps || getMaxGrid(item.board || []),
 		board: item.board || []
@@ -479,13 +463,13 @@ function createBoardDialog(){
 
 	const title = document.createElement('h3');
 	title.className = 'punishment-title';
-	title.textContent = '选择棋盘';
+	title.textContent = t("home.boardDialog.title");
 
 	const segmented = document.createElement('div');
 	segmented.className = 'board-segmented';
 	segmented.innerHTML = `
-		<button class="board-seg-btn active" type="button" data-tab="builtin">官方棋盘</button>
-		<button class="board-seg-btn" type="button" data-tab="custom">玩家工坊</button>
+		<button class="board-seg-btn active" type="button" data-tab="builtin">${t("home.boardDialog.tabBuiltin")}</button>
+		<button class="board-seg-btn" type="button" data-tab="custom">${t("home.boardDialog.tabCustom")}</button>
 		<div class="board-seg-indicator"></div>
 	`;
 
@@ -501,8 +485,8 @@ function createBoardDialog(){
 			const empty = document.createElement("div");
 			empty.className = "board-empty";
 			empty.textContent = tab === "custom"
-				? "还没有自定义棋盘，先去设置页顶部的“创建棋盘”做一个。"
-				: "暂无官方棋盘";
+				? t("home.boardDialog.emptyCustom")
+				: t("home.boardDialog.emptyBuiltin");
 			listContainer.appendChild(empty);
 			return;
 		}
@@ -513,9 +497,9 @@ function createBoardDialog(){
 			el.innerHTML = `
 				<div class="board-info">
 					<div class="board-name">${item.name}</div>
-					<div class="board-desc">${item.desc || (item.type === "custom" ? "本地自定义棋盘" : "")}</div>
+					<div class="board-desc">${item.desc || (item.type === "custom" ? t("home.boardDialog.customDesc") : "")}</div>
 				</div>
-				<div class="board-size">${item.steps}格</div>
+				<div class="board-size">${t("home.boardDialog.size", { steps: item.steps })}</div>
 			`;
 
 			el.addEventListener("click", () => {
@@ -563,7 +547,7 @@ function createBoardDialog(){
 
 	const cancelBtn = document.createElement('button');
 	cancelBtn.className = 'punishment-button';
-	cancelBtn.textContent = '取消选择';
+	cancelBtn.textContent = t("home.boardDialog.cancel");
 	cancelBtn.addEventListener('click', () => overlay.remove());
 
 	const footer = document.createElement('div');
@@ -592,14 +576,14 @@ function createModeDialog(boardToken){
 
 	const title = document.createElement('h3');
 	title.className = 'punishment-title';
-	title.textContent = '选择模式';
+	title.textContent = t("home.modeDialog.title");
 
 	const listContainer = document.createElement('div');
 	listContainer.className = 'board-list';
 
 	const modes = [
-		{ key:'solo', name:'DIY模式', desc:'自己投骰自己执行' },
-		{ key:'dual', name:'SJ模式', desc:'双人都投骰子，每一个格子中都有两人的任务' }
+		{ key:'solo', name:t("home.modeDialog.soloName"), desc:t("home.modeDialog.soloDesc") },
+		{ key:'dual', name:t("home.modeDialog.dualName"), desc:t("home.modeDialog.dualDesc") }
 	];
 
 	modes.forEach(m => {
@@ -626,7 +610,7 @@ function createModeDialog(boardToken){
 
 	const backBtn = document.createElement('button');
 	backBtn.className = 'punishment-button';
-	backBtn.textContent = '返回重选棋盘';
+	backBtn.textContent = t("home.modeDialog.back");
 	backBtn.addEventListener('click', () => {
 		overlay.remove();
 		document.body.appendChild(createBoardDialog());
@@ -642,39 +626,34 @@ function createModeDialog(boardToken){
 	return overlay;
 }
 
-/* ========= 启动 ========= */
+/* ========= Bootstrap ========= */
 document.addEventListener('DOMContentLoaded', () => {
 	initHeroSubtitleTicker();
 	initPwaInstallSpotlight();
 	initInstallEntryHintFlow();
 
-	// 首次自动弹免责声明
 	if (!localStorage.getItem(MANUAL_AGREED_KEY)){
 		document.body.appendChild(createManualDialog());
 		track("manual_shown_auto");
 	}else{
-		console.log('用户已同意须知');
+		console.log('Usage notes already accepted');
 	}
 
-	// 手动打开免责声明
 	document.getElementById('gameManual').addEventListener('click', () => {
 		track("manual_opened");
 		document.body.appendChild(createManualDialog());
 	});
 
-	// 开始游戏：先棋盘后模式
 	document.getElementById('startGame').addEventListener('click', () => {
 		track("start_game_clicked");
 		document.body.appendChild(createBoardDialog());
 	});
 
-	// 设置页
 	document.getElementById('gameSettings').addEventListener('click', () => {
 		track("settings_opened");
 		window.location.href = 'setting.html';
 	});
 
-	// 开发日志
 	document.getElementById('devLog').addEventListener('click', () => {
 		track("devlog_opened");
 		window.location.href = 'devlog.html';

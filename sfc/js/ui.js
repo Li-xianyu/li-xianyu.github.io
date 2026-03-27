@@ -1,4 +1,3 @@
-// 主题切换功能
 function toggleTheme() {
 	const body = document.body;
 	const currentTheme = body.getAttribute('data-theme');
@@ -26,8 +25,7 @@ function updateThemeColor(theme) {
 		document.head.appendChild(meta);
 	}
 
-	// 确保 data-theme 已经切过去后再读取变量
-	// 这里用根元素取变量，因为变量定义在 :root 和 [data-theme="dark"]
+	// Read the CSS variable after the theme attribute is updated.
 	const color = getComputedStyle(document.documentElement)
 		.getPropertyValue('--bg-color')
 		.trim();
@@ -87,12 +85,10 @@ function trackEvent(eventName, payload) {
 
 window.trackEvent = trackEvent;
 
-// 初始化
 function initTheme() {
 	const savedTheme = localStorage.getItem('theme') || 'light';
 	document.body.setAttribute('data-theme', savedTheme);
 
-	// 初始化时同步浏览器顶部控制栏颜色
 	updateThemeColor(savedTheme);
 
 	const dock = document.createElement('div');
@@ -101,7 +97,6 @@ function initTheme() {
 	const launcher = document.createElement('button');
 	launcher.type = 'button';
 	launcher.className = 'quick-dock-launcher';
-	launcher.setAttribute('aria-label', '打开快捷按钮');
 	launcher.setAttribute('aria-expanded', 'false');
 	launcher.innerHTML = '<i class="bi bi-grid-fill" aria-hidden="true"></i>';
 
@@ -112,7 +107,6 @@ function initTheme() {
 	const themeBtn = document.createElement('button');
 	themeBtn.type = 'button';
 	themeBtn.className = 'quick-action-btn quick-action-theme';
-	themeBtn.setAttribute('aria-label', '切换主题');
 	themeBtn.innerHTML = `<i class="${savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill'}" aria-hidden="true"></i>`;
 	themeBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
@@ -122,16 +116,35 @@ function initTheme() {
 	const settingBtn = document.createElement('button');
 	settingBtn.type = 'button';
 	settingBtn.className = 'quick-action-btn quick-action-setting';
-	settingBtn.setAttribute('aria-label', '打开设置');
 	settingBtn.innerHTML = '<i class="bi bi-sliders" aria-hidden="true"></i>';
 	settingBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
 		window.location.href = 'setting.html';
 	});
 
-	panel.append(themeBtn, settingBtn);
+	const languageBtn = document.createElement('button');
+	languageBtn.type = 'button';
+	languageBtn.className = 'quick-action-btn quick-action-language';
+	languageBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (typeof window.toggleLanguage === 'function') {
+			window.toggleLanguage();
+		}
+	});
+
+	function syncQuickDockI18n() {
+		launcher.setAttribute('aria-label', t('common.quickDock.open'));
+		themeBtn.setAttribute('aria-label', t('common.quickDock.theme'));
+		settingBtn.setAttribute('aria-label', t('common.quickDock.settings'));
+		languageBtn.setAttribute('aria-label', t('common.quickDock.language'));
+		languageBtn.title = t(`common.language.switchTo.${window.getLanguage() === 'en' ? 'zh' : 'en'}`);
+		languageBtn.textContent = t(`common.language.short.${window.getLanguage()}`);
+	}
+
+	panel.append(themeBtn, settingBtn, languageBtn);
 	dock.append(launcher, panel);
 	document.body.appendChild(dock);
+	syncQuickDockI18n();
 
 	const closeDock = () => {
 		dock.classList.remove('open');
@@ -164,5 +177,4 @@ function initTheme() {
 	});
 }
 
-// 在页面加载时初始化
 window.addEventListener('DOMContentLoaded', initTheme);

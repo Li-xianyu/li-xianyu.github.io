@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>Dual Protocol · 开发日志</title>
+	<title data-i18n="devlog.title">Dual Protocol · Dev Log</title>
 	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
 	<link rel="manifest" href="manifest.webmanifest">
-	<meta name="application-name" content="Dual Protocol">
+	<meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
-	<meta name="apple-mobile-web-app-title" content="Dual Protocol">
+	<meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="theme-color" content="#6EA8FE">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
@@ -373,184 +373,79 @@
 	<div class="topbar">
 		<button class="back-btn" id="backHome">
 			<i class="bi bi-arrow-left"></i>
-			返回主页
+			<span data-i18n="devlog.backHome">Back Home</span>
 		</button>
 	</div>
 
 	<section class="hero">
-		<h1 class="hero-title">Dual Protocol 开发日志</h1>
-		<p class="hero-sub">
-			这页不整官方话术了，直接记我这一路怎么把它从“能玩”折腾到“更像个产品”。
-			很多地方都是边做边改，踩坑不少，但每一版都更顺手一点。
-		</p>
+		<h1 class="hero-title" data-i18n="devlog.heroTitle">Dual Protocol Dev Log</h1>
+		<p class="hero-sub" data-i18n="devlog.heroSub">No official marketing voice here. This page is just a record of how I dragged the project from “playable” toward “closer to a product”. A lot of it was built and revised in parallel, with plenty of rough edges, but every version felt a little better to use.</p>
 	</section>
 
 	<section class="section">
 		<h2 class="section-title">
 			<i class="bi bi-clock-history"></i>
-			重大节点
+			<span data-i18n="devlog.milestonesTitle">Major Milestones</span>
 		</h2>
 
-		<div class="timeline">
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">体验增强：新增棋盘自定义 + 每局预估与实际累计</h3>
-					<span class="log-time">2026 年 3 月下旬</span>
-				</div>
-				<p class="log-desc">
-					这一版把可玩性和反馈闭环补上了。
-					支持自定义棋盘，同时新增每局预估触达总数与实时/结算实际累计，玩法和数据反馈都更完整。
-				</p>
-				<div class="tag-row">
-					<span class="tag">自定义棋盘</span>
-					<span class="tag">局内预估</span>
-					<span class="tag">实际累计</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">结构升级：引擎层与规则层开始分家</h3>
-					<span class="log-time">2026 年 2 月下旬 - 3 月上旬</span>
-				</div>
-				<p class="log-desc">
-					这是技术上最关键的一次重构。
-					把“移动引擎”和“规则触发”拆开以后，代码终于从“能跑”变成“能继续迭代”。
-				</p>
-				<div class="tag-row">
-					<span class="tag">引擎层</span>
-					<span class="tag">规则层</span>
-					<span class="tag">结构分离</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">决定部署 Pages，尽可能优化敏感文本</h3>
-					<span class="log-time">2026 年 2 月</span>
-				</div>
-				<p class="log-desc">
-					准备公开部署的时候，文案必须收敛，不然没法往外发。
-					目标很现实：既要保留玩法核心，也得让外部读起来更友好。
-				</p>
-				<div class="tag-row">
-					<span class="tag">GitHub Pages</span>
-					<span class="tag">文本调整</span>
-					<span class="tag">公开部署</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">设置系统上线：用户体验 ++</h3>
-					<span class="log-time">2025 年下半年</span>
-				</div>
-				<p class="log-desc">
-					这一步之后它就不只是“我自己能玩”了。
-					设置页上线后，能自己配规则、调权重、改内容，整个项目才真正活起来。
-				</p>
-				<div class="tag-row">
-					<span class="tag">设置页</span>
-					<span class="tag">本地存储</span>
-					<span class="tag">可配置</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">数据拆分：任务内容开始模块化</h3>
-					<span class="log-time">2025 年中后期</span>
-				</div>
-				<p class="log-desc">
-					内容多起来之后，页面还好说，数据是真难管。
-					所以把任务池按模块拆开，后面做权重、开关、自定义都省心很多。
-				</p>
-				<div class="tag-row">
-					<span class="tag">Data.js</span>
-					<span class="tag">模块化</span>
-					<span class="tag">可扩展</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">双核思路：不止内容，还要有流程</h3>
-					<span class="log-time">2025 年上半年</span>
-				</div>
-				<p class="log-desc">
-					只加条目已经不够用了，流程感才是关键。
-					所以把回合、骰子、移动、位置状态这些都补齐，玩起来才不散。
-				</p>
-				<div class="tag-row">
-					<span class="tag">回合制</span>
-					<span class="tag">骰子逻辑</span>
-					<span class="tag">流程推进</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">路线成型：决定做固定路线飞行棋</h3>
-					<span class="log-time">2024 年 10 月</span>
-				</div>
-				<p class="log-desc">
-					这里是第一个大转弯：不做纯文档页了，直接上棋盘路线。
-					从这一步开始，才有“走格子 + 触发事件 + 推进回合”的游戏味。
-				</p>
-				<div class="tag-row">
-					<span class="tag">固定路线</span>
-					<span class="tag">棋盘化</span>
-					<span class="tag">方向确认</span>
-				</div>
-			</article>
-
-			<article class="log-item">
-				<div class="log-head">
-					<h3 class="log-title">最早期原型：规则列表化</h3>
-					<span class="log-time">2024 年中前后</span>
-				</div>
-				<p class="log-desc">
-					最开始根本不是棋盘，基本就是个“网页版规则手册”。
-					先把内容塞进去、能展开收起、能看明白，算是把骨架先搭起来。
-				</p>
-				<div class="tag-row">
-					<span class="tag">规则列表</span>
-					<span class="tag">前端交互</span>
-					<span class="tag">最初雏形</span>
-				</div>
-			</article>
-		</div>
+		<div class="timeline" id="timeline"></div>
 	</section>
 
 	<section class="section">
 		<h2 class="section-title">
 			<i class="bi bi-stars"></i>
-			致谢
+			<span data-i18n="devlog.thanksTitle">Thanks</span>
 		</h2>
-		<div class="ack-card">
-			<p class="ack-line">首先致谢我的女友兼小圈 partner，一路陪我磨细节、提反馈、和我一起实践测试、顶住我开发时思维的反复横跳。</p>
-			<p class="ack-line">也感谢一位因为 IT 认识、一路做了很多年朋友的老兄。从技术聊到生活，聊到本项目时，甚至还被我硬生生带着了解了一点小圈。</p>
-			<p class="ack-line">再谢一路帮我试玩和提意见的朋友们，每次“这块不太好”的提醒都很关键。</p>
-			<p class="ack-line">最后特别谢 <span class="chatgpt-badge">狂霸酷炫拽 ChatGPT</span>，高强度陪我改到半夜。</p>
-		</div>
+		<div class="ack-card" id="thanksCard"></div>
 	</section>
 
 	<section class="section">
 		<h2 class="section-title">
 			<i class="bi bi-lightning-charge"></i>
-			To You
+			<span data-i18n="devlog.toYouTitle">To You</span>
 		</h2>
-		<div class="footer-box">
-			能看到这里，真的谢谢你。<br><br>
-			前路漫漫，与君共勉。
-		</div>
+		<div class="footer-box" id="toYouBox"></div>
 	</section>
 </div>
+	<script src="lang/zh.js?v=20260327-1"></script>
+	<script src="lang/en.js?v=20260327-1"></script>
+	<script src="js/i18n.js?v=20260327-1"></script>
 	<script src="js/ui.js?v=20260308-1"></script>
 	<script src="js/pwa.js?v=20260327-1"></script>
 	<script>
 		"use strict";
 
+		function renderDevlogContent() {
+			const timeline = document.getElementById("timeline");
+			const thanksCard = document.getElementById("thanksCard");
+			const toYouBox = document.getElementById("toYouBox");
+			const timelineItems = getI18nValue("devlog.timeline", { fallback: [] });
+			const thanksLines = getI18nValue("devlog.thanksLines", { fallback: [] });
+
+			if (timeline) {
+				timeline.innerHTML = timelineItems.map((item) => `
+					<article class="log-item">
+						<div class="log-head">
+							<h3 class="log-title">${item.title}</h3>
+							<span class="log-time">${item.time}</span>
+						</div>
+						<p class="log-desc">${item.desc}</p>
+						<div class="tag-row">${(item.tags || []).map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
+					</article>
+				`).join("");
+			}
+
+			if (thanksCard) {
+				const linesHtml = thanksLines.map((line) => `<p class="ack-line">${line}</p>`).join("");
+				thanksCard.innerHTML = `${linesHtml}<p class="ack-line">${t("devlog.thanksChatgptPrefix")} <span class="chatgpt-badge">${t("devlog.thanksChatgptBadge")}</span>${t("devlog.thanksChatgptSuffix")}</p>`;
+			}
+
+			if (toYouBox) {
+				toYouBox.innerHTML = t("devlog.toYouHtml");
+			}
+		}
+
+		renderDevlogContent();
 		document.querySelectorAll(".log-item").forEach((item, index) => {
 			item.style.setProperty("--item-delay", String(120 + (index * 55)));
 		});

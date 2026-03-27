@@ -262,21 +262,21 @@ function track(eventName, payload){
 		pathStatusChipEl.classList.remove("ok", "bad");
 
 		if(count === 0){
-			pathStatusTextEl.textContent = "未开始";
+			pathStatusTextEl.textContent = t("createBoards.stats.notStarted");
 			return;
 		}
 
 		if(count === 1){
-			pathStatusTextEl.textContent = "只有起点";
+			pathStatusTextEl.textContent = t("createBoards.stats.startOnly");
 			pathStatusChipEl.classList.add("bad");
 			return;
 		}
 
 		if(validation.ok){
-			pathStatusTextEl.textContent = "合法";
+			pathStatusTextEl.textContent = t("createBoards.stats.valid");
 			pathStatusChipEl.classList.add("ok");
 		}else{
-			pathStatusTextEl.textContent = `断裂 ${validation.breakIndexes.length} 处`;
+			pathStatusTextEl.textContent = t("createBoards.stats.broken", { count: validation.breakIndexes.length });
 			pathStatusChipEl.classList.add("bad");
 		}
 	}
@@ -304,7 +304,7 @@ function track(eventName, payload){
 		renderAll();
 		saveDraft();
 		track("custom_board_cleared");
-		showToast("已清空棋盘");
+		showToast(t("createBoards.toasts.cleared"));
 	}
 
 	function fillDemoBoard(){
@@ -315,25 +315,25 @@ function track(eventName, payload){
 			[8,0],[7,0],[6,0],[5,0],[4,0],[3,0],[2,0]
 		];
 
-		if(!boardNameEl.value.trim()) boardNameEl.value = "示例长廊";
-		if(!boardDescEl.value.trim()) boardDescEl.value = "外圈回游，长度适中";
+		if(!boardNameEl.value.trim()) boardNameEl.value = t("createBoards.demoName");
+		if(!boardDescEl.value.trim()) boardDescEl.value = t("createBoards.demoDesc");
 
 		renderAll();
 		saveDraft();
 		track("custom_board_demo_loaded");
-		showToast("已加载示例");
+		showToast(t("createBoards.toasts.demoLoaded"));
 	}
 
 	async function copyBoardCode(){
 		try{
 			await navigator.clipboard.writeText(outputEl.value);
 			track("custom_board_code_copied");
-			showToast("board 已复制");
+			showToast(t("createBoards.toasts.boardCopied"));
 		}catch(err){
 			outputEl.select();
 			document.execCommand("copy");
 			track("custom_board_code_copied");
-			showToast("board 已复制");
+			showToast(t("createBoards.toasts.boardCopied"));
 		}
 	}
 
@@ -343,7 +343,7 @@ function track(eventName, payload){
 			const parsed = raw ? JSON.parse(raw) : [];
 			return Array.isArray(parsed) ? parsed : [];
 		}catch(err){
-			console.error("[CreateBoards] 读取本地棋盘失败", err);
+			console.error("[CreateBoards] Failed to read saved boards", err);
 			return [];
 		}
 	}
@@ -358,18 +358,18 @@ function track(eventName, payload){
 		const validation = validatePath();
 
 		if(!name){
-			showToast("先写个棋盘名称");
+			showToast(t("createBoards.toasts.writeNameFirst"));
 			boardNameEl.focus();
 			return;
 		}
 
 		if(state.path.length < 2){
-			showToast("至少得有 2 格，不然太抽象了");
+			showToast(t("createBoards.toasts.atLeastTwoCells"));
 			return;
 		}
 
 		if(!validation.ok){
-			showToast("路径有断裂，先修一修");
+			showToast(t("createBoards.toasts.pathBroken"));
 			return;
 		}
 
@@ -399,14 +399,14 @@ function track(eventName, payload){
 		saveDraft("");
 		renderSavedBoards();
 		track("custom_board_saved", { steps: state.path.length });
-		showToast("已保存到本地");
+		showToast(t("createBoards.toasts.saved"));
 	}
 
 	function renderSavedBoards(){
 		const list = getSavedBoards();
 
 		if(!list.length){
-			savedListEl.innerHTML = '<div class="saved-empty">还没有自定义棋盘。先画一个再说。</div>';
+			savedListEl.innerHTML = `<div class="saved-empty">${t("createBoards.savedEmpty")}</div>`;
 			return;
 		}
 
@@ -419,15 +419,15 @@ function track(eventName, payload){
 			card.innerHTML = `
 				<div class="saved-main">
 					<div class="saved-meta">
-						<div class="saved-name">${escapeHtml(item.name || "未命名棋盘")}</div>
-						<div class="saved-desc">${escapeHtml(item.desc || "无简介")}</div>
+						<div class="saved-name">${escapeHtml(item.name || t("createBoards.defaultBoardName"))}</div>
+						<div class="saved-desc">${escapeHtml(item.desc || t("createBoards.defaultBoardDesc"))}</div>
 					</div>
-					<div class="saved-badge">${item.steps || getMaxGrid(item.board)} 格</div>
+					<div class="saved-badge">${item.steps || getMaxGrid(item.board)} ${t("createBoards.cellUnit")}</div>
 				</div>
 				<div class="saved-actions">
-					<button type="button" class="primary" data-action="load" data-id="${item.id}">载入</button>
-					<button type="button" data-action="copy" data-id="${item.id}">复制代码</button>
-					<button type="button" class="danger" data-action="delete" data-id="${item.id}">删除</button>
+					<button type="button" class="primary" data-action="load" data-id="${item.id}">${t("createBoards.load")}</button>
+					<button type="button" data-action="copy" data-id="${item.id}">${t("createBoards.copyCode")}</button>
+					<button type="button" class="danger" data-action="delete" data-id="${item.id}">${t("createBoards.delete")}</button>
 				</div>
 			`;
 
@@ -462,7 +462,7 @@ function track(eventName, payload){
 		saveDraft(id);
 		renderAll();
 		track("custom_board_loaded");
-		showToast("已载入棋盘");
+		showToast(t("createBoards.toasts.loaded"));
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
@@ -475,9 +475,9 @@ function track(eventName, payload){
 		try{
 			await navigator.clipboard.writeText(code);
 			track("custom_board_saved_code_copied");
-			showToast("已复制已存档棋盘代码");
+			showToast(t("createBoards.toasts.savedCodeCopied"));
 		}catch(err){
-			showToast("复制失败");
+			showToast(t("createBoards.toasts.copyFailed"));
 		}
 	}
 
@@ -492,7 +492,7 @@ function track(eventName, payload){
 
 		renderSavedBoards();
 		track("custom_board_deleted");
-		showToast("已删除");
+		showToast(t("createBoards.toasts.deleted"));
 	}
 
 	function matrixToPath(matrix){
@@ -533,7 +533,7 @@ function track(eventName, payload){
 			const raw = localStorage.getItem(DRAFT_KEY);
 			return raw ? JSON.parse(raw) : null;
 		}catch(err){
-			console.error("[CreateBoards] 读取草稿失败", err);
+			console.error("[CreateBoards] Failed to read draft", err);
 			return null;
 		}
 	}
@@ -564,7 +564,7 @@ function track(eventName, payload){
 		const draft = getDraft();
 
 		if(!draft){
-			showToast("没有草稿");
+			showToast(t("createBoards.toasts.noDraft"));
 			return;
 		}
 
@@ -573,7 +573,7 @@ function track(eventName, payload){
 		state.path = Array.isArray(draft.path) ? draft.path : [];
 		renderAll();
 		track("custom_board_draft_loaded");
-		showToast("已载入草稿");
+		showToast(t("createBoards.toasts.draftLoaded"));
 	}
 
 	function createId(){

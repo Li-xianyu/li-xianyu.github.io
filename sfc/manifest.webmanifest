@@ -2,7 +2,7 @@
 	"name": "Dual Protocol",
 	"short_name": "Dual Protocol",
 	"description": "Local-first board game tools and companion pages.",
-	"lang": "zh-CN",
+	"lang": "en",
 	"id": "./",
 	"start_url": "./index.html",
 	"scope": "./",

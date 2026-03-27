@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="theme-color" content="#f8f4ff">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>游戏中...</title>
+	<title data-i18n="game.title">In Game...</title>
 	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
 	<link rel="manifest" href="manifest.webmanifest">
-	<meta name="application-name" content="Dual Protocol">
+	<meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
-	<meta name="apple-mobile-web-app-title" content="Dual Protocol">
+	<meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260320-1">
 	<link rel="stylesheet" href="css/index.css?v=20260320-1">
@@ -19,36 +19,39 @@
 </head>
 <body class="game-page">
 
-	<div class="round-info" id="roundInfo">第 1 回合</div>
+	<div class="round-info" id="roundInfo" data-i18n="game.roundInitial">Round 1</div>
 	<div class="board" id="board"></div>
 
 	<div class="controls" id="controls">
-		<button class="dice-btn master" id="rollmaster" type="button">主投掷</button>
-		<button class="dice-btn passive" id="rolldice" type="button">被投掷</button>
+		<button class="dice-btn master" id="rollmaster" type="button" data-i18n="game.roll.masterIdle">Z Roll</button>
+		<button class="dice-btn passive" id="rolldice" type="button" data-i18n="game.roll.passiveIdle">B Roll</button>
 	</div>
 
 	<div class="task-panel" id="taskPanel">
 		<div class="task-block" id="masterTaskBlock">
-			<div class="task-title">Z任务 <span class="task-badge" id="zVetoBadge" hidden>一票否决</span></div>
-			<div class="task-content" id="taskMaster">—</div>
+			<div class="task-title"><span data-i18n="game.taskMasterTitle">Z Task</span> <span class="task-badge" id="zVetoBadge" hidden data-i18n="game.vetoBadge">Veto</span></div>
+			<div class="task-content" id="taskMaster" data-i18n="common.status.dash">—</div>
 		</div>
 		<div class="task-block">
 			<div class="task-title">
-				<span class="task-title-label">B任务</span>
-				<span class="task-live-count" id="bTaskLiveCount">累计 0</span>
-				<button class="task-detail-trigger" id="bTaskStatsBtn" type="button" aria-label="查看B任务统计" title="查看统计">
+				<span class="task-title-label" data-i18n="game.taskPassiveTitle">B Task</span>
+				<span class="task-live-count" id="bTaskLiveCount" data-i18n="game.liveCountDefault">Total 0</span>
+				<button class="task-detail-trigger" id="bTaskStatsBtn" type="button" data-i18n-aria-label="game.statsAria" data-i18n-title="game.statsTitle" aria-label="View B-task stats" title="View stats">
 					<i class="bi bi-exclamation-lg" aria-hidden="true"></i>
 				</button>
 			</div>
-			<div class="task-content" id="taskPassive">—</div>
+			<div class="task-content" id="taskPassive" data-i18n="common.status.dash">—</div>
 		</div>
 	</div>
 
+	<script src="lang/zh.js?v=20260327-1"></script>
+	<script src="lang/en.js?v=20260327-1"></script>
+	<script src="js/i18n.js?v=20260327-1"></script>
 	<script src="js/ui.js?v=20260320-1"></script>
 	<script src="js/pwa.js?v=20260327-1"></script>
 	<script src="js/Data.js?v=20260308-1"></script>
 	<script>
-		// 游戏模式：dual（双人） / solo（单人）
+		// Game mode: dual / solo
 		(() => {
 			const sp = new URLSearchParams(location.search);
 			const m = (sp.get('mode') || '').trim().toLowerCase();
@@ -72,7 +75,7 @@
 			return token;
 		}
 
-		/* 兼容旧版纯数字链接 */
+		/* Support legacy numeric links. */
 		const n = parseInt(token, 10);
 		if (!isNaN(n) && n > 0 && n <= Boards.length){
 			return `builtin:${n}`;
@@ -86,7 +89,7 @@
 			const boardToken = getValidBoardToken();
 			renderBoard(boardToken);
 		} catch (error) {
-			console.error('初始化失败:', error);
+			console.error('Failed to initialize game:', error);
 			renderBoard('builtin:1');
 		}
 	}

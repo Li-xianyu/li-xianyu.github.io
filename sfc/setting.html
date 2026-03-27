@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="theme-color" content="#f8f4ff">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>规则设置</title>
-	<script src="js/Data.js?v=20260308-1"></script>
+	<title data-i18n="settings.title">Rule Settings</title>
 	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
 	<link rel="manifest" href="manifest.webmanifest">
-	<meta name="application-name" content="Dual Protocol">
+	<meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
-	<meta name="apple-mobile-web-app-title" content="Dual Protocol">
+	<meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260308-1">
 	<link rel="stylesheet" href="css/setting.css?v=20260321-5">
@@ -24,81 +23,81 @@
 		<div class="top-bar">
 			<button class="nav-btn nav-btn-left" id="backHomeBtn" type="button">
 				<i class="bi bi-arrow-left"></i>
-				返回主页
+				<span data-i18n="settings.backHome">Back Home</span>
 			</button>
 
-			<h1 class="page-title">规则设置</h1>
+			<h1 class="page-title" data-i18n="settings.title">Rule Settings</h1>
 
 			<button class="nav-btn nav-btn-right" id="goCreateBoardsBtn" type="button">
 				<i class="bi bi-grid-3x3-gap-fill"></i>
-				创建棋盘
+				<span data-i18n="settings.createBoards">Create Board</span>
 			</button>
 		</div>
 
-		<!-- iOS 分段选择器 -->
+		<!-- Segmented control -->
 		<div class="segmented" id="segmented">
-			<button class="seg-btn active" type="button" data-tab="b">B Module</button>
-			<button class="seg-btn" type="button" data-tab="z">Z Module</button>
-			<button class="seg-btn" type="button" data-tab="x">Extensions</button>
+			<button class="seg-btn active" type="button" data-tab="b" data-i18n="settings.tabs.b">B Module</button>
+			<button class="seg-btn" type="button" data-tab="z" data-i18n="settings.tabs.z">Z Module</button>
+			<button class="seg-btn" type="button" data-tab="x" data-i18n="settings.tabs.x">Extensions</button>
 			<div class="seg-indicator" id="segIndicator"></div>
 		</div>
 
-		<!-- ========== B：执行模块（GameData）========== -->
+		<!-- ========== B module (GameData) ========== -->
 		<section class="tab-panel" id="panel-b">
 
 			<fieldset>
-				<legend>单次强度区间</legend>
+				<legend data-i18n="settings.rangeLegend">Single-hit count range</legend>
 				<div class="input-group">
 					<div class="field">
-						<label for="minCount">最小数量：</label>
+						<label for="minCount" data-i18n="settings.minCount">Minimum count:</label>
 						<input type="number" id="minCount" min="10" step="10">
 					</div>
 
 					<div class="field">
-						<label for="maxCount">最大数量：</label>
+						<label for="maxCount" data-i18n="settings.maxCount">Maximum count:</label>
 						<input type="number" id="maxCount" min="20" step="10">
 					</div>
 				</div>
 			</fieldset>
 
 			<fieldset class="weight-settings-container">
-				<legend>模块权重设置</legend>
-				<p class="tip">权重表示各模块在随机生成时的相对占比。权重越高，被选中的概率越大。</p>
+				<legend data-i18n="settings.weightsLegend">Module weight settings</legend>
+				<p class="tip" data-i18n="settings.weightsTip">Weights control the relative chance of each module when random content is generated. Higher weight means higher chance.</p>
 
 				<div class="input-container">
-					<label for="weight-prop">核心模块权重：</label>
+					<label for="weight-prop" data-i18n="settings.weightProp">Core module weight:</label>
 					<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
 				</div>
 				<div class="input-container">
-					<label for="weight-reward">休息模块权重：</label>
+					<label for="weight-reward" data-i18n="settings.weightReward">Rest module weight:</label>
 					<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
 				</div>
 				<div class="input-container">
-					<label for="weight-aod">位移模块权重：</label>
+					<label for="weight-aod" data-i18n="settings.weightAod">Move module weight:</label>
 					<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
 				</div>
 				<div class="input-container">
-					<label for="weight-sports">运动模块权重：</label>
+					<label for="weight-sports" data-i18n="settings.weightSports">Exercise module weight:</label>
 					<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
 				</div>
 			</fieldset>
 
 			<section class="module-card" aria-labelledby="modulePoolTitle">
 				<div class="module-card-head">
-					<h2 class="module-card-title" id="modulePoolTitle">执行内容池</h2>
-					<p class="module-card-tip">点击选项即可切换启用/禁用（深色=启用，浅色=禁用）。带 <span class="plus-badge">+</span> 的分类支持自定义添加。</p>
+					<h2 class="module-card-title" id="modulePoolTitle" data-i18n="settings.modulePoolTitle">Execution content pool</h2>
+					<p class="module-card-tip" data-i18n-html="settings.modulePoolTipHtml">Tap an item to toggle it on or off (dark = enabled, light = disabled). Categories with <span class="plus-badge">+</span> support custom additions.</p>
 				</div>
 				<div id="settings-container"></div>
 			</section>
 		</section>
 
-		<!-- ========== Z：指令模块（ActiveData）========== -->
+		<!-- ========== Z module (ActiveData) ========== -->
 		<section class="tab-panel" id="panel-z" style="display:none;">
 			<fieldset class="weight-settings-container">
-				<legend>Z 模块权重</legend>
-				<p class="tip">这个权重是给未来“指令也参与随机池”预留的；现在不影响格子显示逻辑。</p>
+				<legend data-i18n="settings.activeLegend">Z module weight</legend>
+				<p class="tip" data-i18n="settings.activeTip">This weight is reserved for a future mode where instructions also join the random pool. Right now it does not affect board rendering.</p>
 				<div class="input-container">
-					<label for="weight-active">指令权重：</label>
+					<label for="weight-active" data-i18n="settings.activeWeight">Instruction weight:</label>
 					<input type="number" id="weight-active" value="30" min="0" max="100" step="1">
 				</div>
 			</fieldset>
@@ -107,13 +106,13 @@
 		</section>
 		<section class="tab-panel" id="panel-x" style="display:none;">
 			<fieldset class="game-ui-settings-container">
-				<legend>局内显示</legend>
-				<p class="tip">控制 game 页面里 B 任务预测入口和实时累计是否显示，默认都开启。</p>
+				<legend data-i18n="settings.uiLegend">In-game display</legend>
+				<p class="tip" data-i18n="settings.uiTip">Controls whether the B-task prediction entry and live total are shown on the game page. Both are enabled by default.</p>
 
 				<label class="switch-setting-row" for="toggleBTaskPrediction">
 					<span class="switch-setting-copy">
-						<span class="switch-setting-title">B任务预测指标</span>
-						<span class="switch-setting-desc">显示任务面板里的感叹号按钮，点击后可查看预测与统计。</span>
+						<span class="switch-setting-title" data-i18n="settings.togglePredictionTitle">B-task prediction indicator</span>
+						<span class="switch-setting-desc" data-i18n="settings.togglePredictionDesc">Shows the exclamation button in the task panel so you can open prediction and stats.</span>
 					</span>
 					<span class="switch-control">
 						<input type="checkbox" id="toggleBTaskPrediction" checked>
@@ -123,8 +122,8 @@
 
 				<label class="switch-setting-row" for="toggleBTaskLiveCount">
 					<span class="switch-setting-copy">
-						<span class="switch-setting-title">实时累计实际数量</span>
-						<span class="switch-setting-desc">在任务面板中持续显示本局已累计的实际数量。</span>
+						<span class="switch-setting-title" data-i18n="settings.toggleLiveCountTitle">Live actual total</span>
+						<span class="switch-setting-desc" data-i18n="settings.toggleLiveCountDesc">Keeps the accumulated actual count visible in the task panel during a round.</span>
 					</span>
 					<span class="switch-control">
 						<input type="checkbox" id="toggleBTaskLiveCount" checked>
@@ -134,19 +133,23 @@
 			</fieldset>
 		</section>
 
-		<button class="save-btn" id="saveBtn">保存设置</button>
+		<button class="save-btn" id="saveBtn" data-i18n="settings.save">Save settings</button>
 
 	</div>
 
 	<div class="modal-overlay" id="modal">
 		<div class="modal">
-			<h2>设置已保存</h2>
-			<p>你的配置已经成功保存。</p>
-			<button onclick="closeModal()">确定</button>
+			<h2 data-i18n="settings.modalSavedTitle">Settings saved</h2>
+			<p data-i18n="settings.modalSavedMessage">Your configuration has been saved successfully.</p>
+			<button onclick="closeModal()" data-i18n="common.actions.confirm">Confirm</button>
 		</div>
 	</div>
+<script src="lang/zh.js?v=20260327-1"></script>
+<script src="lang/en.js?v=20260327-1"></script>
+<script src="js/i18n.js?v=20260327-1"></script>
 <script src="js/ui.js?v=20260308-1"></script>
 <script src="js/pwa.js?v=20260327-1"></script>
+<script src="js/Data.js?v=20260308-1"></script>
 <script>
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
@@ -232,12 +235,12 @@ function initSegmented(){
 		});
 	});
 
-	// 默认定位到 active 的按钮
+	// Keep the indicator aligned with the active tab.
 	const act = root.querySelector(".seg-btn.active") || btns[0];
 	root.dataset.active = act.dataset.tab;
 	requestAnimationFrame(() => moveIndicatorTo(act));
 
-	// 旋转/缩放时也保持位置
+	// Keep the indicator aligned on resize as well.
 	window.addEventListener("resize", () => {
 		const act2 = root.querySelector(".seg-btn.active") || btns[0];
 		moveIndicatorTo(act2);
@@ -245,7 +248,7 @@ function initSegmented(){
 }
 
 /* =========================
-   B：执行模块
+   B module
 ========================= */
 function loadSettingsB() {
 	const storedSettings = JSON.parse(
@@ -292,22 +295,19 @@ function fillWeightInputsFromGameData(){
 	}
 }
 
-const CATEGORY_LABELS = {
-	posture: "姿势",
-	prop: "工具",
-	reward: "休息",
-	aod: "位移",
-	sports: "运动",
-	active: "指令池（Z）"
-};
+function getCategoryLabels(){
+	return getI18nValue("settings.categoryLabels", { fallback: {} }) || {};
+}
 
-const EDITABLE_SCOPE_META = {
-	posture: { title: "新增姿势", placeholder: "输入新的姿势" },
-	prop: { title: "新增工具", placeholder: "输入新的工具名称" },
-	reward: { title: "新增休息", placeholder: "示例：休息3分钟（纯文本也可以）" },
-	sports: { title: "新增运动", placeholder: "示例：平板支撑3分钟（纯文本也可以）" },
-	active: { title: "新增 Z 指令", placeholder: "输入新的 Z 指令" }
-};
+function getEditableScopeMeta(){
+	return {
+		posture: { title: t("settings.editableMeta.postureTitle"), placeholder: t("settings.editableMeta.posturePlaceholder") },
+		prop: { title: t("settings.editableMeta.propTitle"), placeholder: t("settings.editableMeta.propPlaceholder") },
+		reward: { title: t("settings.editableMeta.rewardTitle"), placeholder: t("settings.editableMeta.rewardPlaceholder") },
+		sports: { title: t("settings.editableMeta.sportsTitle"), placeholder: t("settings.editableMeta.sportsPlaceholder") },
+		active: { title: t("settings.editableMeta.activeTitle"), placeholder: t("settings.editableMeta.activePlaceholder") }
+	};
+}
 
 function isEditableScope(scopeKey){
 	return scopeKey === "active" || (
@@ -362,7 +362,7 @@ function createSelectButton(scopeKey, item, index){
 	const btn = document.createElement("button");
 	btn.type = "button";
 	btn.className = `select-btn ${item.selected ? "selected" : ""}`;
-	btn.textContent = item.name;
+	btn.textContent = getLocalizedItemName(scopeKey, item);
 	setChipDelay(btn, index);
 
 	btn.addEventListener("click", () => {
@@ -385,7 +385,7 @@ function createCustomChip(scopeKey, item, index){
 	deleteBtn.type = "button";
 	deleteBtn.className = "custom-chip-delete";
 	deleteBtn.textContent = "×";
-	deleteBtn.setAttribute("aria-label", `删除 ${item.name}`);
+	deleteBtn.setAttribute("aria-label", t("settings.deleteAria", { name: item.name }));
 
 	deleteBtn.addEventListener("click", async (event) => {
 		event.preventDefault();
@@ -403,7 +403,9 @@ function createAddChip(scopeKey, index){
 	btn.type = "button";
 	btn.className = "select-btn add-select-btn";
 	btn.textContent = "+";
-	btn.setAttribute("aria-label", `新增 ${CATEGORY_LABELS[scopeKey] || "内容"}`);
+	btn.setAttribute("aria-label", t("settings.addAria", {
+		label: getCategoryLabels()[scopeKey] || t("settings.editableMeta.defaultTitle")
+	}));
 	setChipDelay(btn, index);
 
 	btn.addEventListener("click", async () => {
@@ -448,8 +450,8 @@ function showInputDialog(options){
 	const {
 		title,
 		placeholder,
-		confirmText = "确定",
-		cancelText = "取消",
+		confirmText = t("settings.inputConfirm"),
+		cancelText = t("settings.inputCancel"),
 		initialValue = ""
 	} = options;
 
@@ -522,8 +524,8 @@ function showConfirmDialog(options){
 	const {
 		title,
 		message,
-		confirmText = "确定",
-		cancelText = "取消",
+		confirmText = t("settings.inputConfirm"),
+		cancelText = t("settings.inputCancel"),
 		danger = false
 	} = options;
 
@@ -589,9 +591,9 @@ function showConfirmDialog(options){
 }
 
 async function promptCreateCustomItem(scopeKey){
-	const meta = EDITABLE_SCOPE_META[scopeKey] || {
-		title: "新增内容",
-		placeholder: "输入新的内容"
+	const meta = getEditableScopeMeta()[scopeKey] || {
+		title: t("settings.editableMeta.defaultTitle"),
+		placeholder: t("settings.editableMeta.defaultPlaceholder")
 	};
 
 	const rawValue = await showInputDialog({
@@ -603,12 +605,12 @@ async function promptCreateCustomItem(scopeKey){
 
 	const name = normalizeCustomName(rawValue);
 	if (!name) {
-		showModal("内容不能为空", "请输入内容后再确定。");
+		showModal(t("settings.emptyContentTitle"), t("settings.emptyContentMessage"));
 		return;
 	}
 
 	if (hasDuplicateScopeItem(scopeKey, name)) {
-		showModal("内容重复", "当前分类里已经有相同内容。");
+		showModal(t("settings.duplicateTitle"), t("settings.duplicateMessage"));
 		return;
 	}
 
@@ -620,10 +622,10 @@ async function promptCreateCustomItem(scopeKey){
 
 async function removeCustomItem(scopeKey, item){
 	const shouldDelete = await showConfirmDialog({
-		title: "删除自定义内容",
-		message: `确定删除“${item.name}”吗？`,
-		confirmText: "删除",
-		cancelText: "取消",
+		title: t("settings.confirmDeleteTitle"),
+		message: t("settings.confirmDeleteMessage", { name: item.name }),
+		confirmText: t("common.actions.delete"),
+		cancelText: t("common.actions.cancel"),
 		danger: true
 	});
 
@@ -646,27 +648,27 @@ function renderSettingsB() {
 	Object.keys(GameData).forEach(category => {
 		const fieldset = document.createElement("fieldset");
 		const legend = document.createElement("legend");
-		legend.textContent = CATEGORY_LABELS[category] || category;
+		legend.textContent = getCategoryLabels()[category] || category;
 		fieldset.appendChild(legend);
 
 		if (category === "sports") {
 			const tip = document.createElement("p");
 			tip.className = "tip";
-			tip.textContent = "提示：支持中英文数字 + 秒/分钟单位（如“平板支撑3分钟”“拉伸20min”）会触发倒计时；纯文本也可正常使用。";
+			tip.textContent = t("settings.sportsTip");
 			fieldset.appendChild(tip);
 		}
 
 		if (category === "reward") {
 			const tip = document.createElement("p");
 			tip.className = "tip";
-			tip.textContent = "提示：支持中英文数字 + 秒/分钟单位（如“休息3分钟”“休息45s”“休息20min”）会触发倒计时；纯文本也可正常使用。";
+			tip.textContent = t("settings.rewardTip");
 			fieldset.appendChild(tip);
 		}
 
 		if (category === "aod") {
 			const tip = document.createElement("p");
 			tip.className = "tip";
-			tip.textContent = "提示：当前“前进1-3格/后退1-3格”仅执行位移，不触发落点格子的额外内容。";
+			tip.textContent = t("settings.aodTip");
 			fieldset.appendChild(tip);
 		}
 
@@ -680,7 +682,7 @@ function renderSettingsB() {
 }
 
 /* =========================
-   Z：指令模块（ActiveData）
+   Z module (ActiveData)
 ========================= */
 function loadActiveDataZ(){
 	const storedActive = JSON.parse(localStorage.getItem("ActiveData"));
@@ -694,7 +696,7 @@ function renderSettingsZ(){
 
 	const fieldset = document.createElement("fieldset");
 	const legend = document.createElement("legend");
-	legend.textContent = CATEGORY_LABELS.active;
+	legend.textContent = getCategoryLabels().active || "Z";
 	fieldset.appendChild(legend);
 
 	const buttonGroup = document.createElement("div");
@@ -706,7 +708,7 @@ function renderSettingsZ(){
 }
 
 /* =========================
-   动效：Web Animations API
+   Motion: Web Animations API
 ========================= */
 let _fsObserver = null;
 
@@ -810,18 +812,18 @@ function getNumericInputValue(id, fallbackValue){
 }
 
 /* =========================
-   保存
+   Save
 ========================= */
 function saveAllSettings(){
 	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
 	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
 
 	if (minVal % 10 !== 0 || maxVal % 10 !== 0) {
-		showModal("错误", "请输入 10 的倍数！");
+		showModal(t("settings.errorTitle"), t("settings.errorMultipleOfTen"));
 		return;
 	}
 	if (minVal >= maxVal) {
-		showModal("错误", "最小值必须小于最大值！");
+		showModal(t("settings.errorTitle"), t("settings.errorMinLessThanMax"));
 		return;
 	}
 
@@ -855,7 +857,7 @@ function saveAllSettings(){
 		show_b_task_live_count: gameUiSettings.showBTaskLiveCount
 	});
 
-	showModal("设置已保存", "你的配置已经成功保存。");
+	showModal(t("settings.modalSavedTitle"), t("settings.modalSavedMessage"));
 }
 
 /* =========================

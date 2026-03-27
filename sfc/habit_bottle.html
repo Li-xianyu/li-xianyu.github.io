@@ -1,17 +1,17 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="theme-color" content="#f8f4ff">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bottle Studio</title>
+    <title data-i18n="bottle.title">Bottle Studio</title>
     <link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
     <link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="application-name" content="Dual Protocol">
+    <meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Dual Protocol">
+    <meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/ui.css?v=20260308-1">
     <style>
@@ -315,26 +315,26 @@
     <main class="shell">
         <section class="hero">
             <div class="hero-top">
-                <h1 class="hero-title">Bottle Studio</h1>
-                <button class="back-home" id="goHome" type="button"><i class="bi bi-house"></i> Home</button>
+                <h1 class="hero-title" data-i18n="bottle.heroTitle">Bottle Studio</h1>
+                <button class="back-home" id="goHome" type="button"><i class="bi bi-house"></i> <span data-i18n="bottle.backHome">Home</span></button>
             </div>
-            <p class="hero-sub">更整洁的瓶子管理面板，风格与棋盘 UI 对齐。</p>
+            <p class="hero-sub" data-i18n="bottle.heroSub">A cleaner bottle management panel aligned with the board UI style.</p>
         </section>
 
         <section class="panel">
             <div class="input-row">
-                <textarea id="itemInput" placeholder="输入名称，用空格 / 换行 / 逗号分隔。例如：喝水 冥想 英语 俯卧撑"></textarea>
-                <button id="buildBtn" class="cta" type="button">生成瓶子</button>
+                <textarea id="itemInput" data-i18n-placeholder="bottle.inputPlaceholder" placeholder="Enter names separated by spaces, line breaks, or commas. Example: Water Meditation English Push-ups"></textarea>
+                <button id="buildBtn" class="cta" type="button" data-i18n="bottle.build">Build Bottles</button>
             </div>
             <div class="toolbar">
-                <label>最大等级 <input id="maxLevelInput" class="input-mini" type="number" min="3" max="20" step="1"></label>
+                <label><span data-i18n="bottle.maxLevel">Max level</span> <input id="maxLevelInput" class="input-mini" type="number" min="3" max="20" step="1"></label>
                 <div class="palette-wrap">
-                    <span class="palette-label">液体</span>
-                    <div class="palette" id="palette" aria-label="液体颜色预设"></div>
+                    <span class="palette-label" data-i18n="bottle.liquid">Liquid</span>
+                    <div class="palette" id="palette" data-i18n-aria-label="bottle.paletteAria" aria-label="Liquid color presets"></div>
                 </div>
-                <button class="chip-btn" id="fillAllBtn" type="button">全部 +1</button>
-                <button class="chip-btn" id="resetAllBtn" type="button">全部清零</button>
-                <button class="chip-btn" id="sortBtn" type="button">按等级排序</button>
+                <button class="chip-btn" id="fillAllBtn" type="button" data-i18n="bottle.fillAll">All +1</button>
+                <button class="chip-btn" id="resetAllBtn" type="button" data-i18n="bottle.resetAll">Reset all</button>
+                <button class="chip-btn" id="sortBtn" type="button" data-i18n="bottle.sort">Sort by level</button>
             </div>
         </section>
 
@@ -346,6 +346,9 @@
 
     <div id="flash" class="flash"></div>
 
+    <script src="lang/zh.js?v=20260327-1"></script>
+    <script src="lang/en.js?v=20260327-1"></script>
+    <script src="js/i18n.js?v=20260327-1"></script>
     <script src="js/ui.js?v=20260308-1"></script>
     <script src="js/pwa.js?v=20260327-1"></script>
     <script>
@@ -431,14 +434,19 @@
 
         function updateStats() {
             if (state.items.length === 0) {
-                stats.textContent = "暂无瓶子。请先输入名称并生成。";
+                stats.textContent = t("bottle.noData");
                 return;
             }
 
             const total = state.items.reduce((sum, item) => sum + item.level, 0);
             const maxTotal = state.maxLevel * state.items.length;
             const percent = maxTotal ? Math.round(total / maxTotal * 100) : 0;
-            stats.textContent = `共 ${state.items.length} 个瓶子，总进度 ${total}/${maxTotal} (${percent}%)`;
+            stats.textContent = t("bottle.stats", {
+                count: state.items.length,
+                total,
+                maxTotal,
+                percent
+            });
         }
 
         function createBottleCard(item, index) {
@@ -540,7 +548,7 @@
                 swatch.className = `palette-swatch ${state.color === color ? "selected" : ""}`;
                 swatch.style.background = color;
                 swatch.title = color;
-                swatch.setAttribute("aria-label", `选择液体颜色 ${color}`);
+                swatch.setAttribute("aria-label", t("bottle.colorAria", { color }));
                 swatch.addEventListener("click", () => {
                     state.color = color;
                     renderPalette();
@@ -567,7 +575,7 @@
             grid.innerHTML = "";
 
             if (state.items.length === 0) {
-                grid.innerHTML = '<div class="empty">输入名称后点击“生成瓶子”。</div>';
+                grid.innerHTML = `<div class="empty">${t("bottle.empty")}</div>`;
                 updateStats();
                 return;
             }
@@ -585,7 +593,7 @@
 
             const newMax = clamp(numeric, 3, 20);
             if (newMax !== numeric) {
-                showFlash("最大等级范围：3 - 20");
+                showFlash(t("bottle.flash.maxLevelRange"));
             }
             state.maxLevel = newMax;
             maxLevelInput.value = String(newMax);
@@ -601,14 +609,14 @@
         buildBtn.addEventListener("click", () => {
             const names = parseNames(itemInput.value.trim());
             if (names.length === 0) {
-                showFlash("请先输入名称");
+                showFlash(t("bottle.flash.enterNames"));
                 return;
             }
 
             state.items = names.map(name => ({ name, level: 0 }));
             render();
             saveState();
-            showFlash(`已生成 ${names.length} 个瓶子`);
+            showFlash(t("bottle.flash.generated", { count: names.length }));
         });
 
         fillAllBtn.addEventListener("click", () => {
@@ -627,7 +635,7 @@
             }
             render();
             saveState();
-            showFlash("已清空全部进度");
+            showFlash(t("bottle.flash.reset"));
         });
 
         sortBtn.addEventListener("click", () => {

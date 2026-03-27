@@ -60,13 +60,34 @@ const Boards = [
 		[ 0,  0,  0,  0, 16, 17,  0,  0,  0,  0]
 	]
 ];
-const boardNames = [
-    { name: "经典回字形路径", desc: "传统飞行棋布局" },
-    { name: "蛇形1", desc: "" },
-    { name: "蛇形2", desc: "" },
-    { name: "蛇形3", desc: "" },
-    { name: "爱心路径", desc: "格子少，脆皮专用" }
-];
+const canonicalDataCatalog = window.getI18nValue("data", {
+	lang: "zh",
+	fallback: {
+		boardNames: [],
+		categories: {}
+	}
+}) || { boardNames: [], categories: {} };
+
+function getCategoryCatalog(scopeKey, options = {}) {
+	return window.getI18nValue(`data.categories.${scopeKey}`, {
+		lang: options.lang,
+		fallback: canonicalDataCatalog.categories?.[scopeKey] || { description: "", items: [] }
+	}) || { description: "", items: [] };
+}
+
+function getBoardMetaCatalog(index, options = {}) {
+	const list = window.getI18nValue("data.boardNames", {
+		lang: options.lang,
+		fallback: canonicalDataCatalog.boardNames || []
+	}) || [];
+	return list[index] || canonicalDataCatalog.boardNames?.[index] || { id: `board-${index + 1}`, name: "", desc: "" };
+}
+
+const boardNames = (canonicalDataCatalog.boardNames || []).map((item, index) => ({
+	id: String(item?.id || `board-${index + 1}`),
+	name: String(item?.name || "").trim(),
+	desc: String(item?.desc || "").trim()
+}));
 
 
 const ACTION_COUNT_RANGE = {
@@ -84,91 +105,74 @@ const DEFAULT_GAME_UI_SETTINGS = {
 
 
 
-let GameData = {
-    posture: {
-        description: '姿势',
-        weight: 60,
-        items: [
-            { name: '平趴', selected: true },
-            { name: '弯腰抱膝', selected: true },
-            { name: '站立', selected: true },
-            { name: '跪立', selected: true },
-            { name: '垫脚扶墙', selected: true }
-        ]
-    },
-    prop: {
-        description: '工具',
-        weight: 80,
-        items: [
-            { name: '戒尺', selected: true },
-            { name: '藤条', selected: true },
-            { name: '热熔胶棒', selected: true },
-            { name: '木勺', selected: true },
-            { name: '竹条', selected: true },
-            { name: '小绿', selected: true },   
-            { name: '小红', selected: true },
-            { name: '巴掌', selected: true },
-            { name: '数据线', selected: true },
-            { name: '猫爪拍', selected: true },
-            { name: '树脂棒', selected: true },
-            { name: '柳叶拍', selected: true },
-			{ name: '散鞭', selected: true }
+function buildCategoryItems(scopeKey) {
+	return getCategoryCatalog(scopeKey, { lang: "zh" }).items.map((item, index) => ({
+		id: String(item?.id || `${scopeKey}-${index + 1}`),
+		name: String(item?.label || "").trim(),
+		selected: true
+	}));
+}
 
-        ]
-    },
-    reward: {
-        description: '休息',
-        weight: 10,
-        items: [
-            { name: '休息3分钟', selected: true },
-            { name: '休息5分钟', selected: true },
-            { name: '揉2分钟', selected: true },
-            { name: '温柔的抱抱', selected: true },
-            { name: '免挨一轮', selected: true },
-            { name: '免挨两轮', selected: true }
-        ]
-    },
-    aod: {
-        description: '位移',
-        weight: 5,
-        items: [
-            { name: '直达终点', selected: true },
-            { name: '回到起点', selected: true },
-            { name: '前进1-3格', selected: true },
-            { name: '后退1-3格', selected: true }
-        ]
-    },
-    sports: {
-        description: '运动',
-        weight: 10,
-        items: [
-            { name: '平板支撑三分钟', selected: true },
-            { name: '墙角罚站五分钟', selected: true }
-        ]
-    }
+let GameData = {
+	posture: {
+		description: String(getCategoryCatalog("posture", { lang: "zh" }).description || "").trim(),
+		weight: 60,
+		items: buildCategoryItems("posture")
+	},
+	prop: {
+		description: String(getCategoryCatalog("prop", { lang: "zh" }).description || "").trim(),
+		weight: 80,
+		items: buildCategoryItems("prop")
+	},
+	reward: {
+		description: String(getCategoryCatalog("reward", { lang: "zh" }).description || "").trim(),
+		weight: 10,
+		items: buildCategoryItems("reward")
+	},
+	aod: {
+		description: String(getCategoryCatalog("aod", { lang: "zh" }).description || "").trim(),
+		weight: 5,
+		items: buildCategoryItems("aod")
+	},
+	sports: {
+		description: String(getCategoryCatalog("sports", { lang: "zh" }).description || "").trim(),
+		weight: 10,
+		items: buildCategoryItems("sports")
+	}
 };
 
-
-
-
 let ActiveData = {
-    description: '主动方指令',
-    weight: 30,
-    items: [
-        { name: '数量+5', selected: true },
-        { name: '数量+10', selected: true },
-        { name: '数量-5', selected: true },
-        { name: '数量-10', selected: true },
-        { name: '翻倍', selected: true },
-        { name: '减半(向上取整)', selected: true },
-        { name: '指定姿势', selected: true },
-        { name: '分期执行(中间休2分钟)', selected: true },
-        { name: '强制休息(5分钟)', selected: true },
-        { name: '休息无效', selected: true }
-    ]
+	description: String(getCategoryCatalog("active", { lang: "zh" }).description || "").trim(),
+	weight: 30,
+	items: buildCategoryItems("active")
 };
 
 const CUSTOMIZABLE_GAME_CATEGORIES = ['posture', 'prop', 'reward', 'sports'];
+
+const canonicalStringRegistry = [];
+
+function registerCanonicalString(canonical, path) {
+	const text = String(canonical || "").trim();
+	if (!text) return;
+	canonicalStringRegistry.push({ canonical: text, path });
+}
+
+(function buildCanonicalRegistry() {
+	(canonicalDataCatalog.boardNames || []).forEach((item, index) => {
+		registerCanonicalString(item?.name, `data.boardNames.${index}.name`);
+		registerCanonicalString(item?.desc, `data.boardNames.${index}.desc`);
+	});
+
+	Object.keys(canonicalDataCatalog.categories || {}).forEach((scopeKey) => {
+		const category = canonicalDataCatalog.categories[scopeKey] || {};
+		registerCanonicalString(category.description, `data.categories.${scopeKey}.description`);
+		(category.items || []).forEach((item, index) => {
+			registerCanonicalString(item?.label, `data.categories.${scopeKey}.items.${index}.label`);
+		});
+	});
+
+	canonicalStringRegistry.sort((a, b) => b.canonical.length - a.canonical.length);
+})();
 
 function cloneStructuredData(value){
 	return JSON.parse(JSON.stringify(value));
@@ -329,6 +333,58 @@ function normalizeGameUiSettings(storedGameUiSettings){
 	return base;
 }
 
+function getCategoryItemById(scopeKey, itemId, options = {}) {
+	const category = getCategoryCatalog(scopeKey, options);
+	return (category.items || []).find(item => String(item?.id || "") === String(itemId || "")) || null;
+}
+
+function getCanonicalCategoryItemLabel(scopeKey, itemId) {
+	return String(getCategoryItemById(scopeKey, itemId, { lang: "zh" })?.label || "").trim();
+}
+
+function getLocalizedCategoryItemLabel(scopeKey, itemId) {
+	const current = getCategoryItemById(scopeKey, itemId);
+	if (current && current.label) return String(current.label).trim();
+	return getCanonicalCategoryItemLabel(scopeKey, itemId);
+}
+
+function getLocalizedCategoryDescription(scopeKey, fallback = "") {
+	const category = getCategoryCatalog(scopeKey);
+	return String(category?.description || fallback || "").trim();
+}
+
+function getLocalizedBoardMeta(index) {
+	const current = getBoardMetaCatalog(index);
+	const fallback = boardNames[index] || { id: `board-${index + 1}`, name: "", desc: "" };
+	return {
+		id: String(current?.id || fallback.id || `board-${index + 1}`),
+		name: String(current?.name || fallback.name || "").trim(),
+		desc: String(current?.desc || fallback.desc || "").trim()
+	};
+}
+
+function getLocalizedItemName(scopeKey, item) {
+	if (!item) return "";
+	if (item.custom) return String(item.name || "").trim();
+	if (item.id) {
+		return getLocalizedCategoryItemLabel(scopeKey, item.id) || String(item.name || "").trim();
+	}
+	return localizeBuiltinText(String(item.name || "").trim());
+}
+
+function localizeBuiltinText(text) {
+	let output = String(text || "");
+	if (!output) return output;
+
+	canonicalStringRegistry.forEach((entry) => {
+		const translated = t(entry.path, {}, entry.canonical);
+		if (!entry.canonical || translated === entry.canonical) return;
+		output = output.split(entry.canonical).join(translated);
+	});
+
+	return output;
+}
+
 GameData = normalizeGameData(GameData);
 ActiveData = normalizeActiveData(ActiveData);
 
@@ -342,3 +398,9 @@ window.LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = LEGACY_ACTION_COUNT_RANGE_STORAGE
 window.GAME_UI_SETTINGS_STORAGE_KEY = GAME_UI_SETTINGS_STORAGE_KEY;
 window.DEFAULT_GAME_UI_SETTINGS = DEFAULT_GAME_UI_SETTINGS;
 window.normalizeGameUiSettings = normalizeGameUiSettings;
+window.getCanonicalCategoryItemLabel = getCanonicalCategoryItemLabel;
+window.getLocalizedCategoryItemLabel = getLocalizedCategoryItemLabel;
+window.getLocalizedCategoryDescription = getLocalizedCategoryDescription;
+window.getLocalizedBoardMeta = getLocalizedBoardMeta;
+window.getLocalizedItemName = getLocalizedItemName;
+window.localizeBuiltinText = localizeBuiltinText;

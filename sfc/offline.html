@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<meta name="theme-color" content="#6a45b8">
-	<title>Dual Protocol | Offline</title>
+	<title data-i18n="offline.title">Dual Protocol | Offline</title>
 	<link rel="icon" href="img/favicon.png" sizes="any">
 	<style>
 		:root{
@@ -115,20 +115,23 @@
 </head>
 <body>
 	<main class="shell">
-		<span class="badge">Offline</span>
-		<h1>当前网络不可用</h1>
-		<p>应用的核心页面和静态资源已经缓存。你可以回到首页，或者在网络恢复后重新加载获取最新内容。</p>
+		<span class="badge" data-i18n="offline.badge">Offline</span>
+		<h1 data-i18n="offline.heading">Network is unavailable</h1>
+		<p data-i18n="offline.body">The core pages and static assets are already cached. You can go back to the home page now, or reload after the network returns to fetch the latest content.</p>
 		<div class="actions">
-			<a class="action action-primary" href="./index.html">返回首页</a>
-			<button class="action action-secondary" id="reloadBtn" type="button">重新加载</button>
+			<a class="action action-primary" href="./index.html" data-i18n="offline.backHome">Back home</a>
+			<button class="action action-secondary" id="reloadBtn" type="button" data-i18n="offline.reload">Reload</button>
 		</div>
 		<ul class="list">
-			<li>已访问过的页面通常仍可继续打开。</li>
-			<li>首次离线时，第三方 CDN 资源可能不可用。</li>
-			<li>恢复网络后刷新一次，缓存会自动更新。</li>
+			<li data-i18n="offline.list.0">Pages that were opened before are often still available.</li>
+			<li data-i18n="offline.list.1">During the first offline session, third-party CDN resources may be missing.</li>
+			<li data-i18n="offline.list.2">After the network returns, refresh once and the cache will update automatically.</li>
 		</ul>
 	</main>
 
+	<script src="lang/zh.js?v=20260327-1"></script>
+	<script src="lang/en.js?v=20260327-1"></script>
+	<script src="js/i18n.js?v=20260327-1"></script>
 	<script>
 		document.getElementById("reloadBtn").addEventListener("click", function () {
 			window.location.reload();

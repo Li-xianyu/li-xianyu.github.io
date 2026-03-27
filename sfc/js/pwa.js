@@ -86,8 +86,8 @@
 		installButton.type = "button";
 		installButton.hidden = true;
 		installButton.className = "quick-action-btn quick-action-install";
-		installButton.setAttribute("aria-label", "安装应用");
-		installButton.title = "安装应用";
+		installButton.setAttribute("aria-label", t("pwa.install.aria"));
+		installButton.title = t("pwa.install.title");
 		installButton.innerHTML = '<i class="bi bi-download" aria-hidden="true"></i>';
 		installButton.addEventListener("click", async () => {
 			const result = await promptInstall("quick_dock");
@@ -113,54 +113,18 @@
 
 	function getInstallHelpCopy() {
 		if (isIosSafari()) {
-			return {
-				title: "Safari 安装步骤",
-				lead: "iPhone / iPad 推荐直接用 Safari。右上角固定悬浮菜单主要服务于支持直接安装的浏览器；iOS 请走 Safari 分享菜单。",
-				steps: [
-					"如果你现在不在 Safari，请先切到 Safari 打开当前页面",
-					"点浏览器底部或顶部的“分享”按钮",
-					"在菜单里选择“添加到主屏幕”",
-					"确认后就能像本地 App 一样从桌面打开"
-				]
-			};
+			return getI18nValue("pwa.install.ios", { fallback: { title: "", lead: "", steps: [] } });
 		}
 
 		if (isChromiumInstallBrowser()) {
-			return {
-				title: "浏览器菜单安装步骤",
-				lead: "这个浏览器支持安装入口。右上角固定悬浮菜单里的安装按钮会保留；如果没有弹出系统安装窗，请改用浏览器菜单里的“安装”，不要选“快捷方式”。",
-				steps: [
-					"先点站内右上角固定悬浮菜单里的安装按钮试一次",
-					"如果没弹系统安装窗，打开浏览器底部或右上角菜单",
-					"在菜单里优先选择“安装 / Install app / 添加到桌面”",
-					"如果同时看到“快捷方式”，不要选它，优先选“安装”"
-				]
-			};
+			return getI18nValue("pwa.install.chromium", { fallback: { title: "", lead: "", steps: [] } });
 		}
 
-		return {
-			title: "安装步骤",
-			lead: "如果右上角固定悬浮菜单里已经出现安装图标，优先点那个最省事。没看到的话，再按下面步骤从浏览器菜单安装。",
-			steps: [
-				"推荐先用 Chrome 或 Edge 打开当前页面",
-				"打开浏览器菜单",
-				"找到“安装应用 / Install app / 添加到桌面”之类的选项",
-				"确认后就能从桌面或开始菜单直接打开"
-			]
-		};
+		return getI18nValue("pwa.install.general", { fallback: { title: "", lead: "", steps: [] } });
 	}
 
 	function getBrowserAdviceCopy() {
-		return {
-			title: "浏览器建议",
-			lead: "想稳定看到安装入口，优先用支持 PWA 的系统浏览器。",
-			steps: [
-				"Android / Windows / macOS：优先用 Chrome 或 Edge，这一系浏览器会保留站内安装入口",
-				"iPhone / iPad：优先用 Safari",
-				"微信、QQ、微博等内置浏览器：先用“在浏览器打开”跳到系统浏览器",
-				"如果装机入口没出现，先刷新一次页面，再看右上角固定悬浮菜单里有没有安装图标"
-			]
-		};
+		return getI18nValue("pwa.browserAdvice", { fallback: { title: "", lead: "", steps: [] } });
 	}
 
 	function showInstallHelp(source) {
@@ -194,7 +158,7 @@
 		confirmBtn.type = "button";
 		confirmBtn.className = "punishment-button";
 		confirmBtn.id = "confirmRestart";
-		confirmBtn.textContent = "知道了";
+		confirmBtn.textContent = t("pwa.install.ok");
 		confirmBtn.addEventListener("click", () => {
 			overlay.remove();
 		});
@@ -247,7 +211,7 @@
 		confirmBtn.type = "button";
 		confirmBtn.className = "punishment-button";
 		confirmBtn.id = "confirmRestart";
-		confirmBtn.textContent = "知道了";
+		confirmBtn.textContent = t("pwa.install.ok");
 		confirmBtn.addEventListener("click", () => {
 			overlay.remove();
 		});
