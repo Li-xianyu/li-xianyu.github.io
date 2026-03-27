@@ -1,0 +1,64 @@
+{
+	"name": "Dual Protocol",
+	"short_name": "Dual Protocol",
+	"description": "Local-first board game tools and companion pages.",
+	"lang": "zh-CN",
+	"id": "./",
+	"start_url": "./index.html",
+	"scope": "./",
+	"display": "standalone",
+	"background_color": "#f8f4ff",
+	"theme_color": "#6a45b8",
+	"categories": [
+		"games",
+		"utilities",
+		"entertainment"
+	],
+	"icons": [
+		{
+			"src": "./img/pwa-192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "./img/pwa-512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	],
+	"shortcuts": [
+		{
+			"name": "Start Game",
+			"url": "./game.html",
+			"icons": [
+				{
+					"src": "./img/pwa-192.png",
+					"sizes": "192x192",
+					"type": "image/png"
+				}
+			]
+		},
+		{
+			"name": "Settings",
+			"url": "./setting.html",
+			"icons": [
+				{
+					"src": "./img/pwa-192.png",
+					"sizes": "192x192",
+					"type": "image/png"
+				}
+			]
+		},
+		{
+			"name": "Bottle Studio",
+			"url": "./habit_bottle.html",
+			"icons": [
+				{
+					"src": "./img/pwa-192.png",
+					"sizes": "192x192",
+					"type": "image/png"
+				}
+			]
+		}
+	]
+}

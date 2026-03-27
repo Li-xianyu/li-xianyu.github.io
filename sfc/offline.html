@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<meta name="theme-color" content="#6a45b8">
+	<title>Dual Protocol | Offline</title>
+	<link rel="icon" href="img/favicon.png" sizes="any">
+	<style>
+		:root{
+			color-scheme:light;
+			--bg:#f6f0ff;
+			--card:#ffffff;
+			--text:#34245f;
+			--muted:#695a90;
+			--accent:#6a45b8;
+			--accent-2:#ff6b9a;
+			--shadow:rgba(61, 41, 99, .16);
+		}
+
+		*{
+			box-sizing:border-box;
+			-webkit-tap-highlight-color:transparent;
+		}
+
+		body{
+			margin:0;
+			min-height:100vh;
+			min-height:100svh;
+			display:grid;
+			place-items:center;
+			padding:24px;
+			background:
+				radial-gradient(circle at top left, rgba(106,69,184,.14), transparent 30%),
+				radial-gradient(circle at bottom right, rgba(255,107,154,.12), transparent 32%),
+				var(--bg);
+			color:var(--text);
+			font-family:"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+		}
+
+		.shell{
+			width:min(640px, 100%);
+			padding:26px 22px;
+			border-radius:24px;
+			background:rgba(255,255,255,.88);
+			border:1px solid rgba(255,255,255,.68);
+			box-shadow:0 20px 54px var(--shadow);
+			backdrop-filter:blur(16px);
+		}
+
+		.badge{
+			display:inline-flex;
+			align-items:center;
+			padding:6px 12px;
+			border-radius:999px;
+			background:rgba(106,69,184,.1);
+			color:var(--accent);
+			font-size:12px;
+			font-weight:700;
+			letter-spacing:.04em;
+			text-transform:uppercase;
+		}
+
+		h1{
+			margin:16px 0 10px;
+			font-size:clamp(28px, 6vw, 42px);
+			line-height:1.05;
+		}
+
+		p{
+			margin:0;
+			line-height:1.8;
+			color:var(--muted);
+			font-size:15px;
+		}
+
+		.actions{
+			display:flex;
+			flex-wrap:wrap;
+			gap:12px;
+			margin-top:22px;
+		}
+
+		.action{
+			display:inline-flex;
+			align-items:center;
+			justify-content:center;
+			min-height:46px;
+			padding:0 18px;
+			border:none;
+			border-radius:999px;
+			text-decoration:none;
+			font-weight:700;
+			cursor:pointer;
+		}
+
+		.action-primary{
+			background:linear-gradient(135deg, var(--accent), var(--accent-2));
+			color:#fff;
+			box-shadow:0 14px 28px rgba(106,69,184,.24);
+		}
+
+		.action-secondary{
+			background:rgba(106,69,184,.08);
+			color:var(--accent);
+		}
+
+		.list{
+			margin:22px 0 0;
+			padding-left:18px;
+			color:var(--muted);
+			line-height:1.9;
+		}
+	</style>
+</head>
+<body>
+	<main class="shell">
+		<span class="badge">Offline</span>
+		<h1>当前网络不可用</h1>
+		<p>应用的核心页面和静态资源已经缓存。你可以回到首页，或者在网络恢复后重新加载获取最新内容。</p>
+		<div class="actions">
+			<a class="action action-primary" href="./index.html">返回首页</a>
+			<button class="action action-secondary" id="reloadBtn" type="button">重新加载</button>
+		</div>
+		<ul class="list">
+			<li>已访问过的页面通常仍可继续打开。</li>
+			<li>首次离线时，第三方 CDN 资源可能不可用。</li>
+			<li>恢复网络后刷新一次，缓存会自动更新。</li>
+		</ul>
+	</main>
+
+	<script>
+		document.getElementById("reloadBtn").addEventListener("click", function () {
+			window.location.reload();
+		});
+	</script>
+</body>
+</html>

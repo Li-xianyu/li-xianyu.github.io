@@ -2,10 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="theme-color" content="#f8f4ff">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Bottle Studio</title>
     <link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
     <link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="application-name" content="Dual Protocol">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Dual Protocol">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/ui.css?v=20260308-1">
     <style>
@@ -341,6 +347,7 @@
     <div id="flash" class="flash"></div>
 
     <script src="js/ui.js?v=20260308-1"></script>
+    <script src="js/pwa.js?v=20260327-1"></script>
     <script>
         const STORAGE_KEY = "habitBottleState.v1";
         const PRESET_COLORS = [

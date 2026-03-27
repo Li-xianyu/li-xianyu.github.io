@@ -6,6 +6,11 @@
 	<title>Dual Protocol · 开发日志</title>
 	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
 	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
+	<link rel="manifest" href="manifest.webmanifest">
+	<meta name="application-name" content="Dual Protocol">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="default">
+	<meta name="apple-mobile-web-app-title" content="Dual Protocol">
 	<meta name="theme-color" content="#6EA8FE">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
@@ -542,6 +547,7 @@
 	</section>
 </div>
 	<script src="js/ui.js?v=20260308-1"></script>
+	<script src="js/pwa.js?v=20260327-1"></script>
 	<script>
 		"use strict";
 
@@ -552,6 +558,131 @@
 		document.getElementById("backHome").addEventListener("click", function(){
 			window.location.href = "index.html";
 		});
+
+		(function initSmoothDevlogScroll(){
+			let targetY = window.scrollY || 0;
+			let currentY = targetY;
+			let maxY = 0;
+			let touchLastY = 0;
+			let touchVelocity = 0;
+			let animating = false;
+			let internalScroll = false;
+			let rafId = 0;
+
+			const easeFactor = 0.14;
+			const wheelStrength = 0.95;
+			const touchStrength = 1.12;
+			const touchInertia = 16;
+			const snapEpsilon = 0.2;
+			const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+			function recalcMax(){
+				maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+				targetY = clamp(targetY, 0, maxY);
+				currentY = clamp(currentY, 0, maxY);
+			}
+
+			function animate(){
+				const delta = targetY - currentY;
+				if (Math.abs(delta) <= snapEpsilon){
+					currentY = targetY;
+				} else {
+					currentY += delta * easeFactor;
+				}
+				internalScroll = true;
+				window.scrollTo(0, currentY);
+				internalScroll = false;
+				if (Math.abs(targetY - currentY) <= snapEpsilon){
+					animating = false;
+					rafId = 0;
+					return;
+				}
+				rafId = window.requestAnimationFrame(animate);
+			}
+
+			function kick(){
+				if (animating){
+					return;
+				}
+				animating = true;
+				rafId = window.requestAnimationFrame(animate);
+			}
+
+			function setTargetBy(deltaY){
+				if (!deltaY){
+					return;
+				}
+				recalcMax();
+				targetY = clamp(targetY + deltaY, 0, maxY);
+				kick();
+			}
+
+			window.addEventListener("wheel", function(event){
+				event.preventDefault();
+				setTargetBy(event.deltaY * wheelStrength);
+			}, { passive:false });
+
+			window.addEventListener("touchstart", function(event){
+				if (!event.touches || event.touches.length === 0){
+					return;
+				}
+				touchLastY = event.touches[0].clientY;
+				touchVelocity = 0;
+			}, { passive:true });
+
+			window.addEventListener("touchmove", function(event){
+				if (!event.touches || event.touches.length === 0){
+					return;
+				}
+				event.preventDefault();
+				const y = event.touches[0].clientY;
+				const delta = touchLastY - y;
+				touchLastY = y;
+				touchVelocity = (touchVelocity * 0.72) + (delta * 0.28);
+				setTargetBy(delta * touchStrength);
+			}, { passive:false });
+
+			window.addEventListener("touchend", function(){
+				if (Math.abs(touchVelocity) < 0.5){
+					return;
+				}
+				setTargetBy(touchVelocity * touchInertia);
+				touchVelocity = 0;
+			}, { passive:true });
+
+			window.addEventListener("keydown", function(event){
+				let delta = 0;
+				if (event.key === "ArrowDown"){
+					delta = 90;
+				} else if (event.key === "ArrowUp"){
+					delta = -90;
+				} else if (event.key === "PageDown" || (event.key === " " && !event.shiftKey)){
+					delta = window.innerHeight * 0.82;
+				} else if (event.key === "PageUp" || (event.key === " " && event.shiftKey)){
+					delta = -window.innerHeight * 0.82;
+				} else if (event.key === "Home"){
+					delta = -maxY;
+				} else if (event.key === "End"){
+					delta = maxY;
+				}
+				if (!delta){
+					return;
+				}
+				event.preventDefault();
+				setTargetBy(delta);
+			}, { passive:false });
+
+			window.addEventListener("resize", recalcMax, { passive:true });
+			window.addEventListener("scroll", function(){
+				if (internalScroll){
+					return;
+				}
+				currentY = window.scrollY || 0;
+				targetY = currentY;
+			}, { passive:true });
+
+			recalcMax();
+		})();
 	</script>
 </body>
 </html>
