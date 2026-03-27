@@ -28,9 +28,31 @@
 		return isIos() && /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
 	}
 
+	function getBrandNames() {
+		const brands = window.navigator.userAgentData && Array.isArray(window.navigator.userAgentData.brands)
+			? window.navigator.userAgentData.brands
+			: [];
+		return brands.map((item) => String(item && item.brand || "").toLowerCase());
+	}
+
+	function isChromiumInstallBrowser() {
+		if (isIos()) {
+			return false;
+		}
+
+		const ua = String(window.navigator.userAgent || "");
+		const brands = getBrandNames();
+		const byBrands = brands.some((name) => /chromium|chrome|edge|opera|vivaldi|brave/.test(name));
+		const byUa = /(chrome|chromium|edg|opr|vivaldi|brave)/i.test(ua) && !/firefox/i.test(ua);
+		return byBrands || byUa;
+	}
+
 	function getState() {
 		return {
 			canInstall: !!deferredPrompt,
+			hasInstallEntry: (!!deferredPrompt || isChromiumInstallBrowser()) && !isStandalone(),
+			needsManualInstall: !deferredPrompt && isChromiumInstallBrowser() && !isStandalone(),
+			isChromiumInstallBrowser: isChromiumInstallBrowser(),
 			isStandalone: isStandalone(),
 			isIos: isIos(),
 			isIosSafari: isIosSafari()
@@ -85,9 +107,8 @@
 		}
 
 		const state = getState();
-		const canInstall = state.canInstall && !state.isStandalone;
-		button.hidden = !canInstall;
-		button.classList.toggle("is-ready", canInstall);
+		button.hidden = !state.hasInstallEntry;
+		button.classList.toggle("is-ready", state.canInstall && !state.isStandalone);
 	}
 
 	function getInstallHelpCopy() {
@@ -100,6 +121,19 @@
 					"点浏览器底部或顶部的“分享”按钮",
 					"在菜单里选择“添加到主屏幕”",
 					"确认后就能像本地 App 一样从桌面打开"
+				]
+			};
+		}
+
+		if (isChromiumInstallBrowser()) {
+			return {
+				title: "浏览器菜单安装步骤",
+				lead: "这个浏览器支持安装入口。右上角固定悬浮菜单里的安装按钮会保留；如果没有弹出系统安装窗，请改用浏览器菜单里的“安装”，不要选“快捷方式”。",
+				steps: [
+					"先点站内右上角固定悬浮菜单里的安装按钮试一次",
+					"如果没弹系统安装窗，打开浏览器底部或右上角菜单",
+					"在菜单里优先选择“安装 / Install app / 添加到桌面”",
+					"如果同时看到“快捷方式”，不要选它，优先选“安装”"
 				]
 			};
 		}
@@ -121,7 +155,7 @@
 			title: "浏览器建议",
 			lead: "想稳定看到安装入口，优先用支持 PWA 的系统浏览器。",
 			steps: [
-				"Android / Windows / macOS：优先用 Chrome 或 Edge",
+				"Android / Windows / macOS：优先用 Chrome 或 Edge，这一系浏览器会保留站内安装入口",
 				"iPhone / iPad：优先用 Safari",
 				"微信、QQ、微博等内置浏览器：先用“在浏览器打开”跳到系统浏览器",
 				"如果装机入口没出现，先刷新一次页面，再看右上角固定悬浮菜单里有没有安装图标"
@@ -241,7 +275,10 @@
 		}
 
 		if (!deferredPrompt) {
-			return { ok: false, outcome: "manual_help" };
+			if (isChromiumInstallBrowser() || isIosSafari()) {
+				return { ok: false, outcome: "manual_help" };
+			}
+			return { ok: false, outcome: "unsupported" };
 		}
 
 		track("pwa_install_prompt_opened", {

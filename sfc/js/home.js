@@ -107,6 +107,12 @@ function initPwaInstallSpotlight(){
 			return;
 		}
 
+		if (state.hasInstallEntry && state.needsManualInstall){
+			descEl.textContent = '当前是 Chrome / Edge 这一系浏览器。右上角固定悬浮菜单里的安装按钮会保留；点了如果没弹系统安装窗，就去浏览器菜单里选“安装”，不要选“快捷方式”。';
+			actionBtn.textContent = '查看安装步骤';
+			return;
+		}
+
 		if (state.isIosSafari){
 			descEl.textContent = 'iPhone / iPad 推荐直接用 Safari。Safari 一般不弹系统安装窗，请用“分享 -> 添加到主屏幕”安装。';
 			actionBtn.textContent = '查看安装步骤';
@@ -210,7 +216,7 @@ function createInstallEntryHintDialog(trigger){
 	content.innerHTML = `
 		<div class="legal-disclaimer">
 			<strong>安装入口提示</strong>
-			<div>右上角固定悬浮菜单按钮里有安装图标，点一下即可安装到本地。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 用 Safari。</div>
+			<div>右上角固定悬浮菜单按钮里有安装图标，点一下即可尝试安装。Chrome / Edge 这一系浏览器如果没弹系统安装窗，就去浏览器菜单里选“安装”，不要选“快捷方式”。</div>
 			<div style="margin-top:8px;">如果你在微信、QQ 这类内置浏览器里，建议先用系统浏览器打开，再安装。</div>
 		</div>
 	`;
@@ -260,7 +266,7 @@ function canShowInstallEntryHint(){
 	if (!window.PWAInstall || typeof window.PWAInstall.getState !== "function") return false;
 
 	const state = window.PWAInstall.getState();
-	return !!state && !!state.canInstall && !state.isStandalone;
+	return !!state && !!state.hasInstallEntry && !state.isStandalone;
 }
 
 function maybeShowInstallEntryHint(trigger){
