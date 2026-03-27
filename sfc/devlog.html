@@ -22,6 +22,15 @@
 			-webkit-tap-highlight-color:transparent;
 		}
 
+		html.js-scroll-managed,
+		html.js-scroll-managed body{
+			overscroll-behavior:none;
+		}
+
+		html.js-scroll-managed .page{
+			touch-action:none;
+		}
+
 		body{
 			margin:0;
 			min-height:100vh;
@@ -455,128 +464,159 @@
 		});
 
 		(function initSmoothDevlogScroll(){
-			let targetY = window.scrollY || 0;
-			let currentY = targetY;
-			let maxY = 0;
-			let touchLastY = 0;
-			let touchVelocity = 0;
-			let animating = false;
-			let internalScroll = false;
+			const docEl = document.documentElement;
+			docEl.classList.add("js-scroll-managed");
+
+			let currentY = window.pageYOffset || window.scrollY || 0;
+			let targetY = currentY;
 			let rafId = 0;
+			const FIXED_STEP = 82;
+			const MAX_SPEED_PER_FRAME = 6;
+			const MAX_QUEUE_DISTANCE = 180;
+			const TOUCH_SCALE = 1.0;
+			const MOMENTUM_DECAY = 0.92;
+			let momentum = 0;
+			let touchActive = false;
+			let lastTouchY = 0;
 
-			const easeFactor = 0.14;
-			const wheelStrength = 0.95;
-			const touchStrength = 1.12;
-			const touchInertia = 16;
-			const snapEpsilon = 0.2;
-			const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+			function maxScrollY(){
+				return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+			}
 
-			function recalcMax(){
-				maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-				targetY = clamp(targetY, 0, maxY);
-				currentY = clamp(currentY, 0, maxY);
+			function clampTarget(){
+				const max = maxScrollY();
+				if (targetY < 0){
+					targetY = 0;
+				} else if (targetY > max){
+					targetY = max;
+				}
+			}
+
+			function queueMove(delta){
+				let nextTarget = targetY + delta;
+				const minTarget = currentY - MAX_QUEUE_DISTANCE;
+				const maxTarget = currentY + MAX_QUEUE_DISTANCE;
+				if (nextTarget < minTarget){
+					nextTarget = minTarget;
+				} else if (nextTarget > maxTarget){
+					nextTarget = maxTarget;
+				}
+				targetY = nextTarget;
+				clampTarget();
+				if (!rafId){
+					rafId = window.requestAnimationFrame(animate);
+				}
 			}
 
 			function animate(){
-				const delta = targetY - currentY;
-				if (Math.abs(delta) <= snapEpsilon){
+				if (Math.abs(momentum) > 0.05){
+					queueMove(momentum);
+					momentum *= MOMENTUM_DECAY;
+				} else {
+					momentum = 0;
+				}
+
+				const diff = targetY - currentY;
+				if (Math.abs(diff) <= MAX_SPEED_PER_FRAME){
 					currentY = targetY;
 				} else {
-					currentY += delta * easeFactor;
+					currentY += diff > 0 ? MAX_SPEED_PER_FRAME : -MAX_SPEED_PER_FRAME;
 				}
-				internalScroll = true;
 				window.scrollTo(0, currentY);
-				internalScroll = false;
-				if (Math.abs(targetY - currentY) <= snapEpsilon){
-					animating = false;
+
+				if (currentY !== targetY){
+					rafId = window.requestAnimationFrame(animate);
+				} else {
 					rafId = 0;
-					return;
 				}
-				rafId = window.requestAnimationFrame(animate);
 			}
 
-			function kick(){
-				if (animating){
-					return;
-				}
-				animating = true;
-				rafId = window.requestAnimationFrame(animate);
-			}
-
-			function setTargetBy(deltaY){
-				if (!deltaY){
-					return;
-				}
-				recalcMax();
-				targetY = clamp(targetY + deltaY, 0, maxY);
-				kick();
+			function keyDelta(event){
+				const key = event.key;
+				const h = window.innerHeight || 800;
+				if (key === "ArrowDown") return FIXED_STEP;
+				if (key === "ArrowUp") return -FIXED_STEP;
+				if (key === "PageDown" || (key === " " && !event.shiftKey)) return h * 0.75;
+				if (key === "PageUp" || (key === " " && event.shiftKey)) return -h * 0.75;
+				if (key === "Home") return -1e9;
+				if (key === "End") return 1e9;
+				return 0;
 			}
 
 			window.addEventListener("wheel", function(event){
+				if (event.ctrlKey || event.metaKey){
+					return;
+				}
 				event.preventDefault();
-				setTargetBy(event.deltaY * wheelStrength);
+				const dir = event.deltaY > 0 ? 1 : (event.deltaY < 0 ? -1 : 0);
+				if (dir !== 0){
+					queueMove(dir * FIXED_STEP);
+					momentum += dir * 1.6;
+					if (momentum > 12) momentum = 12;
+					if (momentum < -12) momentum = -12;
+				}
+			}, { passive:false });
+
+			window.addEventListener("keydown", function(event){
+				if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey){
+					return;
+				}
+				const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+				if (tag === "input" || tag === "textarea" || tag === "select" || event.target.isContentEditable){
+					return;
+				}
+				const delta = keyDelta(event);
+				if (delta !== 0){
+					event.preventDefault();
+					if (Math.abs(delta) > 1000000){
+						targetY = delta > 0 ? maxScrollY() : 0;
+						if (!rafId){
+							rafId = window.requestAnimationFrame(animate);
+						}
+						return;
+					}
+					queueMove(delta);
+				}
 			}, { passive:false });
 
 			window.addEventListener("touchstart", function(event){
-				if (!event.touches || event.touches.length === 0){
+				if (event.touches.length !== 1){
+					touchActive = false;
 					return;
 				}
-				touchLastY = event.touches[0].clientY;
-				touchVelocity = 0;
-			}, { passive:true });
+				touchActive = true;
+				lastTouchY = event.touches[0].clientY;
+			}, { passive:false });
 
 			window.addEventListener("touchmove", function(event){
-				if (!event.touches || event.touches.length === 0){
+				if (!touchActive || event.touches.length !== 1){
 					return;
 				}
 				event.preventDefault();
 				const y = event.touches[0].clientY;
-				const delta = touchLastY - y;
-				touchLastY = y;
-				touchVelocity = (touchVelocity * 0.72) + (delta * 0.28);
-				setTargetBy(delta * touchStrength);
+				const dy = lastTouchY - y;
+				lastTouchY = y;
+
+				if (Math.abs(dy) < 1){
+					return;
+				}
+				queueMove(dy * TOUCH_SCALE);
+				momentum = dy * 0.2;
 			}, { passive:false });
 
 			window.addEventListener("touchend", function(){
-				if (Math.abs(touchVelocity) < 0.5){
-					return;
-				}
-				setTargetBy(touchVelocity * touchInertia);
-				touchVelocity = 0;
+				touchActive = false;
 			}, { passive:true });
 
-			window.addEventListener("keydown", function(event){
-				let delta = 0;
-				if (event.key === "ArrowDown"){
-					delta = 90;
-				} else if (event.key === "ArrowUp"){
-					delta = -90;
-				} else if (event.key === "PageDown" || (event.key === " " && !event.shiftKey)){
-					delta = window.innerHeight * 0.82;
-				} else if (event.key === "PageUp" || (event.key === " " && event.shiftKey)){
-					delta = -window.innerHeight * 0.82;
-				} else if (event.key === "Home"){
-					delta = -maxY;
-				} else if (event.key === "End"){
-					delta = maxY;
+			window.addEventListener("resize", function(){
+				const max = maxScrollY();
+				if (targetY > max){
+					targetY = max;
 				}
-				if (!delta){
-					return;
+				if (currentY > max){
+					currentY = max;
 				}
-				event.preventDefault();
-				setTargetBy(delta);
-			}, { passive:false });
-
-			window.addEventListener("resize", recalcMax, { passive:true });
-			window.addEventListener("scroll", function(){
-				if (internalScroll){
-					return;
-				}
-				currentY = window.scrollY || 0;
-				targetY = currentY;
 			}, { passive:true });
-
-			recalcMax();
 		})();
 	</script>
 </body>
