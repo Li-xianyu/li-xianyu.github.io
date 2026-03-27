@@ -1,5 +1,12 @@
 "use strict";
 
+const MANUAL_AGREED_KEY = "manualAgreed";
+const GUIDE_STATE_KEY = "HOME_ONBOARDING_INTRO_V1_STATE";
+const INSTALL_ENTRY_HINT_KEY = "HOME_INSTALL_ENTRY_HINT_V1";
+
+let installEntryHintTimer = 0;
+let installEntryHintHandledThisSession = false;
+
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
 		window.trackEvent(eventName, payload);
@@ -129,6 +136,155 @@ function initPwaInstallSpotlight(){
 	window.PWAInstall.onChange(applyState);
 }
 
+function hasReceivedInstallEntryHint(){
+	return localStorage.getItem(INSTALL_ENTRY_HINT_KEY) === "1";
+}
+
+function markInstallEntryHintReceived(){
+	localStorage.setItem(INSTALL_ENTRY_HINT_KEY, "1");
+}
+
+function isHomeOnboardingPending(){
+	return !localStorage.getItem(GUIDE_STATE_KEY);
+}
+
+function openQuickDockForInstallHint(){
+	const launcher = document.querySelector(".quick-dock-launcher");
+	if (!launcher) return;
+
+	const dock = document.querySelector(".quick-dock");
+	if (!dock || !dock.classList.contains("open")){
+		launcher.click();
+	}
+
+	window.setTimeout(() => {
+		const installBtn = document.querySelector(".quick-action-install:not([hidden])");
+		const target = installBtn || launcher;
+		if (target && typeof target.focus === "function"){
+			try{
+				target.focus({ preventScroll: true });
+			}catch(err){
+				target.focus();
+			}
+		}
+		if (target && typeof window.playDialogShake === "function"){
+			window.playDialogShake(target);
+		}
+	}, 90);
+}
+
+function createInstallEntryHintDialog(trigger){
+	const overlay = document.createElement("div");
+	overlay.className = "punishment-overlay";
+
+	const dialog = document.createElement("div");
+	dialog.className = "punishment-dialog";
+
+	const title = document.createElement("h3");
+	title.className = "punishment-title";
+	title.textContent = "支持安装到本地";
+
+	const content = document.createElement("div");
+	content.className = "punishment-content";
+	content.innerHTML = `
+		<div class="legal-disclaimer">
+			<strong>可安装提示</strong>
+			<div>右上角的菜单按钮里有个安装图标，点一下即可安装到本地。装到桌面后，下次打开会更快。</div>
+		</div>
+	`;
+
+	const buttonContainer = document.createElement("div");
+	buttonContainer.className = "dialog-buttons";
+
+	const openMenuBtn = document.createElement("button");
+	openMenuBtn.className = "punishment-button";
+	openMenuBtn.id = "confirmRestart";
+	openMenuBtn.textContent = "打开菜单";
+
+	const closeBtn = document.createElement("button");
+	closeBtn.className = "punishment-button";
+	closeBtn.id = "cancelRestart";
+	closeBtn.textContent = "知道了";
+
+	openMenuBtn.addEventListener("click", () => {
+		track("pwa_install_entry_hint_open_menu", { trigger });
+		overlay.remove();
+		openQuickDockForInstallHint();
+	});
+
+	closeBtn.addEventListener("click", () => {
+		track("pwa_install_entry_hint_dismissed", { trigger });
+		overlay.remove();
+	});
+
+	buttonContainer.append(openMenuBtn, closeBtn);
+	dialog.append(title, content, buttonContainer);
+	overlay.appendChild(dialog);
+
+	overlay.addEventListener("click", (event) => {
+		if (event.target === overlay && typeof window.playDialogShake === "function"){
+			window.playDialogShake(openMenuBtn);
+		}
+	});
+
+	return overlay;
+}
+
+function canShowInstallEntryHint(){
+	if (installEntryHintHandledThisSession) return false;
+	if (hasReceivedInstallEntryHint()) return false;
+	if (!localStorage.getItem(MANUAL_AGREED_KEY)) return false;
+	if (isHomeOnboardingPending()) return false;
+	if (!window.PWAInstall || typeof window.PWAInstall.getState !== "function") return false;
+
+	const state = window.PWAInstall.getState();
+	return !!state && !!state.canInstall && !state.isStandalone;
+}
+
+function maybeShowInstallEntryHint(trigger){
+	if (!canShowInstallEntryHint()) return;
+
+	installEntryHintHandledThisSession = true;
+	markInstallEntryHintReceived();
+	track("pwa_install_entry_hint_shown", { trigger });
+	document.body.appendChild(createInstallEntryHintDialog(trigger));
+}
+
+function scheduleInstallEntryHint(trigger, delay = 240){
+	if (installEntryHintHandledThisSession || hasReceivedInstallEntryHint()) return;
+
+	if (installEntryHintTimer){
+		window.clearTimeout(installEntryHintTimer);
+	}
+
+	installEntryHintTimer = window.setTimeout(() => {
+		installEntryHintTimer = 0;
+		maybeShowInstallEntryHint(trigger);
+	}, delay);
+}
+
+function initInstallEntryHintFlow(){
+	if (!window.PWAInstall) return;
+
+	window.PWAInstall.onChange((state) => {
+		if (state && state.canInstall && !state.isStandalone){
+			scheduleInstallEntryHint("pwa_state_change", 220);
+		}
+	});
+
+	window.addEventListener("home:manualAgreed", () => {
+		scheduleInstallEntryHint("manual_agreed", 260);
+	});
+
+	window.addEventListener("home:onboardingFinished", () => {
+		scheduleInstallEntryHint("onboarding_finished", 280);
+	});
+
+	if (localStorage.getItem(MANUAL_AGREED_KEY)) {
+		scheduleInstallEntryHint("home_ready", 420);
+	}
+}
+
 function createManualDialog(){
 	const overlay = document.createElement('div');
 	overlay.className = 'punishment-overlay';
@@ -173,7 +329,7 @@ function createManualDialog(){
 	overlay.appendChild(dialog);
 
 	const handleConfirm = () => {
-		localStorage.setItem('manualAgreed','true');
+		localStorage.setItem(MANUAL_AGREED_KEY,'true');
 		track("manual_agreed");
 		overlay.remove();
 		window.dispatchEvent(new CustomEvent('home:manualAgreed'));
@@ -462,9 +618,10 @@ function createModeDialog(boardToken){
 document.addEventListener('DOMContentLoaded', () => {
 	initHeroSubtitleTicker();
 	initPwaInstallSpotlight();
+	initInstallEntryHintFlow();
 
 	// 首次自动弹免责声明
-	if (!localStorage.getItem('manualAgreed')){
+	if (!localStorage.getItem(MANUAL_AGREED_KEY)){
 		document.body.appendChild(createManualDialog());
 		track("manual_shown_auto");
 	}else{

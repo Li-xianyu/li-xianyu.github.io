@@ -19,6 +19,12 @@
 		localStorage.setItem(GUIDE_STATE_KEY, state);
 	}
 
+	function emitFinished(state) {
+		window.dispatchEvent(new CustomEvent("home:onboardingFinished", {
+			detail: { state }
+		}));
+	}
+
 	function canStart() {
 		return !!localStorage.getItem(MANUAL_AGREED_KEY) && !getState() && !introRunning;
 	}
@@ -92,12 +98,17 @@
 	}
 
 	function startIntroGuide() {
-		if (typeof window.introJs !== "function") return;
+		if (typeof window.introJs !== "function") {
+			setState("unavailable");
+			emitFinished("unavailable");
+			return;
+		}
 		if (!canStart()) return;
 
 		const steps = buildSteps();
 		if (steps.length < 2) {
 			setState("skipped");
+			emitFinished("skipped");
 			return;
 		}
 
@@ -148,6 +159,7 @@
 			finalized = true;
 			if (detachOverlayShake) detachOverlayShake();
 			setState(state);
+			emitFinished(state);
 			track(eventName, { source: "introjs" });
 			forceCleanupIntroArtifacts();
 			introRunning = false;
