@@ -93,9 +93,10 @@
 	function getInstallHelpCopy() {
 		if (isIosSafari()) {
 			return {
-				title: "安装到主屏幕",
-				lead: "iPhone / iPad 上不会弹系统安装窗，但一样可以装到本地。",
+				title: "Safari 安装步骤",
+				lead: "iPhone / iPad 推荐直接用 Safari。右上角固定悬浮菜单主要服务于支持直接安装的浏览器；iOS 请走 Safari 分享菜单。",
 				steps: [
+					"如果你现在不在 Safari，请先切到 Safari 打开当前页面",
 					"点浏览器底部或顶部的“分享”按钮",
 					"在菜单里选择“添加到主屏幕”",
 					"确认后就能像本地 App 一样从桌面打开"
@@ -104,12 +105,26 @@
 		}
 
 		return {
-			title: "安装到本地",
-			lead: "支持的浏览器会直接弹出安装窗；如果没弹，也可以手动安装。",
+			title: "安装步骤",
+			lead: "如果右上角固定悬浮菜单里已经出现安装图标，优先点那个最省事。没看到的话，再按下面步骤从浏览器菜单安装。",
 			steps: [
+				"推荐先用 Chrome 或 Edge 打开当前页面",
 				"打开浏览器菜单",
 				"找到“安装应用 / Install app / 添加到桌面”之类的选项",
 				"确认后就能从桌面或开始菜单直接打开"
+			]
+		};
+	}
+
+	function getBrowserAdviceCopy() {
+		return {
+			title: "浏览器建议",
+			lead: "想稳定看到安装入口，优先用支持 PWA 的系统浏览器。",
+			steps: [
+				"Android / Windows / macOS：优先用 Chrome 或 Edge",
+				"iPhone / iPad：优先用 Safari",
+				"微信、QQ、微博等内置浏览器：先用“在浏览器打开”跳到系统浏览器",
+				"如果装机入口没出现，先刷新一次页面，再看右上角固定悬浮菜单里有没有安装图标"
 			]
 		};
 	}
@@ -162,6 +177,59 @@
 		});
 
 		track("pwa_install_help_opened", {
+			source: source || "unknown",
+			platform: isIosSafari() ? "ios_safari" : "browser_menu"
+		});
+	}
+
+	function showBrowserAdvice(source) {
+		const copy = getBrowserAdviceCopy();
+		const overlay = document.createElement("div");
+		overlay.className = "punishment-overlay";
+
+		const dialog = document.createElement("div");
+		dialog.className = "punishment-dialog";
+
+		const title = document.createElement("h3");
+		title.className = "punishment-title";
+		title.textContent = copy.title;
+
+		const content = document.createElement("div");
+		content.className = "punishment-content";
+		content.innerHTML = `
+			<div class="legal-disclaimer">
+				<strong>${copy.title}</strong>
+				<div>${copy.lead}</div>
+				<ol class="install-help-list">
+					${copy.steps.map((step) => `<li>${step}</li>`).join("")}
+				</ol>
+			</div>
+		`;
+
+		const actions = document.createElement("div");
+		actions.className = "dialog-buttons";
+
+		const confirmBtn = document.createElement("button");
+		confirmBtn.type = "button";
+		confirmBtn.className = "punishment-button";
+		confirmBtn.id = "confirmRestart";
+		confirmBtn.textContent = "知道了";
+		confirmBtn.addEventListener("click", () => {
+			overlay.remove();
+		});
+
+		actions.appendChild(confirmBtn);
+		dialog.append(title, content, actions);
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		overlay.addEventListener("click", (event) => {
+			if (event.target === overlay && typeof window.playDialogShake === "function") {
+				window.playDialogShake(confirmBtn);
+			}
+		});
+
+		track("pwa_browser_advice_opened", {
 			source: source || "unknown",
 			platform: isIosSafari() ? "ios_safari" : "browser_menu"
 		});
@@ -241,6 +309,7 @@
 		onChange,
 		promptInstall,
 		showInstallHelp,
+		showBrowserAdvice,
 		isStandalone
 	};
 

@@ -51,7 +51,7 @@
 			{
 				selector: ".quick-dock-launcher",
 				title: "右上角快捷菜单",
-				intro: "点击这里可以唤出全局快捷操作。菜单里可一键切换日/夜间主题，也能快速进入设置页；想临时调主题或快速改配置时，用这里最快。"
+				intro: "点击这里可以唤出右上角固定悬浮菜单。菜单里除了主题和设置，支持安装时还会出现“安装”图标。推荐 Android / Windows / macOS 用 Chrome 或 Edge，iPhone / iPad 用 Safari。"
 			},
 			{
 				selector: "#devLog",

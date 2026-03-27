@@ -98,24 +98,25 @@ function initPwaInstallSpotlight(){
 		}
 
 		spotlight.hidden = false;
+		guideBtn.textContent = '浏览器建议';
 
 		if (state.canInstall){
-			stateEl.textContent = '可安装';
-			descEl.textContent = '已经满足安装条件了。点一下就能装到手机或电脑本地，之后打开更快，也更像 App。';
+			stateEl.textContent = '推荐安装';
+			descEl.textContent = '右上角固定悬浮菜单里会出现安装按钮，也可以直接点下面安装。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 请用 Safari。';
 			actionBtn.textContent = '立即安装';
 			return;
 		}
 
 		if (state.isIosSafari){
-			stateEl.textContent = '手动安装';
-			descEl.textContent = 'Safari 不会弹系统安装窗，但可以通过分享菜单把它添加到主屏幕，用起来和本地应用差不多。';
-			actionBtn.textContent = '查看安装方式';
+			stateEl.textContent = 'Safari 安装';
+			descEl.textContent = 'iPhone / iPad 推荐直接用 Safari。Safari 一般不弹系统安装窗，请用“分享 -> 添加到主屏幕”安装。';
+			actionBtn.textContent = '查看安装步骤';
 			return;
 		}
 
-		stateEl.textContent = '可手动安装';
-		descEl.textContent = '如果浏览器这次没直接弹安装窗，也可以从浏览器菜单里安装到本地，桌面打开会更顺手。';
-		actionBtn.textContent = '查看安装方式';
+		stateEl.textContent = '浏览器建议';
+		descEl.textContent = '如果右上角固定悬浮菜单里没出现安装按钮，通常是当前浏览器不支持。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 用 Safari。';
+		actionBtn.textContent = '查看安装步骤';
 	}
 
 	actionBtn.addEventListener('click', async () => {
@@ -128,6 +129,10 @@ function initPwaInstallSpotlight(){
 
 	guideBtn.addEventListener('click', () => {
 		track('pwa_hero_help_clicked');
+		if (typeof window.PWAInstall.showBrowserAdvice === 'function'){
+			window.PWAInstall.showBrowserAdvice('hero_spotlight');
+			return;
+		}
 		if (typeof window.PWAInstall.showInstallHelp === 'function'){
 			window.PWAInstall.showInstallHelp('hero_spotlight');
 		}
@@ -182,14 +187,15 @@ function createInstallEntryHintDialog(trigger){
 
 	const title = document.createElement("h3");
 	title.className = "punishment-title";
-	title.textContent = "支持安装到本地";
+	title.textContent = "右上角菜单可以安装";
 
 	const content = document.createElement("div");
 	content.className = "punishment-content";
 	content.innerHTML = `
 		<div class="legal-disclaimer">
-			<strong>可安装提示</strong>
-			<div>右上角的菜单按钮里有个安装图标，点一下即可安装到本地。装到桌面后，下次打开会更快。</div>
+			<strong>安装入口提示</strong>
+			<div>右上角固定悬浮菜单按钮里有安装图标，点一下即可安装到本地。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 用 Safari。</div>
+			<div style="margin-top:8px;">如果你在微信、QQ 这类内置浏览器里，建议先用系统浏览器打开，再安装。</div>
 		</div>
 	`;
 
