@@ -273,7 +273,7 @@ body.home-page[data-theme="dark"] .hero-chip{
 }
 
 .install-spotlight-badge,
-.install-spotlight-state{
+.install-spotlight-dismiss{
 	display:inline-flex;
 	align-items:center;
 	gap:6px;
@@ -291,10 +291,27 @@ body.home-page[data-theme="dark"] .hero-chip{
 	box-shadow:0 10px 22px rgba(106,69,184,.24);
 }
 
-.install-spotlight-state{
+.install-spotlight-dismiss{
 	color:var(--primary);
 	background:rgba(255,255,255,.56);
 	border:1px solid rgba(127,71,255,.12);
+	cursor:pointer;
+	transition:transform var(--transition-speed), background var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+}
+
+.install-spotlight-dismiss:hover{
+	transform:translateY(-1px);
+	background:rgba(255,255,255,.88);
+	border-color:rgba(127,71,255,.22);
+}
+
+.install-spotlight-dismiss:active{
+	transform:translateY(0) scale(.985);
+}
+
+.install-spotlight-dismiss:focus-visible{
+	outline:2px solid var(--current-color);
+	outline-offset:3px;
 }
 
 .install-spotlight-title{
@@ -375,10 +392,15 @@ body.home-page[data-theme="dark"] .install-spotlight{
 	box-shadow:0 20px 40px rgba(0,0,0,.24);
 }
 
-body.home-page[data-theme="dark"] .install-spotlight-state{
+body.home-page[data-theme="dark"] .install-spotlight-dismiss{
 	color:#f0eaff;
 	background:rgba(255,255,255,.08);
 	border-color:rgba(255,255,255,.12);
+}
+
+body.home-page[data-theme="dark"] .install-spotlight-dismiss:hover{
+	background:rgba(255,255,255,.14);
+	border-color:rgba(255,255,255,.18);
 }
 
 body.home-page[data-theme="dark"] .install-spotlight-btn-secondary{

@@ -2,7 +2,8 @@
 
 const MANUAL_AGREED_KEY = "manualAgreed";
 const GUIDE_STATE_KEY = "HOME_ONBOARDING_INTRO_V1_STATE";
-const INSTALL_ENTRY_HINT_KEY = "HOME_INSTALL_ENTRY_HINT_V1";
+const LEGACY_INSTALL_ENTRY_HINT_KEY = "HOME_INSTALL_ENTRY_HINT_V1";
+const INSTALL_PROMPT_DISMISSED_KEY = "HOME_INSTALL_PROMPT_DISMISSED_V1";
 
 let installEntryHintTimer = 0;
 let installEntryHintHandledThisSession = false;
@@ -82,17 +83,17 @@ function initHeroSubtitleTicker(){
 
 function initPwaInstallSpotlight(){
 	const spotlight = document.getElementById('installSpotlight');
-	const stateEl = document.getElementById('installSpotlightState');
+	const dismissBtn = document.getElementById('installSpotlightDismiss');
 	const descEl = document.getElementById('installSpotlightDesc');
 	const actionBtn = document.getElementById('installSpotlightAction');
 	const guideBtn = document.getElementById('installSpotlightGuide');
 
-	if (!spotlight || !stateEl || !descEl || !actionBtn || !guideBtn || !window.PWAInstall){
+	if (!spotlight || !dismissBtn || !descEl || !actionBtn || !guideBtn || !window.PWAInstall){
 		return;
 	}
 
 	function applyState(state){
-		if (!state || state.isStandalone){
+		if (!state || state.isStandalone || isInstallPromptDismissed()){
 			spotlight.hidden = true;
 			return;
 		}
@@ -101,20 +102,17 @@ function initPwaInstallSpotlight(){
 		guideBtn.textContent = '浏览器建议';
 
 		if (state.canInstall){
-			stateEl.textContent = '推荐安装';
 			descEl.textContent = '右上角固定悬浮菜单里会出现安装按钮，也可以直接点下面安装。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 请用 Safari。';
 			actionBtn.textContent = '立即安装';
 			return;
 		}
 
 		if (state.isIosSafari){
-			stateEl.textContent = 'Safari 安装';
 			descEl.textContent = 'iPhone / iPad 推荐直接用 Safari。Safari 一般不弹系统安装窗，请用“分享 -> 添加到主屏幕”安装。';
 			actionBtn.textContent = '查看安装步骤';
 			return;
 		}
 
-		stateEl.textContent = '浏览器建议';
 		descEl.textContent = '如果右上角固定悬浮菜单里没出现安装按钮，通常是当前浏览器不支持。推荐 Android / Windows / macOS 用 Chrome 或 Edge；iPhone / iPad 用 Safari。';
 		actionBtn.textContent = '查看安装步骤';
 	}
@@ -138,15 +136,33 @@ function initPwaInstallSpotlight(){
 		}
 	});
 
+	dismissBtn.addEventListener('click', () => {
+		dismissInstallPrompts('hero_spotlight');
+	});
+
 	window.PWAInstall.onChange(applyState);
 }
 
-function hasReceivedInstallEntryHint(){
-	return localStorage.getItem(INSTALL_ENTRY_HINT_KEY) === "1";
+function isInstallPromptDismissed(){
+	return localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === "1";
 }
 
-function markInstallEntryHintReceived(){
-	localStorage.setItem(INSTALL_ENTRY_HINT_KEY, "1");
+function dismissInstallPrompts(source){
+	if (installEntryHintTimer){
+		window.clearTimeout(installEntryHintTimer);
+		installEntryHintTimer = 0;
+	}
+
+	installEntryHintHandledThisSession = true;
+	localStorage.setItem(INSTALL_PROMPT_DISMISSED_KEY, "1");
+	track("pwa_install_prompt_dismissed", {
+		source: source || "unknown"
+	});
+
+	const spotlight = document.getElementById('installSpotlight');
+	if (spotlight){
+		spotlight.hidden = true;
+	}
 }
 
 function isHomeOnboardingPending(){
@@ -238,7 +254,7 @@ function createInstallEntryHintDialog(trigger){
 
 function canShowInstallEntryHint(){
 	if (installEntryHintHandledThisSession) return false;
-	if (hasReceivedInstallEntryHint()) return false;
+	if (isInstallPromptDismissed()) return false;
 	if (!localStorage.getItem(MANUAL_AGREED_KEY)) return false;
 	if (isHomeOnboardingPending()) return false;
 	if (!window.PWAInstall || typeof window.PWAInstall.getState !== "function") return false;
@@ -251,13 +267,12 @@ function maybeShowInstallEntryHint(trigger){
 	if (!canShowInstallEntryHint()) return;
 
 	installEntryHintHandledThisSession = true;
-	markInstallEntryHintReceived();
 	track("pwa_install_entry_hint_shown", { trigger });
 	document.body.appendChild(createInstallEntryHintDialog(trigger));
 }
 
 function scheduleInstallEntryHint(trigger, delay = 240){
-	if (installEntryHintHandledThisSession || hasReceivedInstallEntryHint()) return;
+	if (installEntryHintHandledThisSession || isInstallPromptDismissed()) return;
 
 	if (installEntryHintTimer){
 		window.clearTimeout(installEntryHintTimer);
@@ -271,6 +286,7 @@ function scheduleInstallEntryHint(trigger, delay = 240){
 
 function initInstallEntryHintFlow(){
 	if (!window.PWAInstall) return;
+	localStorage.removeItem(LEGACY_INSTALL_ENTRY_HINT_KEY);
 
 	window.PWAInstall.onChange((state) => {
 		if (state && state.canInstall && !state.isStandalone){
