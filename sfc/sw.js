@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260327-2";
+const CACHE_VERSION = "20260328-1";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
@@ -17,6 +17,7 @@ const PRECACHE_PATHS = [
 	"./css/setting.css",
 	"./css/create_boards.css",
 	"./js/i18n.js",
+	"./js/umami-loader.js",
 	"./js/ui.js",
 	"./js/pwa.js",
 	"./js/index.js",
