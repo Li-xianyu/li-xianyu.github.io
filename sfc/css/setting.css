@@ -1293,6 +1293,66 @@ fieldset.weight-settings-container{
 	}
 }
 
+@media (max-width:560px){
+	.top-bar{
+		min-height:auto;
+		padding:0;
+		margin:2px auto 16px;
+		display:grid;
+		grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-areas:
+			"left right"
+			"title title";
+		gap:10px 10px;
+		align-items:start;
+	}
+
+	.page-title{
+		position:static;
+		grid-area:title;
+		left:auto;
+		top:auto;
+		transform:none;
+		line-height:1.25;
+		font-size:21px;
+		padding-top:2px;
+		white-space:normal;
+		text-wrap:balance;
+		pointer-events:auto;
+	}
+
+	.nav-btn{
+		position:static;
+		top:auto;
+		transform:none;
+		min-width:0;
+		max-width:100%;
+		padding:10px 12px;
+		line-height:1.25;
+		white-space:normal;
+		text-align:center;
+		justify-content:center;
+	}
+
+	.nav-btn:hover{
+		transform:translateY(-1px);
+	}
+
+	.nav-btn:active{
+		transform:scale(.98);
+	}
+
+	.nav-btn-left{
+		grid-area:left;
+		justify-self:start;
+	}
+
+	.nav-btn-right{
+		grid-area:right;
+		justify-self:end;
+	}
+}
+
 @media (max-width:420px){
 	body{
 		padding:22px 12px 30px;
