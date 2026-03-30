@@ -131,6 +131,15 @@
 					</span>
 				</label>
 			</fieldset>
+
+			<fieldset class="data-transfer-settings-container">
+				<legend data-i18n="settings.dataTransferLegend">Local data transfer</legend>
+				<p class="tip" data-i18n="settings.dataTransferTip">Export your current local configuration and custom boards as a backup, or import a previous backup to restore them on this device.</p>
+				<button class="secondary-action-btn" id="openDataTransferBtn" type="button">
+					<i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+					<span data-i18n="settings.dataTransferButton">Import / Export Data</span>
+				</button>
+			</fieldset>
 		</section>
 
 		<button class="save-btn" id="saveBtn" data-i18n="settings.save">Save settings</button>
@@ -144,6 +153,49 @@
 			<button onclick="closeModal()" data-i18n="common.actions.confirm">Confirm</button>
 		</div>
 	</div>
+
+	<div class="transfer-overlay" id="dataTransferModal" hidden tabindex="-1">
+		<div class="board-dialog transfer-dialog" role="dialog" aria-modal="true" aria-labelledby="dataTransferTitle">
+			<h3 class="punishment-title transfer-title" id="dataTransferTitle" data-i18n="settings.transferDialogTitle">Local Data Transfer</h3>
+
+			<div class="board-segmented transfer-segmented" id="transferSegmented">
+				<button class="board-seg-btn active" type="button" data-tab="export" data-i18n="settings.transferTabs.export">Export</button>
+				<button class="board-seg-btn" type="button" data-tab="import" data-i18n="settings.transferTabs.import">Import</button>
+				<div class="board-seg-indicator"></div>
+			</div>
+
+			<div class="transfer-body">
+				<section class="transfer-panel" data-transfer-panel="export">
+					<p class="transfer-hint" data-i18n="settings.transferExportTip">The export contains rule settings, B/Z pools, in-game display options, custom boards, board draft, language, and theme.</p>
+					<p class="transfer-meta" id="transferExportSummary"></p>
+					<textarea class="transfer-textarea" id="exportDataOutput" readonly spellcheck="false"></textarea>
+					<div class="transfer-actions">
+						<button class="editor-btn editor-btn-secondary" id="copyExportBtn" type="button" data-i18n="settings.transferCopy">Copy JSON</button>
+						<button class="editor-btn editor-btn-primary" id="downloadExportBtn" type="button" data-i18n="settings.transferDownload">Download File</button>
+					</div>
+				</section>
+
+				<section class="transfer-panel" data-transfer-panel="import" hidden>
+					<p class="transfer-hint" data-i18n="settings.transferImportTip">Paste a backup JSON here, or choose a local `.json` file. Importing will overwrite the corresponding local data on this device.</p>
+					<label class="transfer-file-trigger" for="importDataFile">
+						<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i>
+						<span data-i18n="settings.transferChooseFile">Choose JSON File</span>
+					</label>
+					<input id="importDataFile" type="file" accept="application/json,.json" hidden>
+					<p class="transfer-file-name" id="importFileName" data-i18n="settings.transferNoFile">No file selected</p>
+					<textarea class="transfer-textarea" id="importDataInput" spellcheck="false" data-i18n-placeholder="settings.transferImportPlaceholder" placeholder="Paste backup JSON here"></textarea>
+					<div class="transfer-actions">
+						<button class="editor-btn editor-btn-secondary" id="clearImportBtn" type="button" data-i18n="settings.transferClear">Clear</button>
+						<button class="editor-btn editor-btn-primary" id="applyImportBtn" type="button" data-i18n="settings.transferApply">Import and Overwrite</button>
+					</div>
+				</section>
+			</div>
+
+			<div class="dialog-buttons transfer-footer">
+				<button class="editor-btn editor-btn-secondary transfer-close-btn" id="closeDataTransferBtn" type="button" data-i18n="common.actions.cancel">Cancel</button>
+			</div>
+		</div>
+	</div>
 <script src="lang/zh.js?v=20260327-2"></script>
 <script src="lang/en.js?v=20260327-2"></script>
 <script src="js/i18n.js?v=20260327-2"></script>
@@ -151,6 +203,26 @@
 <script src="js/pwa.js?v=20260327-2"></script>
 <script src="js/Data.js?v=20260327-2"></script>
 <script>
+const DATA_TRANSFER_FORMAT = "dual-protocol-local-backup";
+const DATA_TRANSFER_VERSION = 1;
+const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
+	actionCountRange: ACTION_COUNT_RANGE_STORAGE_KEY,
+	gameData: "GameData",
+	activeData: "ActiveData",
+	gameUiSettings: GAME_UI_SETTINGS_STORAGE_KEY,
+	customBoards: "CUSTOM_BOARDS",
+	customBoardDraft: "CUSTOM_BOARD_DRAFT",
+	language: "APP_LANGUAGE",
+	theme: "theme"
+});
+
+const dataTransferState = {
+	activeTab: "export",
+	exportText: "",
+	exportFilename: "",
+	exportError: ""
+};
+
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
 		window.trackEvent(eventName, payload);
@@ -167,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	renderSettingsB();
 	renderSettingsZ();
+	initDataTransferDialog();
 
 	observeFieldsets();
 
@@ -819,6 +892,638 @@ function getNumericInputValue(id, fallbackValue){
 	return Number.isFinite(value) ? value : fallbackValue;
 }
 
+function getActionCountRangeValidationError(minVal, maxVal){
+	if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || minVal % 10 !== 0 || maxVal % 10 !== 0) {
+		return t("settings.errorMultipleOfTen");
+	}
+	if (minVal >= maxVal) {
+		return t("settings.errorMinLessThanMax");
+	}
+	return "";
+}
+
+function readStoredJson(storageKey, fallbackValue = null){
+	try {
+		const rawValue = localStorage.getItem(storageKey);
+		return rawValue ? JSON.parse(rawValue) : fallbackValue;
+	} catch (error) {
+		console.warn("[Settings] Failed to read stored JSON:", storageKey, error);
+		return fallbackValue;
+	}
+}
+
+function getCurrentActionCountRangeSnapshot(){
+	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
+	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
+	const validationError = getActionCountRangeValidationError(minVal, maxVal);
+	if (validationError) {
+		throw new Error(validationError);
+	}
+	return { min: minVal, max: maxVal };
+}
+
+function getCurrentGameDataSnapshot(){
+	const snapshot = normalizeGameData(GameData);
+	snapshot.prop.weight = getNumericInputValue("weight-prop", snapshot.prop.weight);
+	snapshot.reward.weight = getNumericInputValue("weight-reward", snapshot.reward.weight);
+	snapshot.aod.weight = getNumericInputValue("weight-aod", snapshot.aod.weight);
+	snapshot.sports.weight = getNumericInputValue("weight-sports", snapshot.sports.weight);
+	return snapshot;
+}
+
+function getCurrentActiveDataSnapshot(){
+	const snapshot = normalizeActiveData(ActiveData);
+	snapshot.weight = getNumericInputValue("weight-active", snapshot.weight);
+	return snapshot;
+}
+
+function getCurrentGameUiSettingsSnapshot(){
+	return normalizeGameUiSettings({
+		showBTaskPrediction: !!document.getElementById("toggleBTaskPrediction")?.checked,
+		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked
+	});
+}
+
+function normalizeImportedActionCountRange(rawValue){
+	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportRangeInvalid"));
+	}
+
+	const minVal = Number.parseInt(rawValue.min, 10);
+	const maxVal = Number.parseInt(rawValue.max, 10);
+	const validationError = getActionCountRangeValidationError(minVal, maxVal);
+	if (validationError) {
+		throw new Error(validationError);
+	}
+
+	return { min: minVal, max: maxVal };
+}
+
+function normalizeImportedGameData(rawValue){
+	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportGameDataInvalid"));
+	}
+
+	const categoryKeys = ["posture", "prop", "reward", "aod", "sports"];
+	if (!categoryKeys.some((key) => Object.prototype.hasOwnProperty.call(rawValue, key))) {
+		throw new Error(t("settings.transferImportGameDataInvalid"));
+	}
+
+	return normalizeGameData(rawValue);
+}
+
+function normalizeImportedActiveData(rawValue){
+	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportActiveDataInvalid"));
+	}
+
+	if (
+		!Object.prototype.hasOwnProperty.call(rawValue, "items") &&
+		!Object.prototype.hasOwnProperty.call(rawValue, "weight")
+	) {
+		throw new Error(t("settings.transferImportActiveDataInvalid"));
+	}
+
+	return normalizeActiveData(rawValue);
+}
+
+function normalizeImportedGameUiSettings(rawValue){
+	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportUiInvalid"));
+	}
+
+	if (
+		!Object.prototype.hasOwnProperty.call(rawValue, "showBTaskPrediction") &&
+		!Object.prototype.hasOwnProperty.call(rawValue, "showBTaskLiveCount")
+	) {
+		throw new Error(t("settings.transferImportUiInvalid"));
+	}
+
+	return normalizeGameUiSettings(rawValue);
+}
+
+function normalizeImportedTheme(rawValue){
+	return String(rawValue || "").trim().toLowerCase() === "dark" ? "dark" : "light";
+}
+
+function normalizeImportedLanguage(rawValue){
+	return String(rawValue || "").trim().toLowerCase() === "zh" ? "zh" : "en";
+}
+
+function normalizeBoardMatrix(rawBoard){
+	if (!Array.isArray(rawBoard) || rawBoard.length !== 10) {
+		throw new Error(t("settings.transferImportBoardsInvalid"));
+	}
+
+	return rawBoard.map((row) => {
+		if (!Array.isArray(row) || row.length !== 10) {
+			throw new Error(t("settings.transferImportBoardsInvalid"));
+		}
+
+		return row.map((cell) => {
+			const numericValue = Number(cell);
+			return Number.isFinite(numericValue) && numericValue > 0
+				? Math.floor(numericValue)
+				: 0;
+		});
+	});
+}
+
+function getBoardMaxStep(board){
+	let maxStep = 0;
+	board.forEach((row) => {
+		row.forEach((cell) => {
+			if (cell > maxStep) maxStep = cell;
+		});
+	});
+	return maxStep;
+}
+
+function normalizeCustomBoardItem(rawItem, index){
+	if (!rawItem || typeof rawItem !== "object" || Array.isArray(rawItem)) {
+		throw new Error(t("settings.transferImportBoardsInvalid"));
+	}
+
+	const board = normalizeBoardMatrix(rawItem.board);
+	const steps = getBoardMaxStep(board);
+	if (steps < 2) {
+		throw new Error(t("settings.transferImportBoardsInvalid"));
+	}
+
+	const updatedAt = Number(rawItem.updatedAt);
+	const createdAt = Number(rawItem.createdAt);
+	const now = Date.now();
+	const fallbackName = t("createBoards.defaultBoardName");
+
+	return {
+		id: String(rawItem.id || `cb_import_${Date.now().toString(36)}_${index}`),
+		name: String(rawItem.name || fallbackName).trim() || fallbackName,
+		desc: String(rawItem.desc || "").trim(),
+		board,
+		steps,
+		updatedAt: Number.isFinite(updatedAt) ? updatedAt : now,
+		createdAt: Number.isFinite(createdAt) ? createdAt : (Number.isFinite(updatedAt) ? updatedAt : now)
+	};
+}
+
+function normalizeImportedCustomBoards(rawValue){
+	if (!Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportBoardsInvalid"));
+	}
+
+	return rawValue.map((item, index) => normalizeCustomBoardItem(item, index));
+}
+
+function normalizeDraftPath(rawPath){
+	if (!Array.isArray(rawPath)) return [];
+
+	return rawPath
+		.map((point) => {
+			if (!Array.isArray(point) || point.length < 2) return null;
+			const row = Number(point[0]);
+			const col = Number(point[1]);
+			if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || row > 9 || col < 0 || col > 9) {
+				return null;
+			}
+			return [row, col];
+		})
+		.filter(Boolean);
+}
+
+function normalizeImportedCustomBoardDraft(rawValue){
+	if (rawValue === null) return null;
+	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
+		throw new Error(t("settings.transferImportDraftInvalid"));
+	}
+
+	return {
+		name: String(rawValue.name || "").trim(),
+		desc: String(rawValue.desc || "").trim(),
+		path: normalizeDraftPath(rawValue.path),
+		editingId: typeof rawValue.editingId === "string" ? rawValue.editingId : "",
+		updatedAt: Number.isFinite(Number(rawValue.updatedAt)) ? Number(rawValue.updatedAt) : Date.now()
+	};
+}
+
+function getCurrentDataTransferSnapshot(){
+	return {
+		[DATA_TRANSFER_STORAGE_KEYS.actionCountRange]: getCurrentActionCountRangeSnapshot(),
+		[DATA_TRANSFER_STORAGE_KEYS.gameData]: getCurrentGameDataSnapshot(),
+		[DATA_TRANSFER_STORAGE_KEYS.activeData]: getCurrentActiveDataSnapshot(),
+		[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings]: getCurrentGameUiSettingsSnapshot(),
+		[DATA_TRANSFER_STORAGE_KEYS.customBoards]: normalizeImportedCustomBoards(
+			readStoredJson(DATA_TRANSFER_STORAGE_KEYS.customBoards, [])
+		),
+		[DATA_TRANSFER_STORAGE_KEYS.customBoardDraft]: normalizeImportedCustomBoardDraft(
+			readStoredJson(DATA_TRANSFER_STORAGE_KEYS.customBoardDraft, null)
+		),
+		[DATA_TRANSFER_STORAGE_KEYS.language]: normalizeImportedLanguage(
+			localStorage.getItem(DATA_TRANSFER_STORAGE_KEYS.language) ||
+			(typeof window.getLanguage === "function" ? window.getLanguage() : "en")
+		),
+		[DATA_TRANSFER_STORAGE_KEYS.theme]: normalizeImportedTheme(
+			localStorage.getItem(DATA_TRANSFER_STORAGE_KEYS.theme) ||
+			document.body.getAttribute("data-theme") ||
+			"light"
+		)
+	};
+}
+
+function buildDataTransferPayload(){
+	return {
+		format: DATA_TRANSFER_FORMAT,
+		version: DATA_TRANSFER_VERSION,
+		app: "Dual Protocol",
+		exportedAt: new Date().toISOString(),
+		data: getCurrentDataTransferSnapshot()
+	};
+}
+
+function getDataTransferFileName(isoString){
+	const date = isoString ? new Date(isoString) : new Date();
+	const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+	const parts = [
+		safeDate.getFullYear(),
+		String(safeDate.getMonth() + 1).padStart(2, "0"),
+		String(safeDate.getDate()).padStart(2, "0"),
+		String(safeDate.getHours()).padStart(2, "0"),
+		String(safeDate.getMinutes()).padStart(2, "0"),
+		String(safeDate.getSeconds()).padStart(2, "0")
+	];
+	return `dual-protocol-backup-${parts.join("")}.json`;
+}
+
+function refreshDataTransferExport(){
+	const output = document.getElementById("exportDataOutput");
+	const summary = document.getElementById("transferExportSummary");
+	const copyBtn = document.getElementById("copyExportBtn");
+	const downloadBtn = document.getElementById("downloadExportBtn");
+	if (!output || !summary || !copyBtn || !downloadBtn) return;
+
+	try {
+		const payload = buildDataTransferPayload();
+		const exportText = JSON.stringify(payload, null, 2);
+		const boardCount = Array.isArray(payload.data?.[DATA_TRANSFER_STORAGE_KEYS.customBoards])
+			? payload.data[DATA_TRANSFER_STORAGE_KEYS.customBoards].length
+			: 0;
+
+		dataTransferState.exportText = exportText;
+		dataTransferState.exportFilename = getDataTransferFileName(payload.exportedAt);
+		dataTransferState.exportError = "";
+
+		output.value = exportText;
+		summary.textContent = t("settings.transferSummary", {
+			groups: Object.keys(payload.data || {}).length,
+			boards: boardCount
+		});
+		copyBtn.disabled = false;
+		downloadBtn.disabled = false;
+	} catch (error) {
+		dataTransferState.exportText = "";
+		dataTransferState.exportFilename = "";
+		dataTransferState.exportError = error?.message || t("settings.transferExportUnavailable");
+
+		output.value = dataTransferState.exportError;
+		summary.textContent = t("settings.transferExportUnavailable");
+		copyBtn.disabled = true;
+		downloadBtn.disabled = true;
+	}
+}
+
+function syncDataTransferIndicator(){
+	const overlay = document.getElementById("dataTransferModal");
+	if (!overlay || overlay.hidden) return;
+
+	const segmented = document.getElementById("transferSegmented");
+	const indicator = segmented?.querySelector(".board-seg-indicator");
+	const activeBtn = segmented?.querySelector(".board-seg-btn.active");
+	if (!segmented || !indicator || !activeBtn) return;
+
+	const rootRect = segmented.getBoundingClientRect();
+	const btnRect = activeBtn.getBoundingClientRect();
+	indicator.style.width = `${btnRect.width}px`;
+	indicator.style.transform = `translateX(${btnRect.left - rootRect.left}px)`;
+}
+
+function switchDataTransferTab(tabKey){
+	const overlay = document.getElementById("dataTransferModal");
+	if (!overlay) return;
+
+	overlay.querySelectorAll(".board-seg-btn").forEach((btn) => {
+		btn.classList.toggle("active", btn.dataset.tab === tabKey);
+	});
+
+	overlay.querySelectorAll("[data-transfer-panel]").forEach((panel) => {
+		panel.hidden = panel.dataset.transferPanel !== tabKey;
+	});
+
+	dataTransferState.activeTab = tabKey;
+	if (tabKey === "export") refreshDataTransferExport();
+
+	requestAnimationFrame(syncDataTransferIndicator);
+}
+
+function openDataTransferDialog(tabKey = "export"){
+	const overlay = document.getElementById("dataTransferModal");
+	if (!overlay) return;
+
+	overlay.hidden = false;
+	document.body.classList.add("dialog-open");
+	switchDataTransferTab(tabKey);
+
+	requestAnimationFrame(() => {
+		syncDataTransferIndicator();
+		const activeBtn = overlay.querySelector(".board-seg-btn.active");
+		if (activeBtn) activeBtn.focus();
+	});
+
+	track("settings_data_dialog_opened");
+}
+
+function closeDataTransferDialog(){
+	const overlay = document.getElementById("dataTransferModal");
+	if (!overlay) return;
+
+	overlay.hidden = true;
+	document.body.classList.remove("dialog-open");
+}
+
+function clearDataTransferImportInput(){
+	const input = document.getElementById("importDataInput");
+	const fileInput = document.getElementById("importDataFile");
+	const fileName = document.getElementById("importFileName");
+
+	if (input) input.value = "";
+	if (fileInput) fileInput.value = "";
+	if (fileName) fileName.textContent = t("settings.transferNoFile");
+}
+
+function readFileAsText(file){
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result || ""));
+		reader.onerror = () => reject(new Error(t("settings.transferFileReadError")));
+		reader.readAsText(file);
+	});
+}
+
+async function handleDataTransferFileSelected(event){
+	const file = event?.target?.files?.[0];
+	const fileName = document.getElementById("importFileName");
+	const importInput = document.getElementById("importDataInput");
+
+	if (!file) {
+		if (fileName) fileName.textContent = t("settings.transferNoFile");
+		return;
+	}
+
+	try {
+		const text = await readFileAsText(file);
+		if (importInput) importInput.value = text;
+		if (fileName) {
+			fileName.textContent = t("settings.transferSelectedFile", { name: file.name });
+		}
+		switchDataTransferTab("import");
+		track("settings_data_file_loaded");
+	} catch (error) {
+		if (fileName) fileName.textContent = t("settings.transferNoFile");
+		showModal(t("settings.transferImportErrorTitle"), error?.message || t("settings.transferFileReadError"));
+	}
+}
+
+async function copyTextToClipboard(text){
+	if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+		try {
+			await navigator.clipboard.writeText(text);
+			return true;
+		} catch (error) {}
+	}
+
+	const helper = document.createElement("textarea");
+	helper.value = text;
+	helper.setAttribute("readonly", "");
+	helper.style.position = "fixed";
+	helper.style.left = "-9999px";
+	helper.style.top = "0";
+	document.body.appendChild(helper);
+	helper.select();
+
+	let copied = false;
+	try {
+		copied = document.execCommand("copy");
+	} catch (error) {
+		copied = false;
+	}
+
+	helper.remove();
+	return copied;
+}
+
+async function copyDataTransferExport(){
+	if (!dataTransferState.exportText) {
+		showModal(t("settings.transferExportErrorTitle"), dataTransferState.exportError || t("settings.transferExportUnavailable"));
+		return;
+	}
+
+	const copied = await copyTextToClipboard(dataTransferState.exportText);
+	if (!copied) {
+		showModal(t("settings.transferExportErrorTitle"), t("settings.transferCopyError"));
+		return;
+	}
+
+	track("settings_data_export_copied");
+	showModal(t("settings.transferCopySuccessTitle"), t("settings.transferCopySuccessMessage"));
+}
+
+function downloadDataTransferExport(){
+	if (!dataTransferState.exportText) {
+		showModal(t("settings.transferExportErrorTitle"), dataTransferState.exportError || t("settings.transferExportUnavailable"));
+		return;
+	}
+
+	try {
+		const blob = new Blob([dataTransferState.exportText], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement("a");
+		anchor.href = url;
+		anchor.download = dataTransferState.exportFilename || getDataTransferFileName();
+		document.body.appendChild(anchor);
+		anchor.click();
+		anchor.remove();
+		window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+		track("settings_data_export_downloaded");
+	} catch (error) {
+		showModal(t("settings.transferExportErrorTitle"), t("settings.transferDownloadError"));
+	}
+}
+
+function extractImportedDataRoot(parsedValue){
+	if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+		throw new Error(t("settings.transferImportUnsupported"));
+	}
+
+	if (parsedValue.data && typeof parsedValue.data === "object" && !Array.isArray(parsedValue.data)) {
+		return parsedValue.data;
+	}
+
+	return parsedValue;
+}
+
+function normalizeImportedBackup(parsedValue){
+	const source = extractImportedDataRoot(parsedValue);
+	const normalizedStorage = {};
+
+	const importedActionRange = source[DATA_TRANSFER_STORAGE_KEYS.actionCountRange] ?? source[LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY];
+	if (importedActionRange !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.actionCountRange] = normalizeImportedActionCountRange(importedActionRange);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.gameData] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.gameData] = normalizeImportedGameData(source[DATA_TRANSFER_STORAGE_KEYS.gameData]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.activeData] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.activeData] = normalizeImportedActiveData(source[DATA_TRANSFER_STORAGE_KEYS.activeData]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings] = normalizeImportedGameUiSettings(source[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.customBoards] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.customBoards] = normalizeImportedCustomBoards(source[DATA_TRANSFER_STORAGE_KEYS.customBoards]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.customBoardDraft] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.customBoardDraft] = normalizeImportedCustomBoardDraft(source[DATA_TRANSFER_STORAGE_KEYS.customBoardDraft]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.language] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.language] = normalizeImportedLanguage(source[DATA_TRANSFER_STORAGE_KEYS.language]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.theme] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.theme] = normalizeImportedTheme(source[DATA_TRANSFER_STORAGE_KEYS.theme]);
+	}
+
+	const appliedKeys = Object.keys(normalizedStorage);
+	if (!appliedKeys.length) {
+		throw new Error(t("settings.transferImportUnsupported"));
+	}
+
+	return { storage: normalizedStorage, appliedKeys };
+}
+
+function applyImportedBackup(storage){
+	Object.entries(storage).forEach(([storageKey, value]) => {
+		if (storageKey === DATA_TRANSFER_STORAGE_KEYS.language || storageKey === DATA_TRANSFER_STORAGE_KEYS.theme) {
+			localStorage.setItem(storageKey, value);
+			return;
+		}
+
+		if (storageKey === DATA_TRANSFER_STORAGE_KEYS.actionCountRange) {
+			localStorage.setItem(storageKey, JSON.stringify(value));
+			localStorage.removeItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY);
+			return;
+		}
+
+		if (storageKey === DATA_TRANSFER_STORAGE_KEYS.customBoardDraft && value === null) {
+			localStorage.removeItem(storageKey);
+			return;
+		}
+
+		localStorage.setItem(storageKey, JSON.stringify(value));
+	});
+}
+
+async function importDataTransferBackup(){
+	const importInput = document.getElementById("importDataInput");
+	const rawText = String(importInput?.value || "").trim();
+	if (!rawText) {
+		showModal(t("settings.transferImportErrorTitle"), t("settings.transferImportEmpty"));
+		return;
+	}
+
+	let parsedValue;
+	try {
+		parsedValue = JSON.parse(rawText);
+	} catch (error) {
+		showModal(t("settings.transferImportErrorTitle"), t("settings.transferImportParseError"));
+		return;
+	}
+
+	let normalizedImport;
+	try {
+		normalizedImport = normalizeImportedBackup(parsedValue);
+	} catch (error) {
+		showModal(t("settings.transferImportErrorTitle"), error?.message || t("settings.transferImportUnsupported"));
+		return;
+	}
+
+	const shouldImport = await showConfirmDialog({
+		title: t("settings.transferImportConfirmTitle"),
+		message: t("settings.transferImportConfirmMessage", { groups: normalizedImport.appliedKeys.length }),
+		confirmText: t("settings.transferApply"),
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldImport) return;
+
+	applyImportedBackup(normalizedImport.storage);
+	closeDataTransferDialog();
+	track("settings_data_imported", { groups: normalizedImport.appliedKeys.length });
+	showModal(
+		t("settings.transferImportSuccessTitle"),
+		t("settings.transferImportSuccessMessage"),
+		{ onClose: () => window.location.reload() }
+	);
+}
+
+function initDataTransferDialog(){
+	const openBtn = document.getElementById("openDataTransferBtn");
+	const closeBtn = document.getElementById("closeDataTransferBtn");
+	const overlay = document.getElementById("dataTransferModal");
+	const segmented = document.getElementById("transferSegmented");
+	if (!openBtn || !closeBtn || !overlay || !segmented) return;
+
+	openBtn.addEventListener("click", () => openDataTransferDialog("export"));
+	closeBtn.addEventListener("click", closeDataTransferDialog);
+
+	segmented.querySelectorAll(".board-seg-btn").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			if (btn.classList.contains("active")) return;
+			switchDataTransferTab(btn.dataset.tab);
+			track("settings_data_dialog_tab_switched", { tab: btn.dataset.tab });
+		});
+	});
+
+	overlay.addEventListener("click", (event) => {
+		if (event.target !== overlay) return;
+		if (typeof window.playDialogShake === "function") {
+			window.playDialogShake(closeBtn);
+			return;
+		}
+		closeDataTransferDialog();
+	});
+
+	overlay.addEventListener("keydown", (event) => {
+		if (event.key !== "Escape") return;
+		event.preventDefault();
+		closeDataTransferDialog();
+	});
+
+	document.getElementById("copyExportBtn")?.addEventListener("click", copyDataTransferExport);
+	document.getElementById("downloadExportBtn")?.addEventListener("click", downloadDataTransferExport);
+	document.getElementById("clearImportBtn")?.addEventListener("click", clearDataTransferImportInput);
+	document.getElementById("applyImportBtn")?.addEventListener("click", importDataTransferBackup);
+	document.getElementById("importDataFile")?.addEventListener("change", handleDataTransferFileSelected);
+
+	window.addEventListener("resize", syncDataTransferIndicator);
+
+	clearDataTransferImportInput();
+	refreshDataTransferExport();
+}
+
 /* =========================
    Save
 ========================= */
@@ -826,12 +1531,9 @@ function saveAllSettings(){
 	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
 	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
 
-	if (minVal % 10 !== 0 || maxVal % 10 !== 0) {
-		showModal(t("settings.errorTitle"), t("settings.errorMultipleOfTen"));
-		return;
-	}
-	if (minVal >= maxVal) {
-		showModal(t("settings.errorTitle"), t("settings.errorMinLessThanMax"));
+	const validationError = getActionCountRangeValidationError(minVal, maxVal);
+	if (validationError) {
+		showModal(t("settings.errorTitle"), validationError);
 		return;
 	}
 
@@ -875,10 +1577,18 @@ function showModal(title, message) {
 	const modal = document.getElementById("modal");
 	modal.querySelector("h2").textContent = title;
 	modal.querySelector("p").textContent = message;
+	const options = arguments[2] || {};
+	modal._closeHandler = typeof options.onClose === "function" ? options.onClose : null;
 	modal.classList.add("show");
 }
 function closeModal() {
-	document.getElementById("modal").classList.remove("show");
+	const modal = document.getElementById("modal");
+	modal.classList.remove("show");
+	const closeHandler = modal._closeHandler;
+	modal._closeHandler = null;
+	if (typeof closeHandler === "function") {
+		closeHandler();
+	}
 }
 </script>
 
