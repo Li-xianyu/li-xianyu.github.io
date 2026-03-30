@@ -63,6 +63,19 @@ body{
 	background:#c94f74;
 }
 
+.top-btn-back{
+	background:color-mix(in srgb, var(--black-cell) 20%, #ffffff);
+	color:var(--black-cell);
+	border:1px solid color-mix(in srgb, var(--black-cell) 28%, #ffffff);
+	box-shadow:0 6px 16px color-mix(in srgb, var(--shadow-color) 70%, transparent);
+}
+
+[data-theme="dark"] .top-btn-back{
+	background:color-mix(in srgb, var(--black-cell) 30%, rgba(255,255,255,0.06));
+	color:#e9ddff;
+	border:1px solid color-mix(in srgb, var(--black-cell) 38%, rgba(255,255,255,0.3));
+}
+
 .hero{
 	margin-bottom:22px;
 	padding:26px 22px;
