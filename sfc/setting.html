@@ -22,7 +22,7 @@
 	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260331-8">
+	<link rel="stylesheet" href="css/setting.css?v=20260331-10">
 	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body>
@@ -165,6 +165,7 @@
 			<div class="board-segmented manage-segmented" id="manageSegmented" data-active="presets">
 				<button class="board-seg-btn active" type="button" data-manage-tab="presets" id="manageTabPresets">Presets</button>
 				<button class="board-seg-btn" type="button" data-manage-tab="backup" id="manageTabBackup">Backup</button>
+				<button class="board-seg-btn" type="button" data-manage-tab="reset" id="manageTabReset">Reset</button>
 				<div class="board-seg-indicator"></div>
 			</div>
 
@@ -218,6 +219,39 @@
 						</section>
 					</div>
 				</section>
+
+				<section class="manage-panel" data-manage-panel="reset" hidden>
+					<div class="manage-panel-head manage-panel-head-stack">
+						<p class="manage-panel-status" id="resetLabel">Core settings reset</p>
+						<p class="manage-panel-note" id="resetHint">Only affects B/Z rules and local presets. EX display, language, theme, and custom boards stay as they are.</p>
+					</div>
+
+					<div class="reset-list">
+						<article class="reset-card">
+							<h4 class="reset-card-title" id="resetRulesTitle">Reset B/Z to defaults</h4>
+							<p class="reset-card-desc" id="resetRulesDesc">Restore B/Z selection states, weights, and the B single-round range to the program defaults. This fills the current form and still needs Save.</p>
+							<div class="reset-card-actions">
+								<button class="editor-btn editor-btn-secondary" id="resetRulesBtn" type="button">Reset B/Z</button>
+							</div>
+						</article>
+
+						<article class="reset-card">
+							<h4 class="reset-card-title" id="clearPresetsTitle">Clear all presets</h4>
+							<p class="reset-card-desc" id="clearPresetsDesc">Delete the five local preset slots immediately. Current form values are not changed.</p>
+							<div class="reset-card-actions">
+								<button class="editor-btn editor-btn-secondary" id="clearPresetsBtn" type="button">Clear presets</button>
+							</div>
+						</article>
+
+						<article class="reset-card reset-card-danger">
+							<h4 class="reset-card-title" id="resetRulesAndPresetsTitle">Clean start</h4>
+							<p class="reset-card-desc" id="resetRulesAndPresetsDesc">Reset B/Z back to defaults and clear all presets together. EX display, language, theme, and custom boards are still kept.</p>
+							<div class="reset-card-actions">
+								<button class="editor-btn editor-btn-danger" id="resetRulesAndPresetsBtn" type="button">Reset B/Z and presets</button>
+							</div>
+						</article>
+					</div>
+				</section>
 			</div>
 
 			<div class="dialog-buttons transfer-footer">
@@ -237,19 +271,20 @@ const SETTINGS_PARENT_MESSAGE_TYPE = "sfc:settings-saved";
 const SETTINGS_PARENT_SCROLL_MESSAGE_TYPE = "sfc:settings-scroll-progress";
 const SETTINGS_EMBED_TITLE_SCROLL_DISTANCE = 72;
 const DATA_TRANSFER_FORMAT = "dual-protocol-local-backup";
-const DATA_TRANSFER_VERSION = 1;
+const DATA_TRANSFER_VERSION = 2;
+const SETTINGS_PRESETS_STORAGE_KEY = "SETTINGS_PRESETS";
+const SETTINGS_PRESET_LIMIT = 5;
 const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
 	actionCountRange: ACTION_COUNT_RANGE_STORAGE_KEY,
 	gameData: "GameData",
 	activeData: "ActiveData",
 	gameUiSettings: GAME_UI_SETTINGS_STORAGE_KEY,
+	settingsPresets: SETTINGS_PRESETS_STORAGE_KEY,
 	customBoards: "CUSTOM_BOARDS",
 	customBoardDraft: "CUSTOM_BOARD_DRAFT",
 	language: "APP_LANGUAGE",
 	theme: "theme"
 });
-const SETTINGS_PRESETS_STORAGE_KEY = "SETTINGS_PRESETS";
-const SETTINGS_PRESET_LIMIT = 5;
 
 const dataTransferState = {
 	activeTab: "export",
@@ -1149,15 +1184,39 @@ function getManageCopy(){
 	if (lang === "zh" || lang.startsWith("zh")) {
 		return {
 			title: "设置管理",
-			manageLabel: "打开预设和备份",
+			manageLabel: "打开预设、备份和重置",
 			presetsTab: "预设",
 			backupTab: "备份",
+			resetTab: "重置",
 			presetUsage: "已保存 {count}/{limit}",
 			backupLabel: "本地备份",
+			resetLabel: "核心设置重置",
+			resetHint: "只影响 B/Z 规则和本地预设。EX 显示、语言、主题、自定义棋盘都会保留。",
 			presetInfoTitle: "预设说明",
 			presetInfoMessage: "最多可保存 5 组规则预设。应用预设只会填充当前表单，仍需点击底部保存才会正式生效。",
 			backupInfoTitle: "备份说明",
-			backupInfoMessage: "导出包含规则设置、B/Z 内容池、界面显示选项、自定义棋盘、草稿、语言和主题。导入会覆盖此设备上对应的本地数据。",
+			backupInfoMessage: "导出包含规则设置、规则预设、B/Z 内容池、界面显示选项、自定义棋盘、草稿、语言和主题。导入会覆盖此设备上对应的本地数据。",
+			resetRulesTitle: "恢复 B/Z 默认",
+			resetRulesDesc: "把 B/Z 的选中状态、权重和 B 单次核心范围恢复为程序默认值。这只会填入当前表单，仍需点击底部保存才会正式生效。",
+			resetRulesAction: "恢复 B/Z 默认",
+			resetRulesConfirmTitle: "恢复 B/Z 默认？",
+			resetRulesConfirmMessage: "这会把当前表单里的 B/Z 选中状态、权重和 B 单次核心范围恢复为程序默认值，自定义 B/Z 条目也会从表单中移除。之后仍需点击底部保存才会正式生效。",
+			resetRulesSuccessTitle: "B/Z 已恢复默认",
+			resetRulesSuccessMessage: "默认值已经填入当前表单。记得点击底部保存，才会正式应用。",
+			clearPresetsTitle: "清空全部预设",
+			clearPresetsDesc: "立即删除本地保存的 5 个预设槽位，不会改动当前表单内容。",
+			clearPresetsAction: "清空预设",
+			clearPresetsConfirmTitle: "清空全部预设？",
+			clearPresetsConfirmMessage: "这会立即删除本地保存的所有预设，且无法撤销。",
+			clearPresetsSuccessTitle: "预设已清空",
+			clearPresetsSuccessMessage: "本地预设已全部删除。",
+			resetRulesAndPresetsTitle: "一键清零",
+			resetRulesAndPresetsDesc: "同时把 B/Z 恢复为默认，并清空全部预设。EX 显示、语言、主题和自定义棋盘不会受影响。",
+			resetRulesAndPresetsAction: "恢复 B/Z 并清空预设",
+			resetRulesAndPresetsConfirmTitle: "一键清零这些设置？",
+			resetRulesAndPresetsConfirmMessage: "这会清空全部本地预设，并把当前表单里的 B/Z 恢复为程序默认值。之后仍需点击底部保存，B/Z 的改动才会正式生效。",
+			resetRulesAndPresetsSuccessTitle: "核心设置已清零",
+			resetRulesAndPresetsSuccessMessage: "B/Z 默认值已经填入当前表单，本地预设也已清空。记得点击底部保存，才会正式应用。",
 			slotLabel: "预设 {index}",
 			defaultPresetName: "预设 {index}",
 			emptyTitle: "空预设位",
@@ -1192,15 +1251,39 @@ function getManageCopy(){
 
 		return {
 			title: "Settings Manager",
-			manageLabel: "Open presets and backup",
+			manageLabel: "Open presets, backup, and reset actions",
 			presetsTab: "Presets",
 			backupTab: "Backup",
+			resetTab: "Reset",
 			presetUsage: "{count}/{limit} saved",
 			backupLabel: "Local backup",
+			resetLabel: "Core settings reset",
+			resetHint: "Only affects B/Z rules and local presets. EX display, language, theme, and custom boards stay as they are.",
 			presetInfoTitle: "Preset info",
 			presetInfoMessage: "Save up to five reusable settings presets. Applying a preset only fills the current form and still needs Save to take effect.",
 			backupInfoTitle: "Backup info",
-			backupInfoMessage: "Export includes rule settings, B/Z pools, in-game display options, custom boards, board draft, language, and theme. Import will overwrite the matching local data on this device.",
+			backupInfoMessage: "Export includes rule settings, settings presets, B/Z pools, in-game display options, custom boards, board draft, language, and theme. Import will overwrite the matching local data on this device.",
+			resetRulesTitle: "Reset B/Z to defaults",
+			resetRulesDesc: "Restore B/Z selections, weights, and the B per-round range to the program defaults. This only fills the current form and still needs Save.",
+			resetRulesAction: "Reset B/Z",
+			resetRulesConfirmTitle: "Reset B/Z to defaults?",
+			resetRulesConfirmMessage: "This restores the current form's B/Z selections, weights, and the B per-round range to the program defaults. Custom B/Z items will also be removed from the form. Save is still required to apply it.",
+			resetRulesSuccessTitle: "B/Z reset in form",
+			resetRulesSuccessMessage: "The default values were loaded into the current form. Save settings to make them take effect.",
+			clearPresetsTitle: "Clear all presets",
+			clearPresetsDesc: "Immediately remove all five local preset slots without changing the current form.",
+			clearPresetsAction: "Clear presets",
+			clearPresetsConfirmTitle: "Clear all presets?",
+			clearPresetsConfirmMessage: "This immediately deletes every local preset and cannot be undone.",
+			clearPresetsSuccessTitle: "Presets cleared",
+			clearPresetsSuccessMessage: "All local presets were removed.",
+			resetRulesAndPresetsTitle: "Clean start",
+			resetRulesAndPresetsDesc: "Reset B/Z back to defaults and clear all presets together. EX display, language, theme, and custom boards stay unchanged.",
+			resetRulesAndPresetsAction: "Reset B/Z and presets",
+			resetRulesAndPresetsConfirmTitle: "Clean start these settings?",
+			resetRulesAndPresetsConfirmMessage: "This clears all local presets and restores the current form's B/Z settings to the program defaults. Save is still required before the B/Z changes take effect.",
+			resetRulesAndPresetsSuccessTitle: "Core settings cleaned",
+			resetRulesAndPresetsSuccessMessage: "B/Z defaults were loaded into the current form and local presets were cleared. Save settings to make the reset take effect.",
 			slotLabel: "Preset {index}",
 			defaultPresetName: "Preset {index}",
 			emptyTitle: "Empty slot",
@@ -1248,7 +1331,19 @@ function applyManageCopy(){
 	setText("manageTitle", copy.title);
 	setText("manageTabPresets", copy.presetsTab);
 	setText("manageTabBackup", copy.backupTab);
+	setText("manageTabReset", copy.resetTab);
 	setText("backupLabel", copy.backupLabel);
+	setText("resetLabel", copy.resetLabel);
+	setText("resetHint", copy.resetHint);
+	setText("resetRulesTitle", copy.resetRulesTitle);
+	setText("resetRulesDesc", copy.resetRulesDesc);
+	setText("resetRulesBtn", copy.resetRulesAction);
+	setText("clearPresetsTitle", copy.clearPresetsTitle);
+	setText("clearPresetsDesc", copy.clearPresetsDesc);
+	setText("clearPresetsBtn", copy.clearPresetsAction);
+	setText("resetRulesAndPresetsTitle", copy.resetRulesAndPresetsTitle);
+	setText("resetRulesAndPresetsDesc", copy.resetRulesAndPresetsDesc);
+	setText("resetRulesAndPresetsBtn", copy.resetRulesAndPresetsAction);
 	setText("closeManageBtn", copy.close);
 
 	const presetInfoBtn = document.getElementById("presetInfoBtn");
@@ -1339,7 +1434,7 @@ function getStoredPresetSlots(){
 	return Array.from({ length: SETTINGS_PRESET_LIMIT }, (_, index) => normalizeStoredPresetItem(rawItems[index], index));
 }
 
-function persistPresetSlots(slots){
+function serializePresetSlots(slots){
 	const safeSlots = Array.from({ length: SETTINGS_PRESET_LIMIT }, (_, index) => {
 		const item = Array.isArray(slots) ? slots[index] : null;
 		if (!item) return null;
@@ -1352,10 +1447,41 @@ function persistPresetSlots(slots){
 		};
 	});
 
-	localStorage.setItem(SETTINGS_PRESETS_STORAGE_KEY, JSON.stringify({
+	return {
 		version: 1,
 		items: safeSlots
-	}));
+	};
+}
+
+function persistPresetSlots(slots){
+	localStorage.setItem(SETTINGS_PRESETS_STORAGE_KEY, JSON.stringify(serializePresetSlots(slots)));
+}
+
+function getCurrentSettingsPresetsSnapshot(){
+	return serializePresetSlots(getStoredPresetSlots());
+}
+
+function normalizeImportedSettingsPresets(rawValue){
+	if (rawValue === null) {
+		return serializePresetSlots([]);
+	}
+
+	const rawItems = Array.isArray(rawValue)
+		? rawValue
+		: Array.isArray(rawValue?.items)
+			? rawValue.items
+			: null;
+
+	if (!rawItems) {
+		throw new Error("Invalid preset payload");
+	}
+
+	const normalizedSlots = Array.from(
+		{ length: SETTINGS_PRESET_LIMIT },
+		(_, index) => normalizeStoredPresetItem(rawItems[index], index)
+	);
+
+	return serializePresetSlots(normalizedSlots);
 }
 
 function countSelectedItems(items){
@@ -1546,6 +1672,37 @@ function applySettingsPresetSnapshot(snapshot){
 	});
 }
 
+function buildDefaultRuleSettingsSnapshot(){
+	return {
+		actionCountRange: normalizeImportedActionCountRange(window.ACTION_COUNT_RANGE || { min: 20, max: 50 }),
+		gameData: normalizeGameData(null),
+		activeData: normalizeActiveData(null)
+	};
+}
+
+function applyRuleSettingsResetSnapshot(snapshot){
+	const normalized = snapshot && typeof snapshot === "object"
+		? snapshot
+		: buildDefaultRuleSettingsSnapshot();
+
+	document.getElementById("minCount").value = normalized.actionCountRange.min;
+	document.getElementById("maxCount").value = normalized.actionCountRange.max;
+
+	GameData = normalizeImportedGameData(normalized.gameData);
+	fillWeightInputsFromGameData();
+	renderSettingsB();
+
+	ActiveData = normalizeImportedActiveData(normalized.activeData);
+	document.getElementById("weight-active").value = ActiveData.weight;
+	renderSettingsZ();
+
+	requestAnimationFrame(() => {
+		observeFieldsets();
+		refreshDataTransferExport();
+		requestEmbedScrollSync(true);
+	});
+}
+
 async function createPresetSlot(index){
 	const copy = getManageCopy();
 	let snapshot;
@@ -1659,6 +1816,60 @@ function applyPresetSlot(index){
 	}
 }
 
+async function resetRuleSettingsToDefault(){
+	const copy = getManageCopy();
+	const shouldReset = await showConfirmDialog({
+		title: copy.resetRulesConfirmTitle,
+		message: copy.resetRulesConfirmMessage,
+		confirmText: copy.resetRulesAction,
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldReset) return;
+
+	applyRuleSettingsResetSnapshot(buildDefaultRuleSettingsSnapshot());
+	closeManageDialog();
+	track("settings_rules_reset_to_default");
+	showModal(copy.resetRulesSuccessTitle, copy.resetRulesSuccessMessage);
+}
+
+async function clearAllSettingsPresets(){
+	const copy = getManageCopy();
+	const shouldClear = await showConfirmDialog({
+		title: copy.clearPresetsConfirmTitle,
+		message: copy.clearPresetsConfirmMessage,
+		confirmText: copy.clearPresetsAction,
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldClear) return;
+
+	persistPresetSlots([]);
+	renderPresetList();
+	refreshDataTransferExport();
+	track("settings_presets_cleared");
+	showModal(copy.clearPresetsSuccessTitle, copy.clearPresetsSuccessMessage);
+}
+
+async function resetRulesAndPresets(){
+	const copy = getManageCopy();
+	const shouldReset = await showConfirmDialog({
+		title: copy.resetRulesAndPresetsConfirmTitle,
+		message: copy.resetRulesAndPresetsConfirmMessage,
+		confirmText: copy.resetRulesAndPresetsAction,
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldReset) return;
+
+	persistPresetSlots([]);
+	renderPresetList();
+	applyRuleSettingsResetSnapshot(buildDefaultRuleSettingsSnapshot());
+	closeManageDialog();
+	track("settings_rules_and_presets_reset");
+	showModal(copy.resetRulesAndPresetsSuccessTitle, copy.resetRulesAndPresetsSuccessMessage);
+}
+
 function syncManageIndicator(){
 	const segmented = document.getElementById("manageSegmented");
 	const indicator = segmented?.querySelector(".board-seg-indicator");
@@ -1688,7 +1899,7 @@ function switchManageTab(tabKey){
 	manageState.activeTab = tabKey;
 	if (tabKey === "presets") {
 		renderPresetList();
-	} else {
+	} else if (tabKey === "backup") {
 		switchDataTransferTab(dataTransferState.activeTab || "export");
 	}
 
@@ -1743,6 +1954,9 @@ function initManageDialog(){
 	closeBtn.addEventListener("click", closeManageDialog);
 	document.getElementById("presetInfoBtn")?.addEventListener("click", () => showManageInfo("presets"));
 	document.getElementById("backupInfoBtn")?.addEventListener("click", () => showManageInfo("backup"));
+	document.getElementById("resetRulesBtn")?.addEventListener("click", resetRuleSettingsToDefault);
+	document.getElementById("clearPresetsBtn")?.addEventListener("click", clearAllSettingsPresets);
+	document.getElementById("resetRulesAndPresetsBtn")?.addEventListener("click", resetRulesAndPresets);
 
 	segmented.querySelectorAll("[data-manage-tab]").forEach((btn) => {
 		btn.addEventListener("click", () => {
@@ -1939,6 +2153,7 @@ function getCurrentDataTransferSnapshot(){
 		[DATA_TRANSFER_STORAGE_KEYS.gameData]: getCurrentGameDataSnapshot(),
 		[DATA_TRANSFER_STORAGE_KEYS.activeData]: getCurrentActiveDataSnapshot(),
 		[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings]: getCurrentGameUiSettingsSnapshot(),
+		[DATA_TRANSFER_STORAGE_KEYS.settingsPresets]: getCurrentSettingsPresetsSnapshot(),
 		[DATA_TRANSFER_STORAGE_KEYS.customBoards]: normalizeImportedCustomBoards(
 			readStoredJson(DATA_TRANSFER_STORAGE_KEYS.customBoards, [])
 		),
@@ -2200,6 +2415,10 @@ function normalizeImportedBackup(parsedValue){
 
 	if (source[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings] !== undefined) {
 		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings] = normalizeImportedGameUiSettings(source[DATA_TRANSFER_STORAGE_KEYS.gameUiSettings]);
+	}
+
+	if (source[DATA_TRANSFER_STORAGE_KEYS.settingsPresets] !== undefined) {
+		normalizedStorage[DATA_TRANSFER_STORAGE_KEYS.settingsPresets] = normalizeImportedSettingsPresets(source[DATA_TRANSFER_STORAGE_KEYS.settingsPresets]);
 	}
 
 	if (source[DATA_TRANSFER_STORAGE_KEYS.customBoards] !== undefined) {

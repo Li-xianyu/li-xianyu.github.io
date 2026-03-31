@@ -1561,6 +1561,15 @@ body.dice-focus .task-panel{
 	padding:16px;
 }
 
+.tabbed-dialog-overlay{
+	align-items:flex-start;
+	overflow-y:auto;
+	padding:
+		calc(env(safe-area-inset-top, 0px) + clamp(24px, 7vh, 72px))
+		16px
+		calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 5vh, 40px));
+}
+
 /* ===== 关键：弹窗改成“头固定 + 内容滚动 + 底固定按钮” ===== */
 @keyframes popIn{
 	0%{ transform:scale(.92); opacity:0; }
@@ -2122,6 +2131,12 @@ body.dice-focus .task-panel{
 	overflow:hidden;
 }
 
+.board-picker-dialog{
+	min-height:min(480px, calc(100vh - 108px));
+	min-height:min(480px, calc(100dvh - 108px));
+	min-height:min(480px, calc(100svh - 108px));
+}
+
 body.settings-embed-open{
 	overflow:hidden;
 }
@@ -2317,6 +2332,11 @@ body.settings-embed-open{
 	padding:14px 16px 10px;
 	overflow:auto;
 	-webkit-overflow-scrolling:touch;
+}
+
+.board-picker-dialog .board-list{
+	flex:1 1 auto;
+	min-height:0;
 }
 
 .board-item{

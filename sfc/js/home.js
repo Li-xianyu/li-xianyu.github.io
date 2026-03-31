@@ -458,10 +458,10 @@ function createBoardDialog(){
 	const customBoards = getCustomBoardOptions();
 
 	const overlay = document.createElement('div');
-	overlay.className = 'punishment-overlay';
+	overlay.className = 'punishment-overlay tabbed-dialog-overlay';
 
 	const dialog = document.createElement('div');
-	dialog.className = 'board-dialog';
+	dialog.className = 'board-dialog board-picker-dialog';
 
 	const title = document.createElement('h3');
 	title.className = 'punishment-title';
