@@ -46,6 +46,10 @@ const roundInfo = document.getElementById('roundInfo');
 const zVetoBadge = document.getElementById('zVetoBadge');
 const bTaskStatsBtn = document.getElementById('bTaskStatsBtn');
 const bTaskLiveCount = document.getElementById('bTaskLiveCount');
+const SETTINGS_PARENT_MESSAGE_TYPE = 'sfc:settings-saved';
+const SETTINGS_SCROLL_MESSAGE_TYPE = 'sfc:settings-scroll-progress';
+
+let settingsEmbedOverlay = null;
 
 const ACTIVE_TEXT = {
 	countPlus5: getCanonicalCategoryItemLabel("active", "count_plus_5"),
@@ -114,6 +118,142 @@ if (board) board.style.display = '';
 if (rolldice) rolldice.style.display = '';
 if (rollmaster) rollmaster.style.display = IS_DUAL ? '' : 'none';
 applyGameUiSettings();
+initEmbeddedSettingsModal();
+
+function syncQuickDockClosedState() {
+	const dock = document.querySelector('.quick-dock');
+	const launcher = document.querySelector('.quick-dock-launcher');
+	const panel = document.querySelector('.quick-dock-panel');
+	if (!dock || !launcher || !panel) return;
+
+	dock.classList.remove('open');
+	launcher.setAttribute('aria-expanded', 'false');
+	panel.setAttribute('aria-hidden', 'true');
+}
+
+function closeEmbeddedSettings(options = {}) {
+	if (!settingsEmbedOverlay) return;
+
+	const shouldRestoreFocus = options.restoreFocus !== false;
+	const launcher = document.querySelector('.quick-action-setting') || document.querySelector('.quick-dock-launcher');
+
+	settingsEmbedOverlay.remove();
+	settingsEmbedOverlay = null;
+	document.body.classList.remove('settings-embed-open');
+
+	if (shouldRestoreFocus && launcher && typeof launcher.focus === 'function') {
+		try {
+			launcher.focus({ preventScroll: true });
+		} catch (error) {
+			launcher.focus();
+		}
+	}
+}
+
+function updateEmbeddedSettingsTitleProgress(progress) {
+	if (!settingsEmbedOverlay) return;
+
+	const value = Math.max(0, Math.min(1, Number(progress) || 0));
+	settingsEmbedOverlay.style.setProperty('--settings-shell-progress', value.toFixed(3));
+	settingsEmbedOverlay.classList.toggle('is-shell-title-visible', value > 0.08);
+}
+
+function createEmbeddedSettingsDialog() {
+	const overlay = document.createElement('div');
+	overlay.className = 'punishment-overlay settings-embed-overlay';
+	overlay.style.setProperty('--settings-shell-progress', '0');
+
+	const dialog = document.createElement('div');
+	dialog.className = 'board-dialog settings-embed-dialog';
+
+	const head = document.createElement('div');
+	head.className = 'settings-embed-head';
+
+	const title = document.createElement('h3');
+	title.className = 'settings-embed-title';
+	title.textContent = t('settings.title');
+
+	const closeBtn = document.createElement('button');
+	closeBtn.type = 'button';
+	closeBtn.className = 'settings-embed-close';
+	closeBtn.setAttribute('aria-label', t('common.actions.close'));
+	closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+	closeBtn.addEventListener('click', () => closeEmbeddedSettings());
+
+	const shell = document.createElement('div');
+	shell.className = 'settings-embed-shell';
+
+	const frame = document.createElement('iframe');
+	frame.className = 'settings-embed-frame';
+	frame.src = 'setting.html?embed=1';
+	frame.setAttribute('title', t('settings.title'));
+	frame.addEventListener('load', () => {
+		overlay.classList.add('is-frame-ready');
+	});
+
+	head.append(title, closeBtn);
+	shell.appendChild(frame);
+	dialog.append(head, shell);
+	overlay.appendChild(dialog);
+
+	overlay.addEventListener('click', (event) => {
+		if (event.target !== overlay) return;
+		if (typeof window.playDialogShake === 'function') {
+			window.playDialogShake(closeBtn);
+			return;
+		}
+		closeEmbeddedSettings();
+	});
+
+	overlay.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape') return;
+		event.preventDefault();
+		closeEmbeddedSettings();
+	});
+
+	overlay._frame = frame;
+	overlay._closeBtn = closeBtn;
+	return overlay;
+}
+
+function openEmbeddedSettings() {
+	if (settingsEmbedOverlay) return;
+
+	syncQuickDockClosedState();
+	settingsEmbedOverlay = createEmbeddedSettingsDialog();
+	document.body.classList.add('settings-embed-open');
+	document.body.appendChild(settingsEmbedOverlay);
+
+	requestAnimationFrame(() => {
+		settingsEmbedOverlay?._closeBtn?.focus();
+	});
+
+	updateEmbeddedSettingsTitleProgress(0);
+
+	track('game_settings_modal_opened');
+}
+
+function initEmbeddedSettingsModal() {
+	window.openEmbeddedSettings = openEmbeddedSettings;
+
+	window.addEventListener('message', (event) => {
+		if (!settingsEmbedOverlay) return;
+
+		const frame = settingsEmbedOverlay._frame;
+		if (!frame || event.source !== frame.contentWindow) return;
+
+		const data = event.data || {};
+		if (data.type === SETTINGS_SCROLL_MESSAGE_TYPE) {
+			updateEmbeddedSettingsTitleProgress(data.progress);
+			return;
+		}
+
+		if (data.type !== SETTINGS_PARENT_MESSAGE_TYPE) return;
+
+		closeEmbeddedSettings({ restoreFocus: false });
+		window.location.reload();
+	});
+}
 
 function getRandomSelected(items) {
 	const active = items.filter(i => i.selected);

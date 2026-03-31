@@ -1424,9 +1424,9 @@ body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-progress{
 .dice-overlay{
 	position:fixed;
 	inset:0;
-	background: rgba(0,0,0,.32);
-	backdrop-filter: blur(6px);
-	-webkit-backdrop-filter: blur(6px);
+	background:var(--overlay-bg);
+	backdrop-filter:blur(16px);
+	-webkit-backdrop-filter:blur(16px);
 	z-index:9998;
 	animation:diceOverlayIn .12s ease;
 }
@@ -1435,7 +1435,7 @@ body.home-page[data-theme="dark"] .home-intro-tooltip .introjs-progress{
 body.dice-focus .board,
 body.dice-focus .controls,
 body.dice-focus .task-panel{
-	filter: blur(1.5px) saturate(.9) brightness(.92);
+	filter: blur(1.5px) saturate(.96);
 	transform: scale(.992);
 	transition: filter .12s ease, transform .12s ease;
 	pointer-events:none; /* 骰子期间别点到棋盘 */
@@ -2042,7 +2042,8 @@ body.dice-focus .task-panel{
 }
 
 .board-seg-btn.active{
-	color:var(--dialog-text);
+	color:#fff;
+	text-shadow:0 1px 0 rgba(0,0,0,0.12);
 }
 
 .board-seg-btn:active{
@@ -2052,7 +2053,7 @@ body.dice-focus .task-panel{
 .board-seg-indicator{
 	position:absolute;
 	top:6px;
-	left:6px;
+	left:0;
 	height:calc(100% - 12px);
 	width:calc(50% - 6px);
 	border-radius:12px;
@@ -2062,14 +2063,35 @@ body.dice-focus .task-panel{
 	box-shadow:0 8px 22px rgba(0,0,0,0.10);
 	backdrop-filter:blur(18px);
 	-webkit-backdrop-filter:blur(18px);
-	transform:translateX(0);
-	transition:transform .22s cubic-bezier(.16,1,.3,1), width .22s cubic-bezier(.16,1,.3,1);
+	transition:left .22s cubic-bezier(.16,1,.3,1), width .22s cubic-bezier(.16,1,.3,1), background-color .22s ease, border-color .22s ease, box-shadow .22s ease;
 }
 
 [data-theme="dark"] .board-seg-indicator{
 	background:rgba(255,255,255,0.10);
 	border:1px solid rgba(255,255,255,0.14);
 	box-shadow:0 10px 26px rgba(0,0,0,0.28);
+}
+
+.board-picker-segmented[data-active="builtin"] .board-seg-indicator{
+	background-color:color-mix(in srgb, var(--master-color) 78%, #fff);
+	border-color:color-mix(in srgb, var(--master-color) 66%, #fff);
+	box-shadow:0 10px 26px rgba(139,164,248,0.24);
+}
+
+.board-picker-segmented[data-active="custom"] .board-seg-indicator{
+	background-color:color-mix(in srgb, var(--primary) 78%, #fff);
+	border-color:color-mix(in srgb, var(--primary) 64%, #fff);
+	box-shadow:0 10px 26px rgba(127,71,255,0.24);
+}
+
+[data-theme="dark"] .board-picker-segmented[data-active="builtin"] .board-seg-indicator{
+	background-color:color-mix(in srgb, var(--master-color) 56%, #1d153d);
+	border-color:color-mix(in srgb, var(--master-color) 50%, #1d153d);
+}
+
+[data-theme="dark"] .board-picker-segmented[data-active="custom"] .board-seg-indicator{
+	background-color:color-mix(in srgb, var(--primary) 56%, #1d153d);
+	border-color:color-mix(in srgb, var(--primary) 50%, #1d153d);
 }
 
 .board-empty{
@@ -2098,6 +2120,197 @@ body.dice-focus .task-panel{
 	display:flex;
 	flex-direction:column;
 	overflow:hidden;
+}
+
+body.settings-embed-open{
+	overflow:hidden;
+}
+
+.settings-embed-overlay{
+	--settings-shell-progress:0;
+	z-index:10020;
+	padding:calc(env(safe-area-inset-top, 0px) + 10px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+.settings-embed-dialog{
+	width:min(96vw, 980px);
+	max-height:min(900px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 22px));
+	max-height:min(900px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 22px));
+	max-height:min(900px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 22px));
+	border-radius:18px;
+}
+
+.settings-embed-head{
+	position:relative;
+	display:flex;
+	align-items:center;
+	justify-content:flex-end;
+	gap:12px;
+	padding:14px 16px;
+	min-height:64px;
+}
+
+.settings-embed-head::after{
+	content:"";
+	position:absolute;
+	left:0;
+	right:0;
+	bottom:0;
+	height:1px;
+	background:rgba(0,0,0,0.06);
+	opacity:var(--settings-shell-progress);
+	transition:opacity .2s ease;
+}
+
+[data-theme="dark"] .settings-embed-head::after{
+	background:rgba(255,255,255,0.10);
+}
+
+.settings-embed-title{
+	position:absolute;
+	left:50%;
+	top:50%;
+	margin:0;
+	font-size:18px;
+	line-height:1.2;
+	font-weight:800;
+	color:var(--black-cell);
+	white-space:nowrap;
+	pointer-events:none;
+	transform:translate(-50%, calc(-50% + ((1 - var(--settings-shell-progress)) * 12px))) scale(calc(0.96 + (var(--settings-shell-progress) * 0.04)));
+	transform-origin:center center;
+	opacity:var(--settings-shell-progress);
+	filter:blur(calc((1 - var(--settings-shell-progress)) * 1px));
+	transition:transform .24s cubic-bezier(.16,1,.3,1), opacity .18s ease, filter .18s ease;
+}
+
+[data-theme="dark"] .settings-embed-title{
+	color:#e9ddff;
+}
+
+.settings-embed-close{
+	position:relative;
+	z-index:2;
+	flex:0 0 auto;
+	width:38px;
+	height:38px;
+	border:none;
+	border-radius:999px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	cursor:pointer;
+	background:rgba(255,255,255,0.72);
+	color:var(--dialog-text);
+	border:1px solid rgba(0,0,0,0.08);
+	box-shadow:0 6px 16px rgba(0,0,0,0.08);
+	transition:transform .12s ease, filter .16s ease, background .16s ease;
+}
+
+.settings-embed-close:hover{
+	transform:translateY(-1px);
+	filter:brightness(1.03);
+}
+
+.settings-embed-close:active{
+	transform:scale(.97);
+}
+
+[data-theme="dark"] .settings-embed-close{
+	background:rgba(255,255,255,0.08);
+	color:rgba(255,255,255,0.92);
+	border-color:rgba(255,255,255,0.12);
+	box-shadow:0 8px 20px rgba(0,0,0,0.22);
+}
+
+.settings-embed-shell{
+	position:relative;
+	flex:1 1 auto;
+	min-height:0;
+	padding:0;
+	background:rgba(255,255,255,0.16);
+}
+
+.settings-embed-shell::before{
+	content:"";
+	position:absolute;
+	inset:0;
+	background:
+		linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06)),
+		radial-gradient(circle at top, rgba(255,255,255,0.18), transparent 52%);
+	opacity:1;
+	transition:opacity .22s ease;
+	pointer-events:none;
+}
+
+.settings-embed-overlay.is-frame-ready .settings-embed-shell::before{
+	opacity:0;
+}
+
+[data-theme="dark"] .settings-embed-shell::before{
+	background:
+		linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+		radial-gradient(circle at top, rgba(157,122,255,0.10), transparent 52%);
+}
+
+.settings-embed-frame{
+	display:block;
+	width:100%;
+	height:min(760px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 128px));
+	height:min(760px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 128px));
+	height:min(760px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 128px));
+	min-height:560px;
+	border:0;
+	background:transparent;
+	opacity:0;
+	transform:translateY(6px);
+	transition:opacity .22s ease, transform .24s cubic-bezier(.16,1,.3,1);
+}
+
+.settings-embed-overlay.is-frame-ready .settings-embed-frame{
+	opacity:1;
+	transform:translateY(0);
+}
+
+@media (max-width:640px){
+	.settings-embed-overlay{
+		padding:calc(env(safe-area-inset-top, 0px) + 8px) 8px calc(env(safe-area-inset-bottom, 0px) + 10px);
+	}
+
+	.settings-embed-dialog{
+		width:min(100vw - 12px, 980px);
+		max-height:min(900px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 18px));
+		max-height:min(900px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 18px));
+		max-height:min(900px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 18px));
+		border-radius:16px;
+	}
+
+	.settings-embed-head{
+		gap:10px;
+		padding:8px 12px;
+		min-height:52px;
+	}
+
+	.settings-embed-title{
+		font-size:15px;
+		line-height:1.15;
+		max-width:calc(100% - 56px);
+	}
+
+	.settings-embed-close{
+		width:36px;
+		height:36px;
+		box-shadow:0 4px 12px rgba(0,0,0,0.08);
+	}
+
+	.settings-embed-frame{
+		height:min(760px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+		height:min(760px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+		height:min(760px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+		min-height:min(480px, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+		min-height:min(480px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+		min-height:min(480px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 106px));
+	}
 }
 
 .board-list{

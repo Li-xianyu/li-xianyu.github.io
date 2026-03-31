@@ -111,6 +111,9 @@
 		const state = getState();
 		button.hidden = !state.hasInstallEntry;
 		button.classList.toggle("is-ready", state.canInstall && !state.isStandalone);
+		if (typeof window.syncQuickDockLayout === "function") {
+			window.syncQuickDockLayout(true);
+		}
 	}
 
 	function getInstallHelpCopy() {

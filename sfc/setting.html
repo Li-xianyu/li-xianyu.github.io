@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -12,9 +12,17 @@
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
 	<meta name="apple-mobile-web-app-title" content="Dual Protocol" data-i18n-content="common.appName">
+	<script>
+		(() => {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get("embed") === "1") {
+				document.documentElement.setAttribute("data-settings-embed", "1");
+			}
+		})();
+	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
-	<link rel="stylesheet" href="css/ui.css?v=20260308-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260330-1">
+	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
+	<link rel="stylesheet" href="css/setting.css?v=20260331-8">
 	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body>
@@ -131,18 +139,14 @@
 					</span>
 				</label>
 			</fieldset>
-
-			<fieldset class="data-transfer-settings-container">
-				<legend data-i18n="settings.dataTransferLegend">Local data transfer</legend>
-				<p class="tip" data-i18n="settings.dataTransferTip">Export your current local configuration and custom boards as a backup, or import a previous backup to restore them on this device.</p>
-				<button class="secondary-action-btn" id="openDataTransferBtn" type="button">
-					<i class="bi bi-arrow-left-right" aria-hidden="true"></i>
-					<span data-i18n="settings.dataTransferButton">Import / Export Data</span>
-				</button>
-			</fieldset>
 		</section>
 
-		<button class="save-btn" id="saveBtn" data-i18n="settings.save">Save settings</button>
+		<div class="settings-action-bar">
+			<button class="save-btn" id="saveBtn" data-i18n="settings.save">Save settings</button>
+			<button class="manage-btn" id="openManageBtn" type="button" aria-label="Manage settings" title="Manage settings">
+				<i class="bi bi-gear-wide-connected" aria-hidden="true"></i>
+			</button>
+		</div>
 
 	</div>
 
@@ -154,55 +158,84 @@
 		</div>
 	</div>
 
-	<div class="transfer-overlay" id="dataTransferModal" hidden tabindex="-1">
-		<div class="board-dialog transfer-dialog" role="dialog" aria-modal="true" aria-labelledby="dataTransferTitle">
-			<h3 class="punishment-title transfer-title" id="dataTransferTitle" data-i18n="settings.transferDialogTitle">Local Data Transfer</h3>
+	<div class="transfer-overlay manage-overlay" id="manageModal" hidden tabindex="-1">
+		<div class="board-dialog manage-dialog" role="dialog" aria-modal="true" aria-labelledby="manageTitle">
+			<h3 class="punishment-title transfer-title" id="manageTitle">Manage Settings</h3>
 
-			<div class="board-segmented transfer-segmented" id="transferSegmented">
-				<button class="board-seg-btn active" type="button" data-tab="export" data-i18n="settings.transferTabs.export">Export</button>
-				<button class="board-seg-btn" type="button" data-tab="import" data-i18n="settings.transferTabs.import">Import</button>
+			<div class="board-segmented manage-segmented" id="manageSegmented" data-active="presets">
+				<button class="board-seg-btn active" type="button" data-manage-tab="presets" id="manageTabPresets">Presets</button>
+				<button class="board-seg-btn" type="button" data-manage-tab="backup" id="manageTabBackup">Backup</button>
 				<div class="board-seg-indicator"></div>
 			</div>
 
-			<div class="transfer-body">
-				<section class="transfer-panel" data-transfer-panel="export">
-					<p class="transfer-hint" data-i18n="settings.transferExportTip">The export contains rule settings, B/Z pools, in-game display options, custom boards, board draft, language, and theme.</p>
-					<p class="transfer-meta" id="transferExportSummary"></p>
-					<textarea class="transfer-textarea" id="exportDataOutput" readonly spellcheck="false"></textarea>
-					<div class="transfer-actions">
-						<button class="editor-btn editor-btn-secondary" id="copyExportBtn" type="button" data-i18n="settings.transferCopy">Copy JSON</button>
-						<button class="editor-btn editor-btn-primary" id="downloadExportBtn" type="button" data-i18n="settings.transferDownload">Download File</button>
+			<div class="manage-body">
+				<section class="manage-panel" data-manage-panel="presets">
+					<div class="manage-panel-head">
+						<p class="manage-panel-status" id="presetUsageLabel">0 / 5</p>
+						<button class="manage-info-btn" id="presetInfoBtn" type="button" aria-label="Preset info" title="Preset info">
+							<i class="bi bi-info-circle" aria-hidden="true"></i>
+						</button>
 					</div>
+					<div class="preset-list" id="presetList"></div>
 				</section>
 
-				<section class="transfer-panel" data-transfer-panel="import" hidden>
-					<p class="transfer-hint" data-i18n="settings.transferImportTip">Paste a backup JSON here, or choose a local `.json` file. Importing will overwrite the corresponding local data on this device.</p>
-					<label class="transfer-file-trigger" for="importDataFile">
-						<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i>
-						<span data-i18n="settings.transferChooseFile">Choose JSON File</span>
-					</label>
-					<input id="importDataFile" type="file" accept="application/json,.json" hidden>
-					<p class="transfer-file-name" id="importFileName" data-i18n="settings.transferNoFile">No file selected</p>
-					<textarea class="transfer-textarea" id="importDataInput" spellcheck="false" data-i18n-placeholder="settings.transferImportPlaceholder" placeholder="Paste backup JSON here"></textarea>
-					<div class="transfer-actions">
-						<button class="editor-btn editor-btn-secondary" id="clearImportBtn" type="button" data-i18n="settings.transferClear">Clear</button>
-						<button class="editor-btn editor-btn-primary" id="applyImportBtn" type="button" data-i18n="settings.transferApply">Import and Overwrite</button>
+				<section class="manage-panel" data-manage-panel="backup" hidden>
+					<div class="manage-panel-head">
+						<p class="manage-panel-status" id="backupLabel">Local backup</p>
+						<button class="manage-info-btn" id="backupInfoBtn" type="button" aria-label="Backup info" title="Backup info">
+							<i class="bi bi-info-circle" aria-hidden="true"></i>
+						</button>
+					</div>
+
+					<div class="board-segmented transfer-segmented" id="transferSegmented" data-active="export">
+						<button class="board-seg-btn active" type="button" data-tab="export">Export</button>
+						<button class="board-seg-btn" type="button" data-tab="import">Import</button>
+						<div class="board-seg-indicator"></div>
+					</div>
+
+					<div class="transfer-body">
+						<section class="transfer-panel" data-transfer-panel="export">
+							<p class="transfer-meta" id="transferExportSummary"></p>
+							<textarea class="transfer-textarea" id="exportDataOutput" readonly spellcheck="false"></textarea>
+							<div class="transfer-actions">
+								<button class="editor-btn editor-btn-secondary" id="copyExportBtn" type="button">Copy JSON</button>
+								<button class="editor-btn editor-btn-primary" id="downloadExportBtn" type="button">Download File</button>
+							</div>
+						</section>
+
+						<section class="transfer-panel" data-transfer-panel="import" hidden>
+							<label class="transfer-file-trigger" for="importDataFile" id="importDataFileTrigger">
+								<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i>
+								<span id="transferChooseFileLabel">Choose JSON File</span>
+							</label>
+							<input id="importDataFile" type="file" accept="application/json,.json" hidden>
+							<p class="transfer-file-name" id="importFileName">No file selected</p>
+							<textarea class="transfer-textarea" id="importDataInput" spellcheck="false" placeholder="Paste backup JSON here"></textarea>
+							<div class="transfer-actions">
+								<button class="editor-btn editor-btn-secondary" id="clearImportBtn" type="button">Clear</button>
+								<button class="editor-btn editor-btn-primary" id="applyImportBtn" type="button">Import and Overwrite</button>
+							</div>
+						</section>
 					</div>
 				</section>
 			</div>
 
 			<div class="dialog-buttons transfer-footer">
-				<button class="editor-btn editor-btn-secondary transfer-close-btn" id="closeDataTransferBtn" type="button" data-i18n="common.actions.cancel">Cancel</button>
+				<button class="editor-btn editor-btn-secondary transfer-close-btn" id="closeManageBtn" type="button">Close</button>
 			</div>
 		</div>
 	</div>
 <script src="lang/zh.js?v=20260330-1"></script>
 <script src="lang/en.js?v=20260330-1"></script>
 <script src="js/i18n.js?v=20260327-2"></script>
-<script src="js/ui.js?v=20260327-2"></script>
-<script src="js/pwa.js?v=20260327-2"></script>
+<script src="js/ui.js?v=20260331-2"></script>
+<script src="js/pwa.js?v=20260331-1"></script>
 <script src="js/Data.js?v=20260327-2"></script>
 <script>
+const SETTINGS_EMBED_MODE = new URLSearchParams(window.location.search).get("embed") === "1";
+const SETTINGS_PARENT_MESSAGE_TYPE = "sfc:settings-saved";
+const SETTINGS_PARENT_SCROLL_MESSAGE_TYPE = "sfc:settings-scroll-progress";
+const SETTINGS_EMBED_TITLE_SCROLL_DISTANCE = 72;
 const DATA_TRANSFER_FORMAT = "dual-protocol-local-backup";
 const DATA_TRANSFER_VERSION = 1;
 const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
@@ -215,6 +248,8 @@ const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
 	language: "APP_LANGUAGE",
 	theme: "theme"
 });
+const SETTINGS_PRESETS_STORAGE_KEY = "SETTINGS_PRESETS";
+const SETTINGS_PRESET_LIMIT = 5;
 
 const dataTransferState = {
 	activeTab: "export",
@@ -222,11 +257,130 @@ const dataTransferState = {
 	exportFilename: "",
 	exportError: ""
 };
+const manageState = {
+	activeTab: "presets"
+};
+
+let embedScrollState = {
+	lastProgress: -1,
+	frame: 0
+};
 
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
 		window.trackEvent(eventName, payload);
 	}
+}
+
+function notifyParentSettingsSaved(){
+	if (!SETTINGS_EMBED_MODE || window.parent === window) return false;
+
+	const payload = {
+		type: SETTINGS_PARENT_MESSAGE_TYPE,
+		source: "setting",
+		timestamp: Date.now()
+	};
+	const targetOrigin = window.location.origin && window.location.origin !== "null"
+		? window.location.origin
+		: "*";
+
+	try {
+		window.parent.postMessage(payload, targetOrigin);
+		return true;
+	} catch (error) {}
+
+	if (targetOrigin === "*") return false;
+
+	try {
+		window.parent.postMessage(payload, "*");
+		return true;
+	} catch (error) {}
+
+	return false;
+}
+
+function getEmbedScrollTop(){
+	return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+}
+
+function getEmbedMaxScrollTop(){
+	const doc = document.documentElement;
+	const body = document.body;
+	const scrollHeight = Math.max(
+		doc?.scrollHeight || 0,
+		body?.scrollHeight || 0,
+		doc?.offsetHeight || 0,
+		body?.offsetHeight || 0
+	);
+	return Math.max(0, scrollHeight - window.innerHeight);
+}
+
+function applyEmbedTitleProgress(progress){
+	if (!SETTINGS_EMBED_MODE) return;
+
+	const clamped = Math.max(0, Math.min(1, Number(progress) || 0));
+	document.documentElement.style.setProperty("--embed-title-progress", clamped.toFixed(3));
+}
+
+function postEmbedScrollProgress(progress){
+	if (!SETTINGS_EMBED_MODE || window.parent === window) return;
+
+	const payload = {
+		type: SETTINGS_PARENT_SCROLL_MESSAGE_TYPE,
+		source: "setting",
+		progress
+	};
+	const targetOrigin = window.location.origin && window.location.origin !== "null"
+		? window.location.origin
+		: "*";
+
+	try {
+		window.parent.postMessage(payload, targetOrigin);
+	} catch (error) {
+		if (targetOrigin === "*") return;
+		try {
+			window.parent.postMessage(payload, "*");
+		} catch (fallbackError) {}
+	}
+}
+
+function syncEmbedScrollProgress(force = false){
+	if (!SETTINGS_EMBED_MODE) return;
+
+	const maxScrollTop = getEmbedMaxScrollTop();
+	const progressDistance = Math.max(1, Math.min(SETTINGS_EMBED_TITLE_SCROLL_DISTANCE, maxScrollTop || SETTINGS_EMBED_TITLE_SCROLL_DISTANCE));
+	const progress = maxScrollTop <= 0
+		? 0
+		: Math.max(0, Math.min(1, getEmbedScrollTop() / progressDistance));
+	applyEmbedTitleProgress(progress);
+
+	if (!force && Math.abs(progress - embedScrollState.lastProgress) < 0.01) {
+		return;
+	}
+
+	embedScrollState.lastProgress = progress;
+	postEmbedScrollProgress(progress);
+}
+
+function requestEmbedScrollSync(force = false){
+	if (!SETTINGS_EMBED_MODE) return;
+
+	if (embedScrollState.frame) {
+		cancelAnimationFrame(embedScrollState.frame);
+	}
+
+	embedScrollState.frame = requestAnimationFrame(() => {
+		embedScrollState.frame = 0;
+		syncEmbedScrollProgress(force);
+	});
+}
+
+function initEmbedScrollBridge(){
+	if (!SETTINGS_EMBED_MODE) return;
+
+	window.addEventListener("scroll", () => requestEmbedScrollSync(false), { passive: true });
+	window.addEventListener("resize", () => requestEmbedScrollSync(true));
+	requestAnimationFrame(() => syncEmbedScrollProgress(true));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -237,9 +391,13 @@ document.addEventListener("DOMContentLoaded", () => {
 	loadGameDataB();
 	loadActiveDataZ();
 
+	applyManageCopy();
 	renderSettingsB();
 	renderSettingsZ();
+	renderPresetList();
+	initManageDialog();
 	initDataTransferDialog();
+	initEmbedScrollBridge();
 
 	observeFieldsets();
 
@@ -465,7 +623,7 @@ function createCustomChip(scopeKey, item, index){
 	const deleteBtn = document.createElement("button");
 	deleteBtn.type = "button";
 	deleteBtn.className = "custom-chip-delete";
-	deleteBtn.textContent = "×";
+	deleteBtn.textContent = "脳";
 	deleteBtn.setAttribute("aria-label", t("settings.deleteAria", { name: item.name }));
 
 	deleteBtn.addEventListener("click", async (event) => {
@@ -668,6 +826,39 @@ function showConfirmDialog(options){
 		requestAnimationFrame(() => {
 			confirmBtn.focus();
 		});
+	});
+}
+
+function getEmbeddedSaveConfirmCopy(){
+	const lang = String(
+		(typeof window.getLanguage === "function" ? window.getLanguage() : document.documentElement.lang) || ""
+	).toLowerCase();
+
+	if (lang === "zh" || lang.startsWith("zh")) {
+		return {
+			title: "保存设置并刷新当前游戏？",
+			message: "这次保存会让 game 页面立即刷新，当前已经进行的状态和进度会被重置。是否继续保存？",
+			confirmText: "继续保存"
+		};
+	}
+
+	return {
+		title: "Save settings and refresh the current game?",
+		message: "Saving here will immediately refresh the game page. Your current in-progress state and progress will be reset. Continue?",
+		confirmText: "Save and refresh"
+	};
+}
+
+async function confirmEmbeddedSaveIfNeeded(){
+	if (!SETTINGS_EMBED_MODE) return true;
+
+	const copy = getEmbeddedSaveConfirmCopy();
+	return showConfirmDialog({
+		title: copy.title,
+		message: copy.message,
+		confirmText: copy.confirmText,
+		cancelText: t("common.actions.cancel"),
+		danger: true
 	});
 }
 
@@ -944,6 +1135,643 @@ function getCurrentGameUiSettingsSnapshot(){
 	});
 }
 
+function formatInlineCopy(template, params = {}){
+	return String(template || "").replace(/\{(\w+)\}/g, (match, key) => {
+		return params[key] !== undefined ? String(params[key]) : match;
+	});
+}
+
+function getManageCopy(){
+	const lang = String(
+		(typeof window.getLanguage === "function" ? window.getLanguage() : document.documentElement.lang) || ""
+	).toLowerCase();
+
+	if (lang === "zh" || lang.startsWith("zh")) {
+		return {
+			title: "设置管理",
+			manageLabel: "打开预设和备份",
+			presetsTab: "预设",
+			backupTab: "备份",
+			presetUsage: "已保存 {count}/{limit}",
+			backupLabel: "本地备份",
+			presetInfoTitle: "预设说明",
+			presetInfoMessage: "最多可保存 5 组规则预设。应用预设只会填充当前表单，仍需点击底部保存才会正式生效。",
+			backupInfoTitle: "备份说明",
+			backupInfoMessage: "导出包含规则设置、B/Z 内容池、界面显示选项、自定义棋盘、草稿、语言和主题。导入会覆盖此设备上对应的本地数据。",
+			slotLabel: "预设 {index}",
+			defaultPresetName: "预设 {index}",
+			emptyTitle: "空预设位",
+			emptyHint: "把当前表单保存为一组可复用预设。",
+			addTitle: "新增预设",
+			addHint: "再保存一组新的规则组合。",
+			saveCurrent: "保存当前",
+			createTitle: "新建设置预设",
+			createPlaceholder: "例如：轻量局",
+			createConfirm: "保存预设",
+			apply: "应用",
+			overwrite: "覆盖",
+			overwriteTitle: "覆盖这个预设？",
+			overwriteMessage: "会用当前表单内容替换“{name}”。",
+			deleteTitle: "删除这个预设？",
+			deleteMessage: "删除后无法撤销：“{name}”。",
+			updatedAt: "最近更新：{time}",
+			applySuccessTitle: "预设已载入",
+			applySuccessMessage: "“{name}”已填入当前表单。记得点击底部保存，才会正式应用。",
+			createdSuccessTitle: "预设已保存",
+			createdSuccessMessage: "当前表单已保存为“{name}”。",
+			overwriteSuccessTitle: "预设已覆盖",
+			overwriteSuccessMessage: "“{name}”已替换为当前表单内容。",
+			deleteSuccessTitle: "预设已删除",
+			deleteSuccessMessage: "“{name}”已从本地预设中删除。",
+			summaryRange: "次数 {min}-{max}",
+			summaryB: "B 启用 {count}",
+			summaryZ: "Z 启用 {count}",
+			close: "关闭"
+		};
+	}
+
+		return {
+			title: "Settings Manager",
+			manageLabel: "Open presets and backup",
+			presetsTab: "Presets",
+			backupTab: "Backup",
+			presetUsage: "{count}/{limit} saved",
+			backupLabel: "Local backup",
+			presetInfoTitle: "Preset info",
+			presetInfoMessage: "Save up to five reusable settings presets. Applying a preset only fills the current form and still needs Save to take effect.",
+			backupInfoTitle: "Backup info",
+			backupInfoMessage: "Export includes rule settings, B/Z pools, in-game display options, custom boards, board draft, language, and theme. Import will overwrite the matching local data on this device.",
+			slotLabel: "Preset {index}",
+			defaultPresetName: "Preset {index}",
+			emptyTitle: "Empty slot",
+			emptyHint: "Save the current form here as a reusable preset.",
+			addTitle: "Add preset",
+			addHint: "Save one more reusable rules combination.",
+			saveCurrent: "Save current",
+			createTitle: "Create settings preset",
+		createPlaceholder: "For example: Lite Mode / Reward Heavy",
+		createConfirm: "Save preset",
+		apply: "Apply",
+		overwrite: "Overwrite",
+		overwriteTitle: "Overwrite this preset?",
+		overwriteMessage: "This will replace \"{name}\" with the current form.",
+		deleteTitle: "Delete this preset?",
+		deleteMessage: "This cannot be undone: \"{name}\".",
+		updatedAt: "Updated: {time}",
+		applySuccessTitle: "Preset loaded",
+		applySuccessMessage: "\"{name}\" has been loaded into the current form. Save settings to make it take effect.",
+		createdSuccessTitle: "Preset saved",
+		createdSuccessMessage: "The current form was saved as \"{name}\".",
+		overwriteSuccessTitle: "Preset overwritten",
+		overwriteSuccessMessage: "\"{name}\" was updated with the current form.",
+		deleteSuccessTitle: "Preset deleted",
+		deleteSuccessMessage: "\"{name}\" was removed from local presets.",
+		summaryRange: "Range {min}-{max}",
+		summaryB: "B enabled {count}",
+		summaryZ: "Z enabled {count}",
+		close: "Close"
+	};
+}
+function applyManageCopy(){
+	const copy = getManageCopy();
+	const manageBtn = document.getElementById("openManageBtn");
+	if (manageBtn) {
+		manageBtn.setAttribute("aria-label", copy.manageLabel);
+		manageBtn.setAttribute("title", copy.manageLabel);
+	}
+
+	const setText = (id, value) => {
+		const node = document.getElementById(id);
+		if (node) node.textContent = value;
+	};
+
+	setText("manageTitle", copy.title);
+	setText("manageTabPresets", copy.presetsTab);
+	setText("manageTabBackup", copy.backupTab);
+	setText("backupLabel", copy.backupLabel);
+	setText("closeManageBtn", copy.close);
+
+	const presetInfoBtn = document.getElementById("presetInfoBtn");
+	if (presetInfoBtn) {
+		presetInfoBtn.setAttribute("aria-label", copy.presetInfoTitle);
+		presetInfoBtn.setAttribute("title", copy.presetInfoTitle);
+	}
+
+	const backupInfoBtn = document.getElementById("backupInfoBtn");
+	if (backupInfoBtn) {
+		backupInfoBtn.setAttribute("aria-label", copy.backupInfoTitle);
+		backupInfoBtn.setAttribute("title", copy.backupInfoTitle);
+	}
+
+	setText("transferChooseFileLabel", t("settings.transferChooseFile"));
+	setText("importFileName", t("settings.transferNoFile"));
+	setText("copyExportBtn", t("settings.transferCopy"));
+	setText("downloadExportBtn", t("settings.transferDownload"));
+	setText("clearImportBtn", t("settings.transferClear"));
+	setText("applyImportBtn", t("settings.transferApply"));
+
+	const importInput = document.getElementById("importDataInput");
+	if (importInput) {
+		importInput.placeholder = t("settings.transferImportPlaceholder");
+	}
+
+	const transferSegmented = document.getElementById("transferSegmented");
+	if (transferSegmented) {
+		const exportBtn = transferSegmented.querySelector('[data-tab="export"]');
+		const importBtn = transferSegmented.querySelector('[data-tab="import"]');
+		if (exportBtn) exportBtn.textContent = t("settings.transferTabs.export");
+		if (importBtn) importBtn.textContent = t("settings.transferTabs.import");
+	}
+}
+
+function buildSettingsPresetSnapshot(){
+	return {
+		actionCountRange: getCurrentActionCountRangeSnapshot(),
+		gameData: getCurrentGameDataSnapshot(),
+		activeData: getCurrentActiveDataSnapshot(),
+		gameUiSettings: getCurrentGameUiSettingsSnapshot()
+	};
+}
+
+function normalizeStoredPresetData(rawData){
+	if (!rawData || typeof rawData !== "object" || Array.isArray(rawData)) {
+		throw new Error("Invalid preset payload");
+	}
+
+	return {
+		actionCountRange: normalizeImportedActionCountRange(rawData.actionCountRange),
+		gameData: normalizeImportedGameData(rawData.gameData),
+		activeData: normalizeImportedActiveData(rawData.activeData),
+		gameUiSettings: normalizeImportedGameUiSettings(rawData.gameUiSettings)
+	};
+}
+
+function normalizeStoredPresetItem(rawItem, index){
+	if (!rawItem || typeof rawItem !== "object" || Array.isArray(rawItem)) return null;
+
+	try {
+		const normalizedData = normalizeStoredPresetData(rawItem.data && typeof rawItem.data === "object" ? rawItem.data : rawItem);
+		const createdAt = Number(rawItem.createdAt);
+		const updatedAt = Number(rawItem.updatedAt);
+		const now = Date.now();
+
+		return {
+			id: String(rawItem.id || `preset_${index}_${now.toString(36)}`),
+			name: normalizeCustomName(rawItem.name) || formatInlineCopy(getManageCopy().defaultPresetName, { index: index + 1 }),
+			createdAt: Number.isFinite(createdAt) ? createdAt : now,
+			updatedAt: Number.isFinite(updatedAt) ? updatedAt : (Number.isFinite(createdAt) ? createdAt : now),
+			data: normalizedData
+		};
+	} catch (error) {
+		console.warn("[Settings] Invalid preset slot ignored:", index, error);
+		return null;
+	}
+}
+
+function getStoredPresetSlots(){
+	const rawValue = readStoredJson(SETTINGS_PRESETS_STORAGE_KEY, null);
+	const rawItems = Array.isArray(rawValue)
+		? rawValue
+		: Array.isArray(rawValue?.items)
+			? rawValue.items
+			: [];
+
+	return Array.from({ length: SETTINGS_PRESET_LIMIT }, (_, index) => normalizeStoredPresetItem(rawItems[index], index));
+}
+
+function persistPresetSlots(slots){
+	const safeSlots = Array.from({ length: SETTINGS_PRESET_LIMIT }, (_, index) => {
+		const item = Array.isArray(slots) ? slots[index] : null;
+		if (!item) return null;
+		return {
+			id: item.id,
+			name: item.name,
+			createdAt: item.createdAt,
+			updatedAt: item.updatedAt,
+			data: item.data
+		};
+	});
+
+	localStorage.setItem(SETTINGS_PRESETS_STORAGE_KEY, JSON.stringify({
+		version: 1,
+		items: safeSlots
+	}));
+}
+
+function countSelectedItems(items){
+	return (Array.isArray(items) ? items : []).reduce((total, item) => total + (item?.selected ? 1 : 0), 0);
+}
+
+function getGameSelectedCount(gameData){
+	return Object.values(gameData || {}).reduce((total, entry) => total + countSelectedItems(entry?.items), 0);
+}
+
+function formatPresetTimestamp(timestamp){
+	const date = new Date(timestamp);
+	if (Number.isNaN(date.getTime())) return "";
+
+	const lang = String(
+		(typeof window.getLanguage === "function" ? window.getLanguage() : document.documentElement.lang) || ""
+	).toLowerCase();
+	return date.toLocaleString(lang.startsWith("zh") ? "zh-CN" : "en-US", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit"
+	});
+}
+
+function getPresetSummaryText(presetItem){
+	const copy = getManageCopy();
+	const range = presetItem?.data?.actionCountRange || { min: "-", max: "-" };
+	const gameData = presetItem?.data?.gameData || {};
+	const activeData = presetItem?.data?.activeData || {};
+
+	return [
+		formatInlineCopy(copy.summaryRange, { min: range.min, max: range.max }),
+		formatInlineCopy(copy.summaryB, { count: getGameSelectedCount(gameData) }),
+		formatInlineCopy(copy.summaryZ, { count: countSelectedItems(activeData.items) })
+	].join(" / ");
+}
+
+function createPresetActionButton(label, className, handler){
+	const button = document.createElement("button");
+	button.type = "button";
+	button.className = className;
+	button.textContent = label;
+	button.addEventListener("click", handler);
+	return button;
+}
+
+function getFirstEmptyPresetIndex(slots){
+	return (Array.isArray(slots) ? slots : []).findIndex(item => !item);
+}
+
+function renderPresetList(){
+	const list = document.getElementById("presetList");
+	if (!list) return;
+
+	const copy = getManageCopy();
+	const slots = getStoredPresetSlots();
+	const usedCount = slots.filter(Boolean).length;
+	const firstEmptyIndex = getFirstEmptyPresetIndex(slots);
+	const usageLabel = document.getElementById("presetUsageLabel");
+	if (usageLabel) {
+		usageLabel.textContent = formatInlineCopy(copy.presetUsage, {
+			count: usedCount,
+			limit: SETTINGS_PRESET_LIMIT
+		});
+	}
+
+	list.innerHTML = "";
+
+	slots.forEach((item, index) => {
+		if (!item) return;
+
+		const card = document.createElement("article");
+		card.className = "preset-card";
+
+		const slot = document.createElement("p");
+		slot.className = "preset-slot";
+		slot.textContent = formatInlineCopy(copy.slotLabel, { index: index + 1 });
+
+		const name = document.createElement("h4");
+		name.className = "preset-name";
+
+		const meta = document.createElement("p");
+		meta.className = "preset-meta";
+
+		const summary = document.createElement("p");
+		summary.className = "preset-summary";
+
+		const actions = document.createElement("div");
+		actions.className = "preset-actions";
+
+		name.textContent = item.name;
+		meta.textContent = formatInlineCopy(copy.updatedAt, { time: formatPresetTimestamp(item.updatedAt) });
+		summary.textContent = getPresetSummaryText(item);
+		actions.append(
+			createPresetActionButton(copy.apply, "editor-btn editor-btn-primary", () => applyPresetSlot(index)),
+			createPresetActionButton(copy.overwrite, "editor-btn editor-btn-secondary", () => overwritePresetSlot(index)),
+			createPresetActionButton(t("common.actions.delete"), "editor-btn editor-btn-danger", () => deletePresetSlot(index))
+		);
+
+		card.append(slot, name, meta, summary, actions);
+		list.appendChild(card);
+	});
+
+	if (usedCount === 0 && firstEmptyIndex !== -1) {
+		const card = document.createElement("article");
+		card.className = "preset-card preset-card-empty preset-card-create";
+
+		const slot = document.createElement("p");
+		slot.className = "preset-slot";
+		slot.textContent = formatInlineCopy(copy.slotLabel, { index: firstEmptyIndex + 1 });
+
+		const name = document.createElement("h4");
+		name.className = "preset-name";
+		name.textContent = copy.emptyTitle;
+
+		const meta = document.createElement("p");
+		meta.className = "preset-meta";
+		meta.textContent = formatInlineCopy(copy.presetUsage, { count: usedCount, limit: SETTINGS_PRESET_LIMIT });
+
+		const summary = document.createElement("p");
+		summary.className = "preset-summary";
+		summary.textContent = copy.emptyHint;
+
+		const actions = document.createElement("div");
+		actions.className = "preset-actions preset-actions-empty";
+		actions.append(
+			createPresetActionButton(copy.saveCurrent, "editor-btn editor-btn-primary", () => createPresetSlot(firstEmptyIndex))
+		);
+
+		card.append(slot, name, meta, summary, actions);
+		list.appendChild(card);
+	} else if (firstEmptyIndex !== -1) {
+		const card = document.createElement("article");
+		card.className = "preset-card preset-card-empty preset-card-create";
+
+		const slot = document.createElement("p");
+		slot.className = "preset-slot";
+		slot.textContent = formatInlineCopy(copy.slotLabel, { index: firstEmptyIndex + 1 });
+
+		const name = document.createElement("h4");
+		name.className = "preset-name";
+		name.textContent = copy.addTitle;
+
+		const meta = document.createElement("p");
+		meta.className = "preset-meta";
+		meta.textContent = formatInlineCopy(copy.presetUsage, { count: usedCount, limit: SETTINGS_PRESET_LIMIT });
+
+		const summary = document.createElement("p");
+		summary.className = "preset-summary";
+		summary.textContent = copy.addHint;
+
+		const actions = document.createElement("div");
+		actions.className = "preset-actions preset-actions-empty";
+		actions.append(
+			createPresetActionButton(copy.saveCurrent, "editor-btn editor-btn-primary", () => createPresetSlot(firstEmptyIndex))
+		);
+
+		card.append(slot, name, meta, summary, actions);
+		list.appendChild(card);
+	}
+}
+
+function applySettingsPresetSnapshot(snapshot){
+	const normalized = normalizeStoredPresetData(snapshot);
+
+	document.getElementById("minCount").value = normalized.actionCountRange.min;
+	document.getElementById("maxCount").value = normalized.actionCountRange.max;
+
+	GameData = normalized.gameData;
+	fillWeightInputsFromGameData();
+	renderSettingsB();
+
+	ActiveData = normalized.activeData;
+	document.getElementById("weight-active").value = normalized.activeData.weight;
+	renderSettingsZ();
+
+	const predictionToggle = document.getElementById("toggleBTaskPrediction");
+	const liveCountToggle = document.getElementById("toggleBTaskLiveCount");
+	if (predictionToggle) predictionToggle.checked = normalized.gameUiSettings.showBTaskPrediction;
+	if (liveCountToggle) liveCountToggle.checked = normalized.gameUiSettings.showBTaskLiveCount;
+
+	requestAnimationFrame(() => {
+		observeFieldsets();
+		refreshDataTransferExport();
+		requestEmbedScrollSync(true);
+	});
+}
+
+async function createPresetSlot(index){
+	const copy = getManageCopy();
+	let snapshot;
+
+	try {
+		snapshot = buildSettingsPresetSnapshot();
+	} catch (error) {
+		showModal(t("settings.errorTitle"), error?.message || String(error));
+		return;
+	}
+
+	const rawName = await showInputDialog({
+		title: copy.createTitle,
+		placeholder: copy.createPlaceholder,
+		confirmText: copy.createConfirm,
+		cancelText: t("common.actions.cancel"),
+		initialValue: formatInlineCopy(copy.defaultPresetName, { index: index + 1 })
+	});
+	if (rawName === null) return;
+
+	const name = normalizeCustomName(rawName) || formatInlineCopy(copy.defaultPresetName, { index: index + 1 });
+	const slots = getStoredPresetSlots();
+	const now = Date.now();
+	slots[index] = {
+		id: `preset_${index}_${now.toString(36)}`,
+		name,
+		createdAt: now,
+		updatedAt: now,
+		data: snapshot
+	};
+
+	persistPresetSlots(slots);
+	renderPresetList();
+	track("settings_preset_created", { slot: index + 1 });
+	showModal(copy.createdSuccessTitle, formatInlineCopy(copy.createdSuccessMessage, { name }));
+}
+
+async function overwritePresetSlot(index){
+	const copy = getManageCopy();
+	const slots = getStoredPresetSlots();
+	const preset = slots[index];
+	if (!preset) return;
+
+	let snapshot;
+	try {
+		snapshot = buildSettingsPresetSnapshot();
+	} catch (error) {
+		showModal(t("settings.errorTitle"), error?.message || String(error));
+		return;
+	}
+
+	const shouldOverwrite = await showConfirmDialog({
+		title: copy.overwriteTitle,
+		message: formatInlineCopy(copy.overwriteMessage, { name: preset.name }),
+		confirmText: copy.overwrite,
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldOverwrite) return;
+
+	const now = Date.now();
+	slots[index] = {
+		id: preset.id,
+		name: preset.name,
+		createdAt: preset.createdAt,
+		updatedAt: now,
+		data: snapshot
+	};
+
+	persistPresetSlots(slots);
+	renderPresetList();
+	track("settings_preset_overwritten", { slot: index + 1 });
+	showModal(copy.overwriteSuccessTitle, formatInlineCopy(copy.overwriteSuccessMessage, { name: preset.name }));
+}
+
+async function deletePresetSlot(index){
+	const copy = getManageCopy();
+	const slots = getStoredPresetSlots();
+	const preset = slots[index];
+	if (!preset) return;
+
+	const shouldDelete = await showConfirmDialog({
+		title: copy.deleteTitle,
+		message: formatInlineCopy(copy.deleteMessage, { name: preset.name }),
+		confirmText: t("common.actions.delete"),
+		cancelText: t("common.actions.cancel"),
+		danger: true
+	});
+	if (!shouldDelete) return;
+
+	slots[index] = null;
+	persistPresetSlots(slots);
+	renderPresetList();
+	track("settings_preset_deleted", { slot: index + 1 });
+	showModal(copy.deleteSuccessTitle, formatInlineCopy(copy.deleteSuccessMessage, { name: preset.name }));
+}
+
+function applyPresetSlot(index){
+	const copy = getManageCopy();
+	const slots = getStoredPresetSlots();
+	const preset = slots[index];
+	if (!preset) return;
+
+	try {
+		applySettingsPresetSnapshot(preset.data);
+		closeManageDialog();
+		track("settings_preset_applied", { slot: index + 1 });
+		showModal(copy.applySuccessTitle, formatInlineCopy(copy.applySuccessMessage, { name: preset.name }));
+	} catch (error) {
+		showModal(t("settings.errorTitle"), error?.message || String(error));
+	}
+}
+
+function syncManageIndicator(){
+	const segmented = document.getElementById("manageSegmented");
+	const indicator = segmented?.querySelector(".board-seg-indicator");
+	const activeBtn = segmented?.querySelector('[data-manage-tab].active');
+	if (!segmented || !indicator || !activeBtn) return;
+
+	const rootRect = segmented.getBoundingClientRect();
+	const btnRect = activeBtn.getBoundingClientRect();
+	segmented.dataset.active = activeBtn.dataset.manageTab || "presets";
+	indicator.style.width = `${btnRect.width}px`;
+	indicator.style.left = `${btnRect.left - rootRect.left}px`;
+}
+
+function switchManageTab(tabKey){
+	const overlay = document.getElementById("manageModal");
+	const segmented = document.getElementById("manageSegmented");
+	if (!overlay || !segmented) return;
+
+	segmented.querySelectorAll("[data-manage-tab]").forEach((btn) => {
+		btn.classList.toggle("active", btn.dataset.manageTab === tabKey);
+	});
+
+	overlay.querySelectorAll("[data-manage-panel]").forEach((panel) => {
+		panel.hidden = panel.dataset.managePanel !== tabKey;
+	});
+
+	manageState.activeTab = tabKey;
+	if (tabKey === "presets") {
+		renderPresetList();
+	} else {
+		switchDataTransferTab(dataTransferState.activeTab || "export");
+	}
+
+	requestAnimationFrame(() => {
+		syncManageIndicator();
+		if (tabKey === "backup") syncDataTransferIndicator();
+	});
+}
+
+function openManageDialog(tabKey = "presets"){
+	const overlay = document.getElementById("manageModal");
+	if (!overlay) return;
+
+	applyManageCopy();
+	overlay.hidden = false;
+	document.body.classList.add("dialog-open");
+	switchManageTab(tabKey);
+
+	requestAnimationFrame(() => {
+		const activeBtn = document.querySelector(`#manageSegmented [data-manage-tab="${manageState.activeTab}"]`);
+		if (activeBtn) activeBtn.focus();
+	});
+
+	track("settings_manage_dialog_opened", { tab: tabKey });
+}
+
+function closeManageDialog(){
+	const overlay = document.getElementById("manageModal");
+	if (!overlay) return;
+
+	overlay.hidden = true;
+	document.body.classList.remove("dialog-open");
+}
+
+function showManageInfo(type){
+	const copy = getManageCopy();
+	if (type === "backup") {
+		showModal(copy.backupInfoTitle, copy.backupInfoMessage);
+		return;
+	}
+	showModal(copy.presetInfoTitle, copy.presetInfoMessage);
+}
+
+function initManageDialog(){
+	const openBtn = document.getElementById("openManageBtn");
+	const closeBtn = document.getElementById("closeManageBtn");
+	const overlay = document.getElementById("manageModal");
+	const segmented = document.getElementById("manageSegmented");
+	if (!openBtn || !closeBtn || !overlay || !segmented) return;
+
+	openBtn.addEventListener("click", () => openManageDialog("presets"));
+	closeBtn.addEventListener("click", closeManageDialog);
+	document.getElementById("presetInfoBtn")?.addEventListener("click", () => showManageInfo("presets"));
+	document.getElementById("backupInfoBtn")?.addEventListener("click", () => showManageInfo("backup"));
+
+	segmented.querySelectorAll("[data-manage-tab]").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			if (btn.classList.contains("active")) return;
+			switchManageTab(btn.dataset.manageTab);
+		});
+	});
+
+	overlay.addEventListener("click", (event) => {
+		if (event.target !== overlay) return;
+		if (typeof window.playDialogShake === "function") {
+			window.playDialogShake(closeBtn);
+			return;
+		}
+		closeManageDialog();
+	});
+
+	overlay.addEventListener("keydown", (event) => {
+		if (event.key !== "Escape") return;
+		event.preventDefault();
+		closeManageDialog();
+	});
+
+	window.addEventListener("resize", () => {
+		syncManageIndicator();
+		syncDataTransferIndicator();
+	});
+}
+
 function normalizeImportedActionCountRange(rawValue){
 	if (!rawValue || typeof rawValue !== "object" || Array.isArray(rawValue)) {
 		throw new Error(t("settings.transferImportRangeInvalid"));
@@ -1191,9 +2019,6 @@ function refreshDataTransferExport(){
 }
 
 function syncDataTransferIndicator(){
-	const overlay = document.getElementById("dataTransferModal");
-	if (!overlay || overlay.hidden) return;
-
 	const segmented = document.getElementById("transferSegmented");
 	const indicator = segmented?.querySelector(".board-seg-indicator");
 	const activeBtn = segmented?.querySelector(".board-seg-btn.active");
@@ -1201,19 +2026,21 @@ function syncDataTransferIndicator(){
 
 	const rootRect = segmented.getBoundingClientRect();
 	const btnRect = activeBtn.getBoundingClientRect();
+	segmented.dataset.active = activeBtn.dataset.tab || "export";
 	indicator.style.width = `${btnRect.width}px`;
-	indicator.style.transform = `translateX(${btnRect.left - rootRect.left}px)`;
+	indicator.style.left = `${btnRect.left - rootRect.left}px`;
 }
 
 function switchDataTransferTab(tabKey){
-	const overlay = document.getElementById("dataTransferModal");
-	if (!overlay) return;
+	const segmented = document.getElementById("transferSegmented");
+	const backupPanel = document.querySelector('[data-manage-panel="backup"]');
+	if (!segmented || !backupPanel) return;
 
-	overlay.querySelectorAll(".board-seg-btn").forEach((btn) => {
+	segmented.querySelectorAll(".board-seg-btn").forEach((btn) => {
 		btn.classList.toggle("active", btn.dataset.tab === tabKey);
 	});
 
-	overlay.querySelectorAll("[data-transfer-panel]").forEach((panel) => {
+	backupPanel.querySelectorAll("[data-transfer-panel]").forEach((panel) => {
 		panel.hidden = panel.dataset.transferPanel !== tabKey;
 	});
 
@@ -1224,28 +2051,13 @@ function switchDataTransferTab(tabKey){
 }
 
 function openDataTransferDialog(tabKey = "export"){
-	const overlay = document.getElementById("dataTransferModal");
-	if (!overlay) return;
-
-	overlay.hidden = false;
-	document.body.classList.add("dialog-open");
+	openManageDialog("backup");
 	switchDataTransferTab(tabKey);
-
-	requestAnimationFrame(() => {
-		syncDataTransferIndicator();
-		const activeBtn = overlay.querySelector(".board-seg-btn.active");
-		if (activeBtn) activeBtn.focus();
-	});
-
 	track("settings_data_dialog_opened");
 }
 
 function closeDataTransferDialog(){
-	const overlay = document.getElementById("dataTransferModal");
-	if (!overlay) return;
-
-	overlay.hidden = true;
-	document.body.classList.remove("dialog-open");
+	closeManageDialog();
 }
 
 function clearDataTransferImportInput(){
@@ -1475,19 +2287,19 @@ async function importDataTransferBackup(){
 	showModal(
 		t("settings.transferImportSuccessTitle"),
 		t("settings.transferImportSuccessMessage"),
-		{ onClose: () => window.location.reload() }
+		{
+			onClose: () => {
+				if (!notifyParentSettingsSaved()) {
+					window.location.reload();
+				}
+			}
+		}
 	);
 }
 
 function initDataTransferDialog(){
-	const openBtn = document.getElementById("openDataTransferBtn");
-	const closeBtn = document.getElementById("closeDataTransferBtn");
-	const overlay = document.getElementById("dataTransferModal");
 	const segmented = document.getElementById("transferSegmented");
-	if (!openBtn || !closeBtn || !overlay || !segmented) return;
-
-	openBtn.addEventListener("click", () => openDataTransferDialog("export"));
-	closeBtn.addEventListener("click", closeDataTransferDialog);
+	if (!segmented) return;
 
 	segmented.querySelectorAll(".board-seg-btn").forEach((btn) => {
 		btn.addEventListener("click", () => {
@@ -1495,21 +2307,6 @@ function initDataTransferDialog(){
 			switchDataTransferTab(btn.dataset.tab);
 			track("settings_data_dialog_tab_switched", { tab: btn.dataset.tab });
 		});
-	});
-
-	overlay.addEventListener("click", (event) => {
-		if (event.target !== overlay) return;
-		if (typeof window.playDialogShake === "function") {
-			window.playDialogShake(closeBtn);
-			return;
-		}
-		closeDataTransferDialog();
-	});
-
-	overlay.addEventListener("keydown", (event) => {
-		if (event.key !== "Escape") return;
-		event.preventDefault();
-		closeDataTransferDialog();
 	});
 
 	document.getElementById("copyExportBtn")?.addEventListener("click", copyDataTransferExport);
@@ -1527,7 +2324,7 @@ function initDataTransferDialog(){
 /* =========================
    Save
 ========================= */
-function saveAllSettings(){
+async function saveAllSettings(){
 	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
 	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
 
@@ -1536,6 +2333,9 @@ function saveAllSettings(){
 		showModal(t("settings.errorTitle"), validationError);
 		return;
 	}
+
+	const shouldSave = await confirmEmbeddedSaveIfNeeded();
+	if (!shouldSave) return;
 
 	localStorage.setItem(ACTION_COUNT_RANGE_STORAGE_KEY, JSON.stringify({ min: minVal, max: maxVal }));
 	localStorage.removeItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY);
@@ -1567,7 +2367,11 @@ function saveAllSettings(){
 		show_b_task_live_count: gameUiSettings.showBTaskLiveCount
 	});
 
-	showModal(t("settings.modalSavedTitle"), t("settings.modalSavedMessage"));
+	showModal(
+		t("settings.modalSavedTitle"),
+		t("settings.modalSavedMessage"),
+		SETTINGS_EMBED_MODE ? { onClose: () => notifyParentSettingsSaved() } : undefined
+	);
 }
 
 /* =========================

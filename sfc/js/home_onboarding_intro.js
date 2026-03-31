@@ -49,7 +49,7 @@
 				intro: t("home.onboarding.settingsBody")
 			},
 			{
-				selector: ".quick-dock-launcher",
+				selector: ".quick-dock.is-auto-expanded .quick-dock-panel, .quick-dock-launcher",
 				title: t("home.onboarding.dockTitle"),
 				intro: t("home.onboarding.dockBody")
 			},

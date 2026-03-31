@@ -175,7 +175,9 @@ function openQuickDockForInstallHint(){
 	if (!launcher) return;
 
 	const dock = document.querySelector(".quick-dock");
-	if (!dock || !dock.classList.contains("open")){
+	if (!dock) return;
+
+	if (!dock.classList.contains("open") && !dock.classList.contains("is-auto-expanded")){
 		launcher.click();
 	}
 
@@ -466,7 +468,8 @@ function createBoardDialog(){
 	title.textContent = t("home.boardDialog.title");
 
 	const segmented = document.createElement('div');
-	segmented.className = 'board-segmented';
+	segmented.className = 'board-segmented board-picker-segmented';
+	segmented.dataset.active = 'builtin';
 	segmented.innerHTML = `
 		<button class="board-seg-btn active" type="button" data-tab="builtin">${t("home.boardDialog.tabBuiltin")}</button>
 		<button class="board-seg-btn" type="button" data-tab="custom">${t("home.boardDialog.tabCustom")}</button>
@@ -519,8 +522,9 @@ function createBoardDialog(){
 		const indicator = segmented.querySelector(".board-seg-indicator");
 		const rootRect = segmented.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
+		segmented.dataset.active = btn.dataset.tab || "builtin";
 		indicator.style.width = btnRect.width + "px";
-		indicator.style.transform = `translateX(${btnRect.left - rootRect.left}px)`;
+		indicator.style.left = `${btnRect.left - rootRect.left}px`;
 	}
 
 	const segBtns = segmented.querySelectorAll(".board-seg-btn");
