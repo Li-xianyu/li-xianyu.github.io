@@ -22,7 +22,7 @@
 	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260331-10">
+	<link rel="stylesheet" href="css/setting.css?v=20260401-4">
 	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body>
@@ -55,38 +55,80 @@
 
 			<fieldset>
 				<legend data-i18n="settings.rangeLegend">Single-hit count range</legend>
-				<div class="input-group">
-					<div class="field">
-						<label for="minCount" data-i18n="settings.minCount">Minimum count:</label>
-						<input type="number" id="minCount" min="10" step="10">
+				<div class="count-range-control">
+					<div class="count-range-summary">
+						<output class="count-range-value" id="countRangeValue" for="minCount maxCount">
+							<span class="count-range-number" id="countRangeMinLabel">20</span>
+							<span class="count-range-separator" aria-hidden="true"> - </span>
+							<span class="count-range-number" id="countRangeMaxLabel">50</span>
+						</output>
 					</div>
-
-					<div class="field">
-						<label for="maxCount" data-i18n="settings.maxCount">Maximum count:</label>
-						<input type="number" id="maxCount" min="20" step="10">
+					<div class="count-range-slider" id="countRangeSlider">
+						<div class="count-range-track" aria-hidden="true"></div>
+						<div class="count-range-fill" id="countRangeFill" aria-hidden="true"></div>
+						<label class="sr-only" for="minCount" data-i18n="settings.minCount">Minimum count:</label>
+						<input type="range" id="minCount" min="5" max="100" step="5" value="20" aria-describedby="countRangeValue">
+						<label class="sr-only" for="maxCount" data-i18n="settings.maxCount">Maximum count:</label>
+						<input type="range" id="maxCount" min="5" max="100" step="5" value="50" aria-describedby="countRangeValue">
+						<button class="count-range-bubble" id="countRangeBubble" type="button" aria-label="Move selected range" title="Move selected range" aria-describedby="countRangeValue">
+							<span class="count-range-bubble-grip" aria-hidden="true"></span>
+						</button>
+					</div>
+					<div class="count-range-scale" aria-hidden="true">
+						<span class="count-range-tick" style="--tick-position:0%;">
+							<span class="count-range-tick-mark"></span>
+							<span class="count-range-tick-label count-range-tick-label-start">5</span>
+						</span>
+						<span class="count-range-tick" style="--tick-position:21.0526%;">
+							<span class="count-range-tick-mark"></span>
+							<span class="count-range-tick-label">25</span>
+						</span>
+						<span class="count-range-tick" style="--tick-position:47.3684%;">
+							<span class="count-range-tick-mark"></span>
+							<span class="count-range-tick-label">50</span>
+						</span>
+						<span class="count-range-tick" style="--tick-position:73.6842%;">
+							<span class="count-range-tick-mark"></span>
+							<span class="count-range-tick-label">75</span>
+						</span>
+						<span class="count-range-tick" style="--tick-position:100%;">
+							<span class="count-range-tick-mark"></span>
+							<span class="count-range-tick-label count-range-tick-label-end">100</span>
+						</span>
 					</div>
 				</div>
 			</fieldset>
 
-			<fieldset class="weight-settings-container">
+			<fieldset class="weight-settings-container module-weight-ring-container">
 				<legend data-i18n="settings.weightsLegend">Module weight settings</legend>
 				<p class="tip" data-i18n="settings.weightsTip">Weights control the relative chance of each module when random content is generated. Higher weight means higher chance.</p>
+				<p class="tip module-weight-tip-secondary" data-i18n="settings.weightsInteractionTip">Tap a legend item or a ring segment to choose a module, then adjust or toggle it below.</p>
 
-				<div class="input-container">
-					<label for="weight-prop" data-i18n="settings.weightProp">Core module weight:</label>
-					<input type="number" id="weight-prop" value="80" min="0" max="100" step="1">
-				</div>
-				<div class="input-container">
-					<label for="weight-reward" data-i18n="settings.weightReward">Rest module weight:</label>
-					<input type="number" id="weight-reward" value="10" min="0" max="100" step="1">
-				</div>
-				<div class="input-container">
-					<label for="weight-aod" data-i18n="settings.weightAod">Move module weight:</label>
-					<input type="number" id="weight-aod" value="5" min="0" max="100" step="1">
-				</div>
-				<div class="input-container">
-					<label for="weight-sports" data-i18n="settings.weightSports">Exercise module weight:</label>
-					<input type="number" id="weight-sports" value="10" min="0" max="100" step="1">
+				<div class="module-weight-ui" id="moduleWeightUi">
+					<div class="module-weight-visual">
+						<svg class="module-weight-ring-svg" id="moduleWeightRingSvg" viewBox="0 0 220 220" role="img" aria-label="Module weight ring">
+							<circle class="module-weight-ring-track" cx="110" cy="110" r="78"></circle>
+							<g id="moduleWeightRingSegments"></g>
+						</svg>
+					</div>
+
+					<div class="module-weight-legend" id="moduleWeightLegend" role="list"></div>
+
+					<div class="module-weight-detail" id="moduleWeightDetail" aria-hidden="true">
+						<div class="module-weight-detail-actions">
+							<div class="module-weight-stepper" role="group" aria-label="Adjust module weight">
+								<button class="module-weight-step-btn" id="moduleWeightDecreaseBtn" type="button" aria-label="Decrease module weight">
+									<i class="bi bi-dash-lg" aria-hidden="true"></i>
+								</button>
+								<output class="module-weight-step-value" id="moduleWeightPercentValue">0%</output>
+								<button class="module-weight-step-btn" id="moduleWeightIncreaseBtn" type="button" aria-label="Increase module weight">
+									<i class="bi bi-plus-lg" aria-hidden="true"></i>
+								</button>
+							</div>
+
+							<button class="module-weight-toggle-btn" id="moduleWeightToggleBtn" type="button">Disable</button>
+						</div>
+					</div>
 				</div>
 			</fieldset>
 
@@ -106,7 +148,7 @@
 				<p class="tip" data-i18n="settings.activeTip">This weight is reserved for a future mode where instructions also join the random pool. Right now it does not affect board rendering.</p>
 				<div class="input-container">
 					<label for="weight-active" data-i18n="settings.activeWeight">Instruction weight:</label>
-					<input type="number" id="weight-active" value="30" min="0" max="100" step="1">
+					<input type="number" id="weight-active" value="30" min="0" step="1">
 				</div>
 			</fieldset>
 
@@ -114,8 +156,8 @@
 		</section>
 		<section class="tab-panel" id="panel-x" style="display:none;">
 			<fieldset class="game-ui-settings-container">
-				<legend data-i18n="settings.uiLegend">In-game display</legend>
-				<p class="tip" data-i18n="settings.uiTip">Controls whether the B-task prediction entry and live total are shown on the game page. Both are enabled by default.</p>
+				<legend data-i18n="settings.uiLegend">In-game EX options</legend>
+				<p class="tip" data-i18n="settings.uiTip">Controls the task-panel EX items and the board intro animation on the game page. All are enabled by default.</p>
 
 				<label class="switch-setting-row" for="toggleBTaskPrediction">
 					<span class="switch-setting-copy">
@@ -135,6 +177,17 @@
 					</span>
 					<span class="switch-control">
 						<input type="checkbox" id="toggleBTaskLiveCount" checked>
+						<span class="switch-slider" aria-hidden="true"></span>
+					</span>
+				</label>
+
+				<label class="switch-setting-row" for="toggleBoardIntroAnimation">
+					<span class="switch-setting-copy">
+						<span class="switch-setting-title" data-i18n="settings.toggleBoardIntroTitle">Board intro animation</span>
+						<span class="switch-setting-desc" data-i18n="settings.toggleBoardIntroDesc">After the pale grid appears, quickly reveal the start, end, and path blocks from both ends.</span>
+					</span>
+					<span class="switch-control">
+						<input type="checkbox" id="toggleBoardIntroAnimation" checked>
 						<span class="switch-slider" aria-hidden="true"></span>
 					</span>
 				</label>
@@ -223,7 +276,7 @@
 				<section class="manage-panel" data-manage-panel="reset" hidden>
 					<div class="manage-panel-head manage-panel-head-stack">
 						<p class="manage-panel-status" id="resetLabel">Core settings reset</p>
-						<p class="manage-panel-note" id="resetHint">Only affects B/Z rules and local presets. EX display, language, theme, and custom boards stay as they are.</p>
+						<p class="manage-panel-note" id="resetHint">Only affects B/Z rules and local presets. EX options, language, theme, and custom boards stay as they are.</p>
 					</div>
 
 					<div class="reset-list">
@@ -245,7 +298,7 @@
 
 						<article class="reset-card reset-card-danger">
 							<h4 class="reset-card-title" id="resetRulesAndPresetsTitle">Clean start</h4>
-							<p class="reset-card-desc" id="resetRulesAndPresetsDesc">Reset B/Z back to defaults and clear all presets together. EX display, language, theme, and custom boards are still kept.</p>
+							<p class="reset-card-desc" id="resetRulesAndPresetsDesc">Reset B/Z back to defaults and clear all presets together. EX options, language, theme, and custom boards are still kept.</p>
 							<div class="reset-card-actions">
 								<button class="editor-btn editor-btn-danger" id="resetRulesAndPresetsBtn" type="button">Reset B/Z and presets</button>
 							</div>
@@ -259,19 +312,19 @@
 			</div>
 		</div>
 	</div>
-<script src="lang/zh.js?v=20260330-1"></script>
-<script src="lang/en.js?v=20260330-1"></script>
+<script src="lang/zh.js?v=20260401-5"></script>
+<script src="lang/en.js?v=20260401-5"></script>
 <script src="js/i18n.js?v=20260327-2"></script>
-<script src="js/ui.js?v=20260331-2"></script>
+<script src="js/ui.js?v=20260401-2"></script>
 <script src="js/pwa.js?v=20260331-1"></script>
-<script src="js/Data.js?v=20260327-2"></script>
+<script src="js/Data.js?v=20260401-2"></script>
 <script>
 const SETTINGS_EMBED_MODE = new URLSearchParams(window.location.search).get("embed") === "1";
 const SETTINGS_PARENT_MESSAGE_TYPE = "sfc:settings-saved";
 const SETTINGS_PARENT_SCROLL_MESSAGE_TYPE = "sfc:settings-scroll-progress";
 const SETTINGS_EMBED_TITLE_SCROLL_DISTANCE = 72;
 const DATA_TRANSFER_FORMAT = "dual-protocol-local-backup";
-const DATA_TRANSFER_VERSION = 2;
+const DATA_TRANSFER_VERSION = 3;
 const SETTINGS_PRESETS_STORAGE_KEY = "SETTINGS_PRESETS";
 const SETTINGS_PRESET_LIMIT = 5;
 const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
@@ -285,6 +338,29 @@ const DATA_TRANSFER_STORAGE_KEYS = Object.freeze({
 	language: "APP_LANGUAGE",
 	theme: "theme"
 });
+const ACTION_COUNT_RANGE_UI_LIMITS = window.ACTION_COUNT_RANGE_LIMITS || Object.freeze({
+	min: 5,
+	max: 100,
+	step: 5,
+	minGap: 5
+});
+const ACTION_COUNT_SCALE_FADE_DELAY_MS = 420;
+const MODULE_WEIGHT_TOTAL = 100;
+const MODULE_WEIGHT_STEP = 5;
+const MODULE_WEIGHT_RING = Object.freeze({
+	viewBox: 220,
+	center: 110,
+	radius: 78,
+	strokeWidth: 18,
+	startAngle: -Math.PI / 2,
+	fullAngle: Math.PI * 2
+});
+const MODULE_WEIGHT_META = Object.freeze([
+	{ key: "prop", color: "#7769f6", zh: "核心", en: "Core" },
+	{ key: "reward", color: "#f2b768", zh: "休息", en: "Rest" },
+	{ key: "aod", color: "#58c0b0", zh: "位移", en: "Move" },
+	{ key: "sports", color: "#ef6f7f", zh: "运动", en: "Sports" }
+]);
 
 const dataTransferState = {
 	activeTab: "export",
@@ -292,8 +368,29 @@ const dataTransferState = {
 	exportFilename: "",
 	exportError: ""
 };
+const actionCountRangeDragState = {
+	active: false,
+	pointerId: null,
+	startX: 0,
+	startRange: null,
+	sliderWidth: 0
+};
+const actionCountRangeScaleState = {
+	hideTimer: 0
+};
+const moduleWeightUiState = {
+	selectedKey: null,
+	hasAnimatedIn: false,
+	rememberedWeights: {},
+	dismissBound: false,
+	currentWeightMap: null,
+	targetWeightMap: null,
+	animationFrame: 0
+};
 const manageState = {
-	activeTab: "presets"
+	activeTab: "presets",
+	layoutFrame: 0,
+	isMeasuringLayout: false
 };
 
 let embedScrollState = {
@@ -422,6 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initSegmented();
 
 	loadSettingsB();
+	initActionCountRangeControls();
 	loadGameUiSettings();
 	loadGameDataB();
 	loadActiveDataZ();
@@ -454,6 +552,258 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	}
 });
+
+function clampActionCountValue(value, min, max){
+	return Math.min(max, Math.max(min, value));
+}
+
+function snapActionCountValue(value, fallbackValue){
+	const parsedValue = Number.parseInt(value, 10);
+	if (!Number.isFinite(parsedValue)) return fallbackValue;
+
+	const limits = ACTION_COUNT_RANGE_UI_LIMITS;
+	const clampedValue = clampActionCountValue(parsedValue, limits.min, limits.max);
+	const steppedValue = limits.min + Math.round((clampedValue - limits.min) / limits.step) * limits.step;
+	return clampActionCountValue(steppedValue, limits.min, limits.max);
+}
+
+function normalizeActionCountRangeInputs(minValue, maxValue, source = "both"){
+	const limits = ACTION_COUNT_RANGE_UI_LIMITS;
+	let nextMin = snapActionCountValue(minValue, ACTION_COUNT_RANGE.min);
+	let nextMax = snapActionCountValue(maxValue, ACTION_COUNT_RANGE.max);
+
+	nextMin = clampActionCountValue(nextMin, limits.min, limits.max - limits.minGap);
+	nextMax = clampActionCountValue(nextMax, limits.min + limits.minGap, limits.max);
+
+	if (source === "min") {
+		nextMin = Math.min(nextMin, nextMax - limits.minGap);
+	} else if (source === "max") {
+		nextMax = Math.max(nextMax, nextMin + limits.minGap);
+	} else if (nextMax - nextMin < limits.minGap) {
+		if (nextMin + limits.minGap <= limits.max) nextMax = nextMin + limits.minGap;
+		else nextMin = nextMax - limits.minGap;
+	}
+
+	nextMin = clampActionCountValue(nextMin, limits.min, limits.max - limits.minGap);
+	nextMax = clampActionCountValue(nextMax, limits.min + limits.minGap, limits.max);
+
+	return { min: nextMin, max: nextMax };
+}
+
+function setActionCountRangeScaleVisible(visible){
+	const rangeControl = document.querySelector(".count-range-control");
+	if (!rangeControl) return;
+	rangeControl.classList.toggle("is-scale-visible", !!visible);
+}
+
+function clearActionCountRangeScaleFadeTimer(){
+	if (!actionCountRangeScaleState.hideTimer) return;
+	window.clearTimeout(actionCountRangeScaleState.hideTimer);
+	actionCountRangeScaleState.hideTimer = 0;
+}
+
+function scheduleActionCountRangeScaleFade(delay = ACTION_COUNT_SCALE_FADE_DELAY_MS){
+	clearActionCountRangeScaleFadeTimer();
+	actionCountRangeScaleState.hideTimer = window.setTimeout(() => {
+		setActionCountRangeScaleVisible(false);
+		actionCountRangeScaleState.hideTimer = 0;
+	}, delay);
+}
+
+function pulseActionCountRangeScale(){
+	setActionCountRangeScaleVisible(true);
+	scheduleActionCountRangeScaleFade();
+}
+
+function holdActionCountRangeScale(){
+	clearActionCountRangeScaleFadeTimer();
+	setActionCountRangeScaleVisible(true);
+}
+
+function updateActionCountRangeUi(range){
+	const rangeValue = document.getElementById("countRangeValue");
+	const rangeMinLabel = document.getElementById("countRangeMinLabel");
+	const rangeMaxLabel = document.getElementById("countRangeMaxLabel");
+	const rangeFill = document.getElementById("countRangeFill");
+	const rangeBubble = document.getElementById("countRangeBubble");
+	const rangeSlider = document.getElementById("countRangeSlider");
+	const minInput = document.getElementById("minCount");
+	const maxInput = document.getElementById("maxCount");
+	if (!rangeSlider || !minInput || !maxInput) return;
+
+	const total = ACTION_COUNT_RANGE_UI_LIMITS.max - ACTION_COUNT_RANGE_UI_LIMITS.min;
+	const startPercent = ((range.min - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
+	const endPercent = ((range.max - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
+	if (rangeValue) {
+		rangeValue.style.removeProperty("--count-range-display-start");
+		rangeValue.style.removeProperty("--count-range-display-end");
+	}
+	if (rangeMinLabel) rangeMinLabel.textContent = `${range.min}`;
+	if (rangeMaxLabel) rangeMaxLabel.textContent = `${range.max}`;
+	if (rangeFill) {
+		rangeFill.style.left = `${startPercent}%`;
+		rangeFill.style.width = `${Math.max(0, endPercent - startPercent)}%`;
+	}
+	if (rangeBubble) {
+		const sliderWidth = rangeSlider.clientWidth || rangeSlider.getBoundingClientRect().width || 0;
+		const sliderRect = rangeSlider.getBoundingClientRect();
+		const fillRect = rangeFill ? rangeFill.getBoundingClientRect() : null;
+		const rawMidpointPx = fillRect
+			? (fillRect.left - sliderRect.left) + (fillRect.width / 2)
+			: ((startPercent + ((endPercent - startPercent) / 2)) / 100) * sliderWidth;
+		rangeBubble.style.left = `${rawMidpointPx}px`;
+	}
+
+	minInput.setAttribute("aria-valuetext", `${range.min}`);
+	maxInput.setAttribute("aria-valuetext", `${range.max}`);
+}
+
+function shiftActionCountRangeWindow(baseRange, deltaSteps){
+	const limits = ACTION_COUNT_RANGE_UI_LIMITS;
+	const span = baseRange.max - baseRange.min;
+	let nextMin = baseRange.min + deltaSteps * limits.step;
+	let nextMax = baseRange.max + deltaSteps * limits.step;
+
+	if (nextMin < limits.min) {
+		nextMin = limits.min;
+		nextMax = nextMin + span;
+	}
+	if (nextMax > limits.max) {
+		nextMax = limits.max;
+		nextMin = nextMax - span;
+	}
+
+	return { min: nextMin, max: nextMax };
+}
+
+function setActionCountRangeActiveHandle(handle){
+	const minInput = document.getElementById("minCount");
+	const maxInput = document.getElementById("maxCount");
+	if (!minInput || !maxInput) return;
+
+	minInput.style.zIndex = handle === "min" ? "4" : "3";
+	maxInput.style.zIndex = handle === "max" ? "4" : "3";
+}
+
+function setActionCountRangeInputs(range, options = {}){
+	const minInput = document.getElementById("minCount");
+	const maxInput = document.getElementById("maxCount");
+	if (!minInput || !maxInput) {
+		return { min: ACTION_COUNT_RANGE.min, max: ACTION_COUNT_RANGE.max };
+	}
+
+	const normalizedRange = normalizeActionCountRangeInputs(
+		range?.min ?? minInput.value,
+		range?.max ?? maxInput.value,
+		options.source || "both"
+	);
+
+	minInput.value = normalizedRange.min;
+	maxInput.value = normalizedRange.max;
+	updateActionCountRangeUi(normalizedRange);
+	return normalizedRange;
+}
+
+function initActionCountRangeControls(){
+	const minInput = document.getElementById("minCount");
+	const maxInput = document.getElementById("maxCount");
+	const rangeSlider = document.getElementById("countRangeSlider");
+	const rangeBubble = document.getElementById("countRangeBubble");
+	if (!minInput || !maxInput || !rangeSlider || !rangeBubble) return;
+
+	const bindRangeInput = (input, handle) => {
+		const activateHandle = () => setActionCountRangeActiveHandle(handle);
+		input.addEventListener("pointerdown", () => {
+			activateHandle();
+			holdActionCountRangeScale();
+		}, { passive: true });
+		input.addEventListener("pointerup", () => scheduleActionCountRangeScaleFade(), { passive: true });
+		input.addEventListener("pointercancel", () => scheduleActionCountRangeScaleFade(), { passive: true });
+		input.addEventListener("blur", () => scheduleActionCountRangeScaleFade());
+		input.addEventListener("focus", () => {
+			activateHandle();
+			holdActionCountRangeScale();
+		});
+		input.addEventListener("input", () => {
+			holdActionCountRangeScale();
+			scheduleActionCountRangeScaleFade();
+			setActionCountRangeInputs(
+				{ min: minInput.value, max: maxInput.value },
+				{ source: handle }
+			);
+		});
+	};
+
+	bindRangeInput(minInput, "min");
+	bindRangeInput(maxInput, "max");
+
+	const endBubbleDrag = (event) => {
+		if (!actionCountRangeDragState.active) return;
+		if (event && actionCountRangeDragState.pointerId !== null && event.pointerId !== actionCountRangeDragState.pointerId) return;
+		actionCountRangeDragState.active = false;
+		actionCountRangeDragState.pointerId = null;
+		rangeBubble.classList.remove("is-dragging");
+		rangeSlider.classList.remove("is-bubble-dragging");
+	};
+
+	rangeBubble.addEventListener("pointerdown", (event) => {
+		if (event.pointerType !== "touch" && event.button !== 0) return;
+
+		const currentRange = normalizeActionCountRangeInputs(minInput.value, maxInput.value);
+		holdActionCountRangeScale();
+		actionCountRangeDragState.active = true;
+		actionCountRangeDragState.pointerId = event.pointerId;
+		actionCountRangeDragState.startX = event.clientX;
+		actionCountRangeDragState.startRange = currentRange;
+		actionCountRangeDragState.sliderWidth = rangeSlider.clientWidth || rangeSlider.getBoundingClientRect().width || 0;
+		rangeBubble.classList.add("is-dragging");
+		rangeSlider.classList.add("is-bubble-dragging");
+		rangeBubble.setPointerCapture(event.pointerId);
+		event.preventDefault();
+	});
+
+	rangeBubble.addEventListener("pointermove", (event) => {
+		if (!actionCountRangeDragState.active || event.pointerId !== actionCountRangeDragState.pointerId) return;
+
+		const sliderWidth = actionCountRangeDragState.sliderWidth || rangeSlider.clientWidth || rangeSlider.getBoundingClientRect().width || 0;
+		if (sliderWidth <= 0 || !actionCountRangeDragState.startRange) return;
+
+		const totalSteps = (ACTION_COUNT_RANGE_UI_LIMITS.max - ACTION_COUNT_RANGE_UI_LIMITS.min) / ACTION_COUNT_RANGE_UI_LIMITS.step;
+		const stepWidth = sliderWidth / Math.max(1, totalSteps);
+		const deltaSteps = Math.round((event.clientX - actionCountRangeDragState.startX) / stepWidth);
+		holdActionCountRangeScale();
+		setActionCountRangeInputs(shiftActionCountRangeWindow(actionCountRangeDragState.startRange, deltaSteps));
+	});
+
+	rangeBubble.addEventListener("pointerup", (event) => {
+		endBubbleDrag(event);
+		scheduleActionCountRangeScaleFade();
+	});
+	rangeBubble.addEventListener("pointercancel", (event) => {
+		endBubbleDrag(event);
+		scheduleActionCountRangeScaleFade();
+	});
+	rangeBubble.addEventListener("lostpointercapture", (event) => {
+		endBubbleDrag(event);
+		scheduleActionCountRangeScaleFade();
+	});
+	rangeBubble.addEventListener("keydown", (event) => {
+		if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+		event.preventDefault();
+		const direction = event.key === "ArrowLeft" ? -1 : 1;
+		const currentRange = normalizeActionCountRangeInputs(minInput.value, maxInput.value);
+		holdActionCountRangeScale();
+		scheduleActionCountRangeScaleFade();
+		setActionCountRangeInputs(shiftActionCountRangeWindow(currentRange, direction));
+	});
+
+	window.addEventListener("resize", () => {
+		updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
+	});
+
+	setActionCountRangeActiveHandle("max");
+	updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
+}
 
 /* =========================
    Segmented Control
@@ -522,19 +872,14 @@ function loadSettingsB() {
 		localStorage.getItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY) ||
 		"null"
 	);
-	if (storedSettings) {
-		document.getElementById("minCount").value = storedSettings.min;
-		document.getElementById("maxCount").value = storedSettings.max;
-	} else {
-		document.getElementById("minCount").value = ACTION_COUNT_RANGE.min;
-		document.getElementById("maxCount").value = ACTION_COUNT_RANGE.max;
-	}
+	setActionCountRangeInputs(storedSettings || ACTION_COUNT_RANGE);
 }
 
 function loadGameDataB() {
 	const storedGameData = JSON.parse(localStorage.getItem("GameData"));
 	GameData = normalizeGameData(storedGameData);
-	fillWeightInputsFromGameData();
+	initModuleWeightControl();
+	syncModuleWeightControlFromGameData({ resetSelection: true, animateRing: true });
 }
 
 function loadGameUiSettings(){
@@ -542,23 +887,628 @@ function loadGameUiSettings(){
 	const gameUiSettings = normalizeGameUiSettings(storedGameUiSettings);
 	const predictionToggle = document.getElementById("toggleBTaskPrediction");
 	const liveCountToggle = document.getElementById("toggleBTaskLiveCount");
+	const boardIntroToggle = document.getElementById("toggleBoardIntroAnimation");
 	if (predictionToggle) predictionToggle.checked = gameUiSettings.showBTaskPrediction;
 	if (liveCountToggle) liveCountToggle.checked = gameUiSettings.showBTaskLiveCount;
+	if (boardIntroToggle) boardIntroToggle.checked = gameUiSettings.enableBoardIntroAnimation;
 }
 
-function fillWeightInputsFromGameData(){
-	if (GameData.prop && GameData.prop.weight !== undefined) {
-		document.getElementById("weight-prop").value = GameData.prop.weight;
+function getModuleWeightLanguage(){
+	const lang = String(
+		(typeof window.getLanguage === "function" ? window.getLanguage() : document.documentElement.lang) || ""
+	).toLowerCase();
+	return (lang === "zh" || lang.startsWith("zh")) ? "zh" : "en";
+}
+
+function getModuleWeightCopy(){
+	return getModuleWeightLanguage() === "zh"
+		? {
+			ringLabel: "模块权重占比圆环",
+			current: "当前模块",
+			share: "当前占比",
+			disabled: "已禁用，不参与随机",
+			enable: "启用",
+			disable: "禁用",
+			increase: "增加模块占比",
+			decrease: "减少模块占比",
+			stepperLabel: "调整模块权重",
+			segmentLabel: "{name}，当前占比 {share}",
+			disabledLabel: "{name}，当前已禁用"
+		}
+		: {
+			ringLabel: "Module weight ring",
+			current: "Current module",
+			share: "Current share",
+			disabled: "Disabled and removed from the ring",
+			enable: "Enable",
+			disable: "Disable",
+			increase: "Increase module share",
+			decrease: "Decrease module share",
+			stepperLabel: "Adjust module weight",
+			segmentLabel: "{name}, current share {share}",
+			disabledLabel: "{name}, currently disabled"
+		};
+}
+
+function getModuleWeightMeta(key){
+	return MODULE_WEIGHT_META.find((entry) => entry.key === key) || MODULE_WEIGHT_META[0];
+}
+
+function getModuleWeightLabel(meta){
+	return getModuleWeightLanguage() === "zh" ? meta.zh : meta.en;
+}
+
+function getModuleWeightEntries(sourceGameData = GameData){
+	return MODULE_WEIGHT_META.map((meta) => {
+		const rawWeight = Number(sourceGameData?.[meta.key]?.weight || 0);
+		return {
+			...meta,
+			label: getModuleWeightLabel(meta),
+			weight: Math.max(0, Number.isFinite(rawWeight) ? rawWeight : 0),
+			defaultWeight: Math.max(1, Number(DEFAULT_GAME_DATA?.[meta.key]?.weight || 1))
+		};
+	});
+}
+
+function rememberPositiveModuleWeights(entries){
+	(entries || []).forEach((entry) => {
+		if (entry.weight > 0) {
+			moduleWeightUiState.rememberedWeights[entry.key] = entry.weight;
+		}
+	});
+}
+
+function normalizeModuleWeightEntries(entries, targetTotal = MODULE_WEIGHT_TOTAL){
+	const result = Object.fromEntries((entries || []).map((entry) => [entry.key, 0]));
+	const positiveEntries = (entries || []).filter((entry) => entry.weight > 0);
+	if (!positiveEntries.length) return result;
+
+	const safeTotal = Math.max(targetTotal, positiveEntries.length);
+	const minPerEntry = 1;
+	const extraPool = safeTotal - (positiveEntries.length * minPerEntry);
+	const rawSum = positiveEntries.reduce((sum, entry) => sum + entry.weight, 0);
+	const allocations = positiveEntries.map((entry, index) => {
+		const rawExtra = extraPool > 0 && rawSum > 0
+			? (entry.weight / rawSum) * extraPool
+			: 0;
+		const flooredExtra = Math.floor(rawExtra);
+		return {
+			key: entry.key,
+			value: minPerEntry + flooredExtra,
+			fraction: rawExtra - flooredExtra,
+			priority: entry.weight,
+			index
+		};
+	});
+
+	let remaining = safeTotal - allocations.reduce((sum, entry) => sum + entry.value, 0);
+	allocations
+		.slice()
+		.sort((left, right) => (
+			(right.fraction - left.fraction) ||
+			(right.priority - left.priority) ||
+			(left.index - right.index)
+		))
+		.forEach((entry) => {
+			if (remaining <= 0) return;
+			const target = allocations.find((allocation) => allocation.key === entry.key);
+			if (!target) return;
+			target.value += 1;
+			remaining -= 1;
+		});
+
+	allocations.forEach((entry) => {
+		result[entry.key] = entry.value;
+	});
+
+	return result;
+}
+
+function getNormalizedModuleWeightMap(sourceGameData = GameData){
+	return normalizeModuleWeightEntries(getModuleWeightEntries(sourceGameData));
+}
+
+function applyModuleWeightMapToGameData(weightMap, targetGameData = GameData){
+	MODULE_WEIGHT_META.forEach((meta) => {
+		if (!targetGameData[meta.key]) return;
+		const nextWeight = Math.max(0, Number(weightMap?.[meta.key] || 0));
+		targetGameData[meta.key].weight = nextWeight;
+		if (nextWeight > 0) {
+			moduleWeightUiState.rememberedWeights[meta.key] = nextWeight;
+		}
+	});
+}
+
+function getModuleWeightDefaultRememberedValue(key){
+	return Math.max(
+		1,
+		Number(moduleWeightUiState.rememberedWeights[key] || DEFAULT_GAME_DATA?.[key]?.weight || 1)
+	);
+}
+
+function formatModuleWeightPercent(weightValue, totalWeight){
+	if (!totalWeight || weightValue <= 0) return "0%";
+	return `${Math.round((weightValue / totalWeight) * 100)}%`;
+}
+
+function cloneModuleWeightMap(weightMap){
+	return Object.fromEntries(
+		MODULE_WEIGHT_META.map((meta) => [meta.key, Math.max(0, Number(weightMap?.[meta.key] || 0))])
+	);
+}
+
+function moduleWeightMapsDiffer(leftMap, rightMap){
+	return MODULE_WEIGHT_META.some((meta) => (
+		Math.abs(
+			Number(leftMap?.[meta.key] || 0) -
+			Number(rightMap?.[meta.key] || 0)
+		) > 0.001
+	));
+}
+
+function interpolateModuleWeightMap(startMap, endMap, progress){
+	const clampedProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+	return Object.fromEntries(MODULE_WEIGHT_META.map((meta) => {
+		const startValue = Number(startMap?.[meta.key] || 0);
+		const endValue = Number(endMap?.[meta.key] || 0);
+		return [meta.key, startValue + ((endValue - startValue) * clampedProgress)];
+	}));
+}
+
+function easeModuleWeightRingProgress(progress){
+	const clampedProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+	return 1 - Math.pow(1 - clampedProgress, 3);
+}
+
+function formatModuleWeightPathNumber(value){
+	return Number(value.toFixed(3));
+}
+
+function polarToCartesianForModuleWeight(angle){
+	return {
+		x: MODULE_WEIGHT_RING.center + (MODULE_WEIGHT_RING.radius * Math.cos(angle)),
+		y: MODULE_WEIGHT_RING.center + (MODULE_WEIGHT_RING.radius * Math.sin(angle))
+	};
+}
+
+function buildFullModuleWeightRingPath(){
+	const top = {
+		x: MODULE_WEIGHT_RING.center,
+		y: MODULE_WEIGHT_RING.center - MODULE_WEIGHT_RING.radius
+	};
+	const bottom = {
+		x: MODULE_WEIGHT_RING.center,
+		y: MODULE_WEIGHT_RING.center + MODULE_WEIGHT_RING.radius
+	};
+
+	return [
+		`M ${formatModuleWeightPathNumber(top.x)} ${formatModuleWeightPathNumber(top.y)}`,
+		`A ${MODULE_WEIGHT_RING.radius} ${MODULE_WEIGHT_RING.radius} 0 1 1 ${formatModuleWeightPathNumber(bottom.x)} ${formatModuleWeightPathNumber(bottom.y)}`,
+		`A ${MODULE_WEIGHT_RING.radius} ${MODULE_WEIGHT_RING.radius} 0 1 1 ${formatModuleWeightPathNumber(top.x)} ${formatModuleWeightPathNumber(top.y)}`,
+		"Z"
+	].join(" ");
+}
+
+function buildModuleWeightArcPath(startAngle, endAngle){
+	const sweepAngle = Math.max(0, endAngle - startAngle);
+	if (sweepAngle <= 0.000001) return "";
+	if (sweepAngle >= MODULE_WEIGHT_RING.fullAngle - 0.000001) {
+		return buildFullModuleWeightRingPath();
 	}
-	if (GameData.reward && GameData.reward.weight !== undefined) {
-		document.getElementById("weight-reward").value = GameData.reward.weight;
+
+	const startPoint = polarToCartesianForModuleWeight(startAngle);
+	const endPoint = polarToCartesianForModuleWeight(endAngle);
+	const largeArcFlag = sweepAngle > Math.PI ? 1 : 0;
+
+	return [
+		`M ${formatModuleWeightPathNumber(startPoint.x)} ${formatModuleWeightPathNumber(startPoint.y)}`,
+		`A ${MODULE_WEIGHT_RING.radius} ${MODULE_WEIGHT_RING.radius} 0 ${largeArcFlag} 1 ${formatModuleWeightPathNumber(endPoint.x)} ${formatModuleWeightPathNumber(endPoint.y)}`
+	].join(" ");
+}
+
+function buildModuleWeightSegmentStates(weightMap){
+	const safeMap = cloneModuleWeightMap(weightMap);
+	const totalWeight = MODULE_WEIGHT_META.reduce((sum, meta) => sum + safeMap[meta.key], 0);
+	let currentAngle = MODULE_WEIGHT_RING.startAngle;
+
+	return MODULE_WEIGHT_META.map((meta) => {
+		const weight = safeMap[meta.key];
+		const ratio = totalWeight > 0 && weight > 0 ? weight / totalWeight : 0;
+		const startAngle = currentAngle;
+		const endAngle = startAngle + (ratio * MODULE_WEIGHT_RING.fullAngle);
+		if (ratio > 0) currentAngle = endAngle;
+
+		return {
+			key: meta.key,
+			weight,
+			ratio,
+			startAngle,
+			endAngle,
+			isClosed: ratio >= 0.999999,
+			d: ratio > 0 ? buildModuleWeightArcPath(startAngle, endAngle) : ""
+		};
+	});
+}
+
+function applyModuleWeightRingGeometry(weightMap, copy = getModuleWeightCopy()){
+	const segmentGroup = document.getElementById("moduleWeightRingSegments");
+	if (!segmentGroup) return [];
+
+	const segmentStates = buildModuleWeightSegmentStates(weightMap);
+	const totalWeight = segmentStates.reduce((sum, state) => sum + state.weight, 0);
+
+	segmentStates.forEach((state) => {
+		const segment = segmentGroup.querySelector(`.module-weight-segment[data-key="${state.key}"]`);
+		if (!segment) return;
+
+		const meta = getModuleWeightMeta(state.key);
+		const label = getModuleWeightLabel(meta);
+		const shareText = formatModuleWeightPercent(state.weight, totalWeight);
+
+		segment.classList.toggle("is-selected", moduleWeightUiState.selectedKey === state.key);
+		segment.classList.toggle("is-closed", state.isClosed);
+		segment.setAttribute("stroke", meta.color);
+		segment.setAttribute("d", state.weight > 0 ? state.d : "");
+		segment.style.stroke = meta.color;
+		segment.style.opacity = state.weight > 0 ? "1" : "0";
+		segment.style.pointerEvents = state.weight > 0 ? "visibleStroke" : "none";
+		segment.setAttribute("aria-hidden", state.weight > 0 ? "false" : "true");
+		segment.setAttribute(
+			"aria-label",
+			state.weight > 0
+				? formatInlineCopy(copy.segmentLabel, { name: label, share: shareText })
+				: formatInlineCopy(copy.disabledLabel, { name: label })
+		);
+	});
+
+	const selectedSegment = moduleWeightUiState.selectedKey
+		? segmentGroup.querySelector(`.module-weight-segment[data-key="${moduleWeightUiState.selectedKey}"]`)
+		: null;
+	if (selectedSegment) {
+		segmentGroup.appendChild(selectedSegment);
 	}
-	if (GameData.aod && GameData.aod.weight !== undefined) {
-		document.getElementById("weight-aod").value = GameData.aod.weight;
+
+	return segmentStates.filter((state) => state.weight > 0 && state.d);
+}
+
+function animateModuleWeightRingTo(targetWeightMap, copy = getModuleWeightCopy()){
+	const nextTarget = cloneModuleWeightMap(targetWeightMap);
+	const startMap = cloneModuleWeightMap(moduleWeightUiState.currentWeightMap || nextTarget);
+
+	if (moduleWeightUiState.animationFrame) {
+		cancelAnimationFrame(moduleWeightUiState.animationFrame);
+		moduleWeightUiState.animationFrame = 0;
 	}
-	if (GameData.sports && GameData.sports.weight !== undefined) {
-		document.getElementById("weight-sports").value = GameData.sports.weight;
+
+	moduleWeightUiState.targetWeightMap = cloneModuleWeightMap(nextTarget);
+
+	if (!moduleWeightMapsDiffer(startMap, nextTarget)) {
+		moduleWeightUiState.currentWeightMap = cloneModuleWeightMap(nextTarget);
+		applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+		return;
 	}
+
+	const startTime = performance.now();
+	const duration = 960;
+
+	const tick = (now) => {
+		const progress = Math.min(1, (now - startTime) / duration);
+		const easedProgress = easeModuleWeightRingProgress(progress);
+		moduleWeightUiState.currentWeightMap = interpolateModuleWeightMap(startMap, nextTarget, easedProgress);
+		applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+
+		if (progress < 1) {
+			moduleWeightUiState.animationFrame = requestAnimationFrame(tick);
+			return;
+		}
+
+		moduleWeightUiState.animationFrame = 0;
+		moduleWeightUiState.currentWeightMap = cloneModuleWeightMap(nextTarget);
+		applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+	};
+
+	moduleWeightUiState.animationFrame = requestAnimationFrame(tick);
+}
+
+function selectModuleWeight(key){
+	if (!MODULE_WEIGHT_META.some((entry) => entry.key === key)) return;
+	if (moduleWeightUiState.selectedKey === key) return;
+	moduleWeightUiState.selectedKey = key;
+	renderModuleWeightControl();
+}
+
+function clearSelectedModuleWeight(){
+	if (!moduleWeightUiState.selectedKey) return;
+	moduleWeightUiState.selectedKey = null;
+	renderModuleWeightControl();
+}
+
+function adjustSelectedModuleWeight(delta){
+	const selectedKey = moduleWeightUiState.selectedKey;
+	if (!selectedKey) return;
+
+	const normalizedMap = getNormalizedModuleWeightMap(GameData);
+	if ((normalizedMap[selectedKey] || 0) <= 0) return;
+
+	const otherEnabledKeys = MODULE_WEIGHT_META
+		.map((meta) => meta.key)
+		.filter((key) => key !== selectedKey && (normalizedMap[key] || 0) > 0);
+	if (!otherEnabledKeys.length) return;
+
+	const currentSelected = normalizedMap[selectedKey];
+	const nextSelected = Math.min(
+		MODULE_WEIGHT_TOTAL - otherEnabledKeys.length,
+		Math.max(1, currentSelected + delta)
+	);
+	if (nextSelected === currentSelected) return;
+
+	const redistributed = normalizeModuleWeightEntries(
+		otherEnabledKeys.map((key) => ({ key, weight: normalizedMap[key] })),
+		MODULE_WEIGHT_TOTAL - nextSelected
+	);
+	const nextMap = Object.fromEntries(MODULE_WEIGHT_META.map((meta) => [meta.key, 0]));
+	nextMap[selectedKey] = nextSelected;
+	otherEnabledKeys.forEach((key) => {
+		nextMap[key] = redistributed[key] || 0;
+	});
+
+	applyModuleWeightMapToGameData(nextMap);
+	renderModuleWeightControl();
+}
+
+function toggleSelectedModuleWeightEnabled(){
+	const selectedKey = moduleWeightUiState.selectedKey;
+	if (!selectedKey) return;
+
+	const normalizedMap = getNormalizedModuleWeightMap(GameData);
+	const nextMap = Object.fromEntries(MODULE_WEIGHT_META.map((meta) => [meta.key, 0]));
+
+	if ((normalizedMap[selectedKey] || 0) > 0) {
+		moduleWeightUiState.rememberedWeights[selectedKey] = normalizedMap[selectedKey];
+		const remainingEntries = MODULE_WEIGHT_META
+			.map((meta) => meta.key)
+			.filter((key) => key !== selectedKey && (normalizedMap[key] || 0) > 0)
+			.map((key) => ({ key, weight: normalizedMap[key] }));
+		if (remainingEntries.length) {
+			Object.assign(nextMap, normalizeModuleWeightEntries(remainingEntries));
+		}
+	} else {
+		const reenabledEntries = MODULE_WEIGHT_META
+			.map((meta) => meta.key)
+			.filter((key) => key === selectedKey || (normalizedMap[key] || 0) > 0)
+			.map((key) => ({
+				key,
+				weight: key === selectedKey
+					? getModuleWeightDefaultRememberedValue(selectedKey)
+					: normalizedMap[key]
+			}));
+		Object.assign(nextMap, normalizeModuleWeightEntries(reenabledEntries));
+	}
+
+	applyModuleWeightMapToGameData(nextMap);
+	renderModuleWeightControl();
+}
+
+function animateModuleWeightRingEntrance(segmentStates){
+	segmentStates.forEach((state, index) => {
+		const segment = document.querySelector(`.module-weight-segment[data-key="${state.key}"]`);
+		if (!segment) return;
+
+		const pathLength = segment.getTotalLength();
+		if (!Number.isFinite(pathLength) || pathLength <= 0) return;
+
+		segment.style.opacity = "0";
+		segment.style.transition = "none";
+		segment.style.strokeDasharray = `${pathLength}`;
+		segment.style.strokeDashoffset = `${pathLength}`;
+
+		requestAnimationFrame(() => {
+			const delay = index * 72;
+			segment.style.transition = `stroke-dashoffset .88s cubic-bezier(.16,1,.3,1) ${delay}ms, opacity .34s ease ${delay}ms, stroke-width .34s cubic-bezier(.22,1,.36,1), filter .34s cubic-bezier(.22,1,.36,1)`;
+			segment.style.opacity = "1";
+			segment.style.strokeDashoffset = "0";
+
+			window.setTimeout(() => {
+				segment.style.removeProperty("stroke-dasharray");
+				segment.style.removeProperty("stroke-dashoffset");
+				segment.style.removeProperty("transition");
+			}, delay + 980);
+		});
+	});
+}
+
+function initModuleWeightControl(){
+	const svg = document.getElementById("moduleWeightRingSvg");
+	const segmentGroup = document.getElementById("moduleWeightRingSegments");
+	const legend = document.getElementById("moduleWeightLegend");
+	const decreaseBtn = document.getElementById("moduleWeightDecreaseBtn");
+	const increaseBtn = document.getElementById("moduleWeightIncreaseBtn");
+	const toggleBtn = document.getElementById("moduleWeightToggleBtn");
+	const detail = document.getElementById("moduleWeightDetail");
+	const ringCopy = getModuleWeightCopy();
+	if (!svg || !segmentGroup || !legend || !decreaseBtn || !increaseBtn || !toggleBtn || !detail) return;
+	if (segmentGroup.childElementCount) return;
+
+	svg.setAttribute("aria-label", ringCopy.ringLabel);
+	const stepper = detail.querySelector(".module-weight-stepper");
+	if (stepper) stepper.setAttribute("aria-label", ringCopy.stepperLabel);
+	decreaseBtn.setAttribute("aria-label", ringCopy.decrease);
+	increaseBtn.setAttribute("aria-label", ringCopy.increase);
+
+	MODULE_WEIGHT_META.forEach((meta) => {
+		const segment = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		segment.classList.add("module-weight-segment");
+		segment.dataset.key = meta.key;
+		segment.setAttribute("fill", "none");
+		segment.setAttribute("stroke", meta.color);
+		segment.setAttribute("tabindex", "0");
+		segment.setAttribute("role", "button");
+		segment.setAttribute("aria-hidden", "true");
+		segment.addEventListener("click", () => selectModuleWeight(meta.key));
+		segment.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			event.preventDefault();
+			selectModuleWeight(meta.key);
+		});
+		segmentGroup.appendChild(segment);
+	});
+
+	legend.addEventListener("click", (event) => {
+		const button = event.target.closest(".module-weight-legend-btn");
+		if (!button) return;
+		selectModuleWeight(button.dataset.key);
+	});
+	legend.addEventListener("keydown", (event) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		const button = event.target.closest(".module-weight-legend-btn");
+		if (!button) return;
+		event.preventDefault();
+		selectModuleWeight(button.dataset.key);
+	});
+
+	decreaseBtn.addEventListener("click", () => adjustSelectedModuleWeight(-MODULE_WEIGHT_STEP));
+	increaseBtn.addEventListener("click", () => adjustSelectedModuleWeight(MODULE_WEIGHT_STEP));
+	toggleBtn.addEventListener("click", toggleSelectedModuleWeightEnabled);
+
+	if (!moduleWeightUiState.dismissBound) {
+		moduleWeightUiState.dismissBound = true;
+		document.addEventListener("pointerdown", (event) => {
+			if (!moduleWeightUiState.selectedKey) return;
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			if (
+				target.closest(".module-weight-segment") ||
+				target.closest(".module-weight-legend-btn") ||
+				target.closest(".module-weight-detail")
+			) {
+				return;
+			}
+			clearSelectedModuleWeight();
+		}, { passive: true });
+
+		document.addEventListener("keydown", (event) => {
+			if (event.key !== "Escape") return;
+			clearSelectedModuleWeight();
+		});
+	}
+}
+
+function renderModuleWeightControl(){
+	const svg = document.getElementById("moduleWeightRingSvg");
+	const segmentGroup = document.getElementById("moduleWeightRingSegments");
+	const legend = document.getElementById("moduleWeightLegend");
+	const detail = document.getElementById("moduleWeightDetail");
+	const detailValue = document.getElementById("moduleWeightPercentValue");
+	const decreaseBtn = document.getElementById("moduleWeightDecreaseBtn");
+	const increaseBtn = document.getElementById("moduleWeightIncreaseBtn");
+	const toggleBtn = document.getElementById("moduleWeightToggleBtn");
+	const stepper = detail.querySelector(".module-weight-stepper");
+	if (!svg || !segmentGroup || !legend || !detail || !detailValue || !decreaseBtn || !increaseBtn || !toggleBtn) {
+		return;
+	}
+
+	const copy = getModuleWeightCopy();
+	const normalizedMap = getNormalizedModuleWeightMap(GameData);
+	const targetWeightMap = cloneModuleWeightMap(normalizedMap);
+	const entries = getModuleWeightEntries(GameData).map((entry) => ({
+		...entry,
+		weight: targetWeightMap[entry.key] || 0
+	}));
+	rememberPositiveModuleWeights(entries);
+
+	svg.setAttribute("aria-label", copy.ringLabel);
+	decreaseBtn.setAttribute("aria-label", copy.decrease);
+	increaseBtn.setAttribute("aria-label", copy.increase);
+	if (stepper) stepper.setAttribute("aria-label", copy.stepperLabel);
+
+	const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
+	const activeEntries = entries.filter((entry) => entry.weight > 0);
+	const geometryChangedWhileAnimating = (
+		moduleWeightUiState.animationFrame &&
+		moduleWeightMapsDiffer(targetWeightMap, moduleWeightUiState.targetWeightMap || {})
+	);
+	let visibleSegmentStates = [];
+
+	if (!moduleWeightUiState.currentWeightMap) {
+		moduleWeightUiState.currentWeightMap = cloneModuleWeightMap(targetWeightMap);
+		moduleWeightUiState.targetWeightMap = cloneModuleWeightMap(targetWeightMap);
+		visibleSegmentStates = applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+		if (!moduleWeightUiState.hasAnimatedIn) {
+			moduleWeightUiState.hasAnimatedIn = true;
+			animateModuleWeightRingEntrance(visibleSegmentStates);
+		}
+	} else if (geometryChangedWhileAnimating) {
+		animateModuleWeightRingTo(targetWeightMap, copy);
+	} else if (moduleWeightUiState.animationFrame) {
+		visibleSegmentStates = applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+	} else if (moduleWeightMapsDiffer(moduleWeightUiState.currentWeightMap, targetWeightMap)) {
+		animateModuleWeightRingTo(targetWeightMap, copy);
+	} else {
+		moduleWeightUiState.targetWeightMap = cloneModuleWeightMap(targetWeightMap);
+		visibleSegmentStates = applyModuleWeightRingGeometry(moduleWeightUiState.currentWeightMap, copy);
+	}
+
+	if (!visibleSegmentStates.length && !moduleWeightUiState.animationFrame) {
+		applyModuleWeightRingGeometry(targetWeightMap, copy);
+	}
+
+	legend.innerHTML = entries.map((entry) => `
+		<button
+			class="module-weight-legend-btn${moduleWeightUiState.selectedKey === entry.key ? " is-selected" : ""}${entry.weight <= 0 ? " is-disabled" : ""}"
+			type="button"
+			role="listitem"
+			data-key="${entry.key}"
+			aria-pressed="${moduleWeightUiState.selectedKey === entry.key ? "true" : "false"}"
+			title="${entry.weight > 0 ? `${entry.label} ${formatModuleWeightPercent(entry.weight, totalWeight)}` : entry.label}"
+		>
+			<span class="module-weight-legend-swatch" style="--module-color:${entry.color};" aria-hidden="true"></span>
+			<span>${entry.label}</span>
+		</button>
+	`).join("");
+
+	const selectedKey = moduleWeightUiState.selectedKey;
+	const selectedEntry = entries.find((entry) => entry.key === selectedKey) || null;
+	if (!selectedEntry) {
+		detail.classList.remove("is-open", "is-disabled");
+		detail.setAttribute("aria-hidden", "true");
+		return;
+	}
+
+	const shareText = formatModuleWeightPercent(selectedEntry.weight, totalWeight);
+	const hasAdjustablePeers = entries.some((entry) => entry.key !== selectedEntry.key && entry.weight > 0);
+	detail.classList.add("is-open");
+	detail.classList.toggle("is-disabled", selectedEntry.weight <= 0);
+	detail.setAttribute("aria-hidden", "false");
+	detail.setAttribute(
+		"aria-label",
+		selectedEntry.weight > 0
+			? formatInlineCopy(copy.segmentLabel, { name: selectedEntry.label, share: shareText })
+			: formatInlineCopy(copy.disabledLabel, { name: selectedEntry.label })
+	);
+	detailValue.textContent = shareText;
+	decreaseBtn.disabled = selectedEntry.weight <= 0 || !hasAdjustablePeers || selectedEntry.weight <= 1;
+	increaseBtn.disabled = selectedEntry.weight <= 0 || !hasAdjustablePeers || selectedEntry.weight >= (MODULE_WEIGHT_TOTAL - Math.max(0, activeEntries.length - 1));
+	toggleBtn.textContent = selectedEntry.weight > 0 ? copy.disable : copy.enable;
+	toggleBtn.setAttribute("aria-label", selectedEntry.weight > 0 ? copy.disable : copy.enable);
+	toggleBtn.classList.toggle("is-enable", selectedEntry.weight <= 0);
+}
+
+function syncModuleWeightControlFromGameData(options = {}){
+	rememberPositiveModuleWeights(getModuleWeightEntries(GameData));
+	if (options.resetSelection) {
+		moduleWeightUiState.selectedKey = null;
+	}
+	if (moduleWeightUiState.animationFrame) {
+		cancelAnimationFrame(moduleWeightUiState.animationFrame);
+		moduleWeightUiState.animationFrame = 0;
+	}
+	initModuleWeightControl();
+	if (options.animateRing) {
+		moduleWeightUiState.hasAnimatedIn = false;
+		moduleWeightUiState.currentWeightMap = null;
+		moduleWeightUiState.targetWeightMap = null;
+	}
+	renderModuleWeightControl();
 }
 
 function getCategoryLabels(){
@@ -1119,10 +2069,19 @@ function getNumericInputValue(id, fallbackValue){
 }
 
 function getActionCountRangeValidationError(minVal, maxVal){
-	if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || minVal % 10 !== 0 || maxVal % 10 !== 0) {
+	const limits = ACTION_COUNT_RANGE_UI_LIMITS;
+	const isAlignedToStep = (value) => (value - limits.min) % limits.step === 0;
+	if (
+		!Number.isFinite(minVal) ||
+		!Number.isFinite(maxVal) ||
+		minVal < limits.min ||
+		maxVal > limits.max ||
+		!isAlignedToStep(minVal) ||
+		!isAlignedToStep(maxVal)
+	) {
 		return t("settings.errorMultipleOfTen");
 	}
-	if (minVal >= maxVal) {
+	if (maxVal - minVal < limits.minGap) {
 		return t("settings.errorMinLessThanMax");
 	}
 	return "";
@@ -1139,8 +2098,12 @@ function readStoredJson(storageKey, fallbackValue = null){
 }
 
 function getCurrentActionCountRangeSnapshot(){
-	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
-	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
+	const normalizedRange = setActionCountRangeInputs({
+		min: getNumericInputValue("minCount", ACTION_COUNT_RANGE.min),
+		max: getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max)
+	});
+	const minVal = normalizedRange.min;
+	const maxVal = normalizedRange.max;
 	const validationError = getActionCountRangeValidationError(minVal, maxVal);
 	if (validationError) {
 		throw new Error(validationError);
@@ -1150,10 +2113,7 @@ function getCurrentActionCountRangeSnapshot(){
 
 function getCurrentGameDataSnapshot(){
 	const snapshot = normalizeGameData(GameData);
-	snapshot.prop.weight = getNumericInputValue("weight-prop", snapshot.prop.weight);
-	snapshot.reward.weight = getNumericInputValue("weight-reward", snapshot.reward.weight);
-	snapshot.aod.weight = getNumericInputValue("weight-aod", snapshot.aod.weight);
-	snapshot.sports.weight = getNumericInputValue("weight-sports", snapshot.sports.weight);
+	applyModuleWeightMapToGameData(getNormalizedModuleWeightMap(GameData), snapshot);
 	return snapshot;
 }
 
@@ -1166,7 +2126,8 @@ function getCurrentActiveDataSnapshot(){
 function getCurrentGameUiSettingsSnapshot(){
 	return normalizeGameUiSettings({
 		showBTaskPrediction: !!document.getElementById("toggleBTaskPrediction")?.checked,
-		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked
+		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked,
+		enableBoardIntroAnimation: !!document.getElementById("toggleBoardIntroAnimation")?.checked
 	});
 }
 
@@ -1191,11 +2152,11 @@ function getManageCopy(){
 			presetUsage: "已保存 {count}/{limit}",
 			backupLabel: "本地备份",
 			resetLabel: "核心设置重置",
-			resetHint: "只影响 B/Z 规则和本地预设。EX 显示、语言、主题、自定义棋盘都会保留。",
+			resetHint: "只影响 B/Z 规则和本地预设。EX 选项、语言、主题、自定义棋盘都会保留。",
 			presetInfoTitle: "预设说明",
 			presetInfoMessage: "最多可保存 5 组规则预设。应用预设只会填充当前表单，仍需点击底部保存才会正式生效。",
 			backupInfoTitle: "备份说明",
-			backupInfoMessage: "导出包含规则设置、规则预设、B/Z 内容池、界面显示选项、自定义棋盘、草稿、语言和主题。导入会覆盖此设备上对应的本地数据。",
+			backupInfoMessage: "导出包含规则设置、规则预设、B/Z 内容池、EX 选项、自定义棋盘、草稿、语言和主题。导入会覆盖此设备上对应的本地数据。",
 			resetRulesTitle: "恢复 B/Z 默认",
 			resetRulesDesc: "把 B/Z 的选中状态、权重和 B 单次核心范围恢复为程序默认值。这只会填入当前表单，仍需点击底部保存才会正式生效。",
 			resetRulesAction: "恢复 B/Z 默认",
@@ -1211,7 +2172,7 @@ function getManageCopy(){
 			clearPresetsSuccessTitle: "预设已清空",
 			clearPresetsSuccessMessage: "本地预设已全部删除。",
 			resetRulesAndPresetsTitle: "一键清零",
-			resetRulesAndPresetsDesc: "同时把 B/Z 恢复为默认，并清空全部预设。EX 显示、语言、主题和自定义棋盘不会受影响。",
+			resetRulesAndPresetsDesc: "同时把 B/Z 恢复为默认，并清空全部预设。EX 选项、语言、主题和自定义棋盘不会受影响。",
 			resetRulesAndPresetsAction: "恢复 B/Z 并清空预设",
 			resetRulesAndPresetsConfirmTitle: "一键清零这些设置？",
 			resetRulesAndPresetsConfirmMessage: "这会清空全部本地预设，并把当前表单里的 B/Z 恢复为程序默认值。之后仍需点击底部保存，B/Z 的改动才会正式生效。",
@@ -1258,11 +2219,11 @@ function getManageCopy(){
 			presetUsage: "{count}/{limit} saved",
 			backupLabel: "Local backup",
 			resetLabel: "Core settings reset",
-			resetHint: "Only affects B/Z rules and local presets. EX display, language, theme, and custom boards stay as they are.",
+			resetHint: "Only affects B/Z rules and local presets. EX options, language, theme, and custom boards stay as they are.",
 			presetInfoTitle: "Preset info",
 			presetInfoMessage: "Save up to five reusable settings presets. Applying a preset only fills the current form and still needs Save to take effect.",
 			backupInfoTitle: "Backup info",
-			backupInfoMessage: "Export includes rule settings, settings presets, B/Z pools, in-game display options, custom boards, board draft, language, and theme. Import will overwrite the matching local data on this device.",
+			backupInfoMessage: "Export includes rule settings, settings presets, B/Z pools, EX options, custom boards, board draft, language, and theme. Import will overwrite the matching local data on this device.",
 			resetRulesTitle: "Reset B/Z to defaults",
 			resetRulesDesc: "Restore B/Z selections, weights, and the B per-round range to the program defaults. This only fills the current form and still needs Save.",
 			resetRulesAction: "Reset B/Z",
@@ -1278,7 +2239,7 @@ function getManageCopy(){
 			clearPresetsSuccessTitle: "Presets cleared",
 			clearPresetsSuccessMessage: "All local presets were removed.",
 			resetRulesAndPresetsTitle: "Clean start",
-			resetRulesAndPresetsDesc: "Reset B/Z back to defaults and clear all presets together. EX display, language, theme, and custom boards stay unchanged.",
+			resetRulesAndPresetsDesc: "Reset B/Z back to defaults and clear all presets together. EX options, language, theme, and custom boards stay unchanged.",
 			resetRulesAndPresetsAction: "Reset B/Z and presets",
 			resetRulesAndPresetsConfirmTitle: "Clean start these settings?",
 			resetRulesAndPresetsConfirmMessage: "This clears all local presets and restores the current form's B/Z settings to the program defaults. Save is still required before the B/Z changes take effect.",
@@ -1644,16 +2605,20 @@ function renderPresetList(){
 		card.append(slot, name, meta, summary, actions);
 		list.appendChild(card);
 	}
+
+	const overlay = document.getElementById("manageModal");
+	if (overlay && !overlay.hidden && !manageState.isMeasuringLayout) {
+		scheduleManageDialogLayout();
+	}
 }
 
 function applySettingsPresetSnapshot(snapshot){
 	const normalized = normalizeStoredPresetData(snapshot);
 
-	document.getElementById("minCount").value = normalized.actionCountRange.min;
-	document.getElementById("maxCount").value = normalized.actionCountRange.max;
+	setActionCountRangeInputs(normalized.actionCountRange);
 
 	GameData = normalized.gameData;
-	fillWeightInputsFromGameData();
+	syncModuleWeightControlFromGameData();
 	renderSettingsB();
 
 	ActiveData = normalized.activeData;
@@ -1662,8 +2627,10 @@ function applySettingsPresetSnapshot(snapshot){
 
 	const predictionToggle = document.getElementById("toggleBTaskPrediction");
 	const liveCountToggle = document.getElementById("toggleBTaskLiveCount");
+	const boardIntroToggle = document.getElementById("toggleBoardIntroAnimation");
 	if (predictionToggle) predictionToggle.checked = normalized.gameUiSettings.showBTaskPrediction;
 	if (liveCountToggle) liveCountToggle.checked = normalized.gameUiSettings.showBTaskLiveCount;
+	if (boardIntroToggle) boardIntroToggle.checked = normalized.gameUiSettings.enableBoardIntroAnimation;
 
 	requestAnimationFrame(() => {
 		observeFieldsets();
@@ -1685,11 +2652,10 @@ function applyRuleSettingsResetSnapshot(snapshot){
 		? snapshot
 		: buildDefaultRuleSettingsSnapshot();
 
-	document.getElementById("minCount").value = normalized.actionCountRange.min;
-	document.getElementById("maxCount").value = normalized.actionCountRange.max;
+	setActionCountRangeInputs(normalized.actionCountRange);
 
 	GameData = normalizeImportedGameData(normalized.gameData);
-	fillWeightInputsFromGameData();
+	syncModuleWeightControlFromGameData();
 	renderSettingsB();
 
 	ActiveData = normalizeImportedActiveData(normalized.activeData);
@@ -1883,7 +2849,70 @@ function syncManageIndicator(){
 	indicator.style.left = `${btnRect.left - rootRect.left}px`;
 }
 
-function switchManageTab(tabKey){
+function syncManageDialogLayout(){
+	const overlay = document.getElementById("manageModal");
+	const dialog = overlay?.querySelector(".manage-dialog");
+	if (!overlay || overlay.hidden || !dialog || manageState.isMeasuringLayout) return;
+
+	const previousManageTab = manageState.activeTab || "presets";
+	const previousTransferTab = dataTransferState.activeTab || "export";
+	const previousVisibility = dialog.style.visibility;
+	const measuredHeights = [];
+	const measureStates = [
+		{ manage: "presets" },
+		{ manage: "backup", transfer: "export" },
+		{ manage: "backup", transfer: "import" },
+		{ manage: "reset" }
+	];
+
+	manageState.isMeasuringLayout = true;
+	dialog.style.visibility = "hidden";
+	if (typeof window.clearFixedDialogHeight === "function") {
+		window.clearFixedDialogHeight(dialog);
+	}
+
+	measureStates.forEach((state) => {
+		switchManageTab(state.manage, { skipLayoutSync: true, skipIndicatorSync: true });
+		if (state.manage === "backup") {
+			switchDataTransferTab(state.transfer, { skipLayoutSync: true, skipIndicatorSync: true });
+		}
+		measuredHeights.push(Math.ceil(dialog.scrollHeight));
+	});
+
+	switchManageTab(previousManageTab, { skipLayoutSync: true, skipIndicatorSync: true });
+	dataTransferState.activeTab = previousTransferTab;
+	if (previousManageTab === "backup") {
+		switchDataTransferTab(previousTransferTab, { skipLayoutSync: true, skipIndicatorSync: true });
+	}
+
+	if (typeof window.applyFixedDialogHeight === "function") {
+		window.applyFixedDialogHeight(dialog, overlay, Math.max(...measuredHeights, 0));
+	}
+
+	dialog.style.visibility = previousVisibility;
+	manageState.isMeasuringLayout = false;
+
+	requestAnimationFrame(() => {
+		syncManageIndicator();
+		if (manageState.activeTab === "backup") {
+			syncDataTransferIndicator();
+		}
+	});
+}
+
+function scheduleManageDialogLayout(){
+	if (manageState.isMeasuringLayout) return;
+	if (manageState.layoutFrame) {
+		cancelAnimationFrame(manageState.layoutFrame);
+	}
+
+	manageState.layoutFrame = requestAnimationFrame(() => {
+		manageState.layoutFrame = 0;
+		syncManageDialogLayout();
+	});
+}
+
+function switchManageTab(tabKey, options = {}){
 	const overlay = document.getElementById("manageModal");
 	const segmented = document.getElementById("manageSegmented");
 	if (!overlay || !segmented) return;
@@ -1900,13 +2929,18 @@ function switchManageTab(tabKey){
 	if (tabKey === "presets") {
 		renderPresetList();
 	} else if (tabKey === "backup") {
-		switchDataTransferTab(dataTransferState.activeTab || "export");
+		switchDataTransferTab(dataTransferState.activeTab || "export", options);
 	}
 
-	requestAnimationFrame(() => {
-		syncManageIndicator();
-		if (tabKey === "backup") syncDataTransferIndicator();
-	});
+	if (!options.skipIndicatorSync) {
+		requestAnimationFrame(() => {
+			syncManageIndicator();
+			if (tabKey === "backup") syncDataTransferIndicator();
+		});
+	}
+	if (!options.skipLayoutSync) {
+		scheduleManageDialogLayout();
+	}
 }
 
 function openManageDialog(tabKey = "presets"){
@@ -1929,6 +2963,11 @@ function openManageDialog(tabKey = "presets"){
 function closeManageDialog(){
 	const overlay = document.getElementById("manageModal");
 	if (!overlay) return;
+
+	if (manageState.layoutFrame) {
+		cancelAnimationFrame(manageState.layoutFrame);
+		manageState.layoutFrame = 0;
+	}
 
 	overlay.hidden = true;
 	document.body.classList.remove("dialog-open");
@@ -1983,6 +3022,7 @@ function initManageDialog(){
 	window.addEventListener("resize", () => {
 		syncManageIndicator();
 		syncDataTransferIndicator();
+		scheduleManageDialogLayout();
 	});
 }
 
@@ -2036,7 +3076,8 @@ function normalizeImportedGameUiSettings(rawValue){
 
 	if (
 		!Object.prototype.hasOwnProperty.call(rawValue, "showBTaskPrediction") &&
-		!Object.prototype.hasOwnProperty.call(rawValue, "showBTaskLiveCount")
+		!Object.prototype.hasOwnProperty.call(rawValue, "showBTaskLiveCount") &&
+		!Object.prototype.hasOwnProperty.call(rawValue, "enableBoardIntroAnimation")
 	) {
 		throw new Error(t("settings.transferImportUiInvalid"));
 	}
@@ -2172,12 +3213,32 @@ function getCurrentDataTransferSnapshot(){
 	};
 }
 
+function getLocalIsoTimestamp(dateInput = new Date()){
+	const date = dateInput instanceof Date ? new Date(dateInput.getTime()) : new Date(dateInput);
+	if (Number.isNaN(date.getTime())) {
+		return new Date().toISOString();
+	}
+
+	const pad = (value) => String(Math.trunc(Math.abs(value))).padStart(2, "0");
+	const offsetMinutes = -date.getTimezoneOffset();
+	const sign = offsetMinutes >= 0 ? "+" : "-";
+	const absoluteOffset = Math.abs(offsetMinutes);
+	const offsetHours = Math.floor(absoluteOffset / 60);
+	const offsetRemainderMinutes = absoluteOffset % 60;
+
+	return [
+		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+		`T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
+		`${sign}${pad(offsetHours)}:${pad(offsetRemainderMinutes)}`
+	].join("");
+}
+
 function buildDataTransferPayload(){
 	return {
 		format: DATA_TRANSFER_FORMAT,
 		version: DATA_TRANSFER_VERSION,
 		app: "Dual Protocol",
-		exportedAt: new Date().toISOString(),
+		exportedAt: getLocalIsoTimestamp(),
 		data: getCurrentDataTransferSnapshot()
 	};
 }
@@ -2246,7 +3307,7 @@ function syncDataTransferIndicator(){
 	indicator.style.left = `${btnRect.left - rootRect.left}px`;
 }
 
-function switchDataTransferTab(tabKey){
+function switchDataTransferTab(tabKey, options = {}){
 	const segmented = document.getElementById("transferSegmented");
 	const backupPanel = document.querySelector('[data-manage-panel="backup"]');
 	if (!segmented || !backupPanel) return;
@@ -2262,7 +3323,12 @@ function switchDataTransferTab(tabKey){
 	dataTransferState.activeTab = tabKey;
 	if (tabKey === "export") refreshDataTransferExport();
 
-	requestAnimationFrame(syncDataTransferIndicator);
+	if (!options.skipIndicatorSync) {
+		requestAnimationFrame(syncDataTransferIndicator);
+	}
+	if (!options.skipLayoutSync) {
+		scheduleManageDialogLayout();
+	}
 }
 
 function openDataTransferDialog(tabKey = "export"){
@@ -2544,8 +3610,12 @@ function initDataTransferDialog(){
    Save
 ========================= */
 async function saveAllSettings(){
-	const minVal = getNumericInputValue("minCount", ACTION_COUNT_RANGE.min);
-	const maxVal = getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max);
+	const normalizedRange = setActionCountRangeInputs({
+		min: getNumericInputValue("minCount", ACTION_COUNT_RANGE.min),
+		max: getNumericInputValue("maxCount", ACTION_COUNT_RANGE.max)
+	});
+	const minVal = normalizedRange.min;
+	const maxVal = normalizedRange.max;
 
 	const validationError = getActionCountRangeValidationError(minVal, maxVal);
 	if (validationError) {
@@ -2559,10 +3629,7 @@ async function saveAllSettings(){
 	localStorage.setItem(ACTION_COUNT_RANGE_STORAGE_KEY, JSON.stringify({ min: minVal, max: maxVal }));
 	localStorage.removeItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY);
 
-	GameData.prop.weight = getNumericInputValue("weight-prop", GameData.prop.weight);
-	GameData.reward.weight = getNumericInputValue("weight-reward", GameData.reward.weight);
-	GameData.aod.weight = getNumericInputValue("weight-aod", GameData.aod.weight);
-	GameData.sports.weight = getNumericInputValue("weight-sports", GameData.sports.weight);
+	applyModuleWeightMapToGameData(getNormalizedModuleWeightMap(GameData));
 
 	localStorage.setItem("GameData", JSON.stringify(GameData));
 
@@ -2571,9 +3638,11 @@ async function saveAllSettings(){
 
 	const gameUiSettings = normalizeGameUiSettings({
 		showBTaskPrediction: !!document.getElementById("toggleBTaskPrediction")?.checked,
-		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked
+		showBTaskLiveCount: !!document.getElementById("toggleBTaskLiveCount")?.checked,
+		enableBoardIntroAnimation: !!document.getElementById("toggleBoardIntroAnimation")?.checked
 	});
 	localStorage.setItem(GAME_UI_SETTINGS_STORAGE_KEY, JSON.stringify(gameUiSettings));
+	refreshDataTransferExport();
 	track("settings_saved", {
 		min_count: minVal,
 		max_count: maxVal,
@@ -2583,7 +3652,8 @@ async function saveAllSettings(){
 		weight_sports: GameData.sports.weight,
 		weight_active: ActiveData.weight,
 		show_b_task_prediction: gameUiSettings.showBTaskPrediction,
-		show_b_task_live_count: gameUiSettings.showBTaskLiveCount
+		show_b_task_live_count: gameUiSettings.showBTaskLiveCount,
+		enable_board_intro_animation: gameUiSettings.enableBoardIntroAnimation
 	});
 
 	showModal(

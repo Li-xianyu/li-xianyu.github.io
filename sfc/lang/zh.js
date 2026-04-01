@@ -204,8 +204,13 @@ window.__I18N_DICTIONARIES.zh = {
 		},
 		note: "支持自定义棋盘与规则参数，开局前可自由调整。",
 		social: {
-			nameHtml: "<s>@yunshanlxy</s> <strong>（被资本做局）</strong>",
-			line: "X 我去你大爷的，那么多黄片不封，封我一个做小工具的开发者。有本事来把我 Github 也封了！！！啊啊啊？"
+			handle: "@LiXianYu101",
+			quote: "今日觉昨日之浅，明日笑今日之狂",
+			line: "今日觉昨日之浅，明日笑今日之狂"
+		},
+		debug: {
+			enabled: "调试模式已开启",
+			disabled: "调试模式已关闭"
 		},
 		installHint: {
 			title: "右上角菜单可以安装",
@@ -272,6 +277,7 @@ window.__I18N_DICTIONARIES.zh = {
 		maxCount: "最大数量：",
 		weightsLegend: "模块权重设置",
 		weightsTip: "权重表示各模块在随机生成时的相对占比。权重越高，被选中的概率越大。",
+		weightsInteractionTip: "可点击下方图例按钮或直接点击圆环分段来选中模块，再在底部进行调整或启用/禁用。",
 		weightProp: "核心模块权重：",
 		weightReward: "休息模块权重：",
 		weightAod: "位移模块权重：",
@@ -281,12 +287,14 @@ window.__I18N_DICTIONARIES.zh = {
 		activeLegend: "Z 模块权重",
 		activeTip: "这个权重是给未来“指令也参与随机池”预留的；现在不影响格子显示逻辑。",
 		activeWeight: "指令权重：",
-		uiLegend: "局内显示",
-		uiTip: "控制 game 页面里 B 任务预测入口和实时累计是否显示，默认都开启。",
+		uiLegend: "局内 EX 选项",
+		uiTip: "控制 game 页面里的任务面板 EX 项，以及棋盘首屏动画，默认都开启。",
 		togglePredictionTitle: "B任务预测指标",
 		togglePredictionDesc: "显示任务面板里的感叹号按钮，点击后可查看预测与统计。",
 		toggleLiveCountTitle: "实时累计实际数量",
 		toggleLiveCountDesc: "在任务面板中持续显示本局已累计的实际数量。",
+		toggleBoardIntroTitle: "棋盘首屏动画",
+		toggleBoardIntroDesc: "进入 game 页面时，先显示整盘浅色格，再快速亮起起点、终点和路径块。",
 		dataTransferLegend: "本地数据迁移",
 		dataTransferTip: "把当前本地配置和自定义棋盘导出成备份，或导入以前导出的备份，在这台设备上恢复使用。",
 		dataTransferButton: "导入 / 导出数据",
@@ -298,7 +306,7 @@ window.__I18N_DICTIONARIES.zh = {
 			export: "导出",
 			import: "导入"
 		},
-		transferExportTip: "导出内容包含规则设置、B/Z 内容池、局内显示选项、自定义棋盘、棋盘草稿、语言和主题。",
+		transferExportTip: "导出内容包含规则设置、B/Z 内容池、EX 选项、自定义棋盘、棋盘草稿、语言和主题。",
 		transferImportTip: "你可以直接粘贴备份 JSON，也可以选择本地 `.json` 文件。导入后会覆盖这台设备上的对应本地数据。",
 		transferChooseFile: "选择 JSON 文件",
 		transferNoFile: "未选择文件",
@@ -327,7 +335,7 @@ window.__I18N_DICTIONARIES.zh = {
 		transferImportRangeInvalid: "备份里的次数区间数据无效。",
 		transferImportGameDataInvalid: "备份里的 B 模块数据无效。",
 		transferImportActiveDataInvalid: "备份里的 Z 模块数据无效。",
-		transferImportUiInvalid: "备份里的局内显示设置无效。",
+		transferImportUiInvalid: "备份里的 EX 设置无效。",
 		transferImportBoardsInvalid: "备份里的自定义棋盘数据无效。",
 		transferImportDraftInvalid: "备份里的棋盘草稿数据无效。",
 		categoryLabels: {
@@ -366,8 +374,8 @@ window.__I18N_DICTIONARIES.zh = {
 		rewardTip: "提示：支持中英文数字 + 秒/分钟单位（如“休息3分钟”“rest 5s”“rest 10min”）会触发倒计时；纯文本也可正常使用。",
 		aodTip: "提示：当前“前进1-3格 / 后退1-3格”仅执行位移，不触发落点格子的额外内容。",
 		errorTitle: "错误",
-		errorMultipleOfTen: "请输入 10 的倍数！",
-		errorMinLessThanMax: "最小值必须小于最大值！"
+		errorMultipleOfTen: "请输入 5~100 之间且为 5 的倍数的数值！",
+		errorMinLessThanMax: "最大值至少要比最小值大 5！"
 	},
 	createBoards: {
 		title: "创建棋盘",

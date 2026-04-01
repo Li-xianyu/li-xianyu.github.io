@@ -94,14 +94,54 @@ const ACTION_COUNT_RANGE = {
     min: 20, 
     max: 50 
 };
+const ACTION_COUNT_RANGE_LIMITS = Object.freeze({
+	min: 5,
+	max: 100,
+	step: 5,
+	minGap: 5
+});
 
 const ACTION_COUNT_RANGE_STORAGE_KEY = "ACTION_COUNT_RANGE";
 const LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = "SPANK_COUNT_RANGE";
 const GAME_UI_SETTINGS_STORAGE_KEY = "GAME_UI_SETTINGS";
 const DEFAULT_GAME_UI_SETTINGS = {
     showBTaskPrediction: true,
-    showBTaskLiveCount: true
+    showBTaskLiveCount: true,
+    enableBoardIntroAnimation: true
 };
+
+function clampNumber(value, min, max){
+	return Math.min(max, Math.max(min, value));
+}
+
+function snapActionCountValue(value, fallbackValue = ACTION_COUNT_RANGE.min){
+	const parsedValue = Number.parseInt(value, 10);
+	if (!Number.isFinite(parsedValue)) return fallbackValue;
+
+	const clampedValue = clampNumber(parsedValue, ACTION_COUNT_RANGE_LIMITS.min, ACTION_COUNT_RANGE_LIMITS.max);
+	const steppedValue = ACTION_COUNT_RANGE_LIMITS.min + Math.round((clampedValue - ACTION_COUNT_RANGE_LIMITS.min) / ACTION_COUNT_RANGE_LIMITS.step) * ACTION_COUNT_RANGE_LIMITS.step;
+	return clampNumber(steppedValue, ACTION_COUNT_RANGE_LIMITS.min, ACTION_COUNT_RANGE_LIMITS.max);
+}
+
+function coerceActionCountRange(rawValue, fallbackRange = ACTION_COUNT_RANGE){
+	const fallbackMin = snapActionCountValue(fallbackRange?.min, ACTION_COUNT_RANGE.min);
+	const fallbackMax = snapActionCountValue(fallbackRange?.max, ACTION_COUNT_RANGE.max);
+	let minValue = snapActionCountValue(rawValue?.min, fallbackMin);
+	let maxValue = snapActionCountValue(rawValue?.max, fallbackMax);
+
+	minValue = clampNumber(minValue, ACTION_COUNT_RANGE_LIMITS.min, ACTION_COUNT_RANGE_LIMITS.max - ACTION_COUNT_RANGE_LIMITS.minGap);
+	maxValue = clampNumber(maxValue, ACTION_COUNT_RANGE_LIMITS.min + ACTION_COUNT_RANGE_LIMITS.minGap, ACTION_COUNT_RANGE_LIMITS.max);
+
+	if (maxValue - minValue < ACTION_COUNT_RANGE_LIMITS.minGap) {
+		if (minValue + ACTION_COUNT_RANGE_LIMITS.minGap <= ACTION_COUNT_RANGE_LIMITS.max) {
+			maxValue = minValue + ACTION_COUNT_RANGE_LIMITS.minGap;
+		} else {
+			minValue = maxValue - ACTION_COUNT_RANGE_LIMITS.minGap;
+		}
+	}
+
+	return { min: minValue, max: maxValue };
+}
 
 
 
@@ -329,6 +369,9 @@ function normalizeGameUiSettings(storedGameUiSettings){
 	if (stored.showBTaskLiveCount !== undefined) {
 		base.showBTaskLiveCount = !!stored.showBTaskLiveCount;
 	}
+	if (stored.enableBoardIntroAnimation !== undefined) {
+		base.enableBoardIntroAnimation = !!stored.enableBoardIntroAnimation;
+	}
 
 	return base;
 }
@@ -393,8 +436,10 @@ window.createCustomItem = createCustomItem;
 window.normalizeGameData = normalizeGameData;
 window.normalizeActiveData = normalizeActiveData;
 window.ACTION_COUNT_RANGE = ACTION_COUNT_RANGE;
+window.ACTION_COUNT_RANGE_LIMITS = ACTION_COUNT_RANGE_LIMITS;
 window.ACTION_COUNT_RANGE_STORAGE_KEY = ACTION_COUNT_RANGE_STORAGE_KEY;
 window.LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY = LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY;
+window.coerceActionCountRange = coerceActionCountRange;
 window.GAME_UI_SETTINGS_STORAGE_KEY = GAME_UI_SETTINGS_STORAGE_KEY;
 window.DEFAULT_GAME_UI_SETTINGS = DEFAULT_GAME_UI_SETTINGS;
 window.normalizeGameUiSettings = normalizeGameUiSettings;

@@ -70,6 +70,48 @@ function playDialogShake(element) {
 
 window.playDialogShake = playDialogShake;
 
+function getViewportDialogHeightBudget(overlay) {
+	if (!overlay) return window.innerHeight || document.documentElement.clientHeight || 0;
+
+	const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
+	const overlayStyles = window.getComputedStyle(overlay);
+	const paddingTop = parseFloat(overlayStyles.paddingTop || "0") || 0;
+	const paddingBottom = parseFloat(overlayStyles.paddingBottom || "0") || 0;
+
+	return Math.max(260, viewportHeight - paddingTop - paddingBottom);
+}
+
+function clearFixedDialogHeight(dialog) {
+	if (!dialog) return;
+	dialog.classList.remove("is-tabbed-dialog-sized");
+	dialog.style.removeProperty("--tabbed-dialog-fixed-height");
+	dialog.style.removeProperty("--tabbed-dialog-max-height");
+}
+
+function applyFixedDialogHeight(dialog, overlay, naturalHeight) {
+	if (!dialog) return 0;
+
+	const safeNaturalHeight = Math.max(0, Number(naturalHeight) || 0);
+	if (!safeNaturalHeight) {
+		clearFixedDialogHeight(dialog);
+		return 0;
+	}
+
+	const viewportBudget = getViewportDialogHeightBudget(overlay);
+	const fixedHeight = Math.min(safeNaturalHeight, viewportBudget);
+	const roundedHeight = Math.round(fixedHeight);
+	const roundedBudget = Math.round(viewportBudget);
+
+	dialog.style.setProperty("--tabbed-dialog-fixed-height", `${roundedHeight}px`);
+	dialog.style.setProperty("--tabbed-dialog-max-height", `${roundedBudget}px`);
+	dialog.classList.add("is-tabbed-dialog-sized");
+	return roundedHeight;
+}
+
+window.getViewportDialogHeightBudget = getViewportDialogHeightBudget;
+window.clearFixedDialogHeight = clearFixedDialogHeight;
+window.applyFixedDialogHeight = applyFixedDialogHeight;
+
 function trackEvent(eventName, payload) {
 	if (!eventName || !window.umami || typeof window.umami.track !== 'function') return;
 	try {

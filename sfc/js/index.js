@@ -13,19 +13,33 @@ let passive_location;
 let master_location;
 let current_board;
 let endNumber;
+let isBoardIntroAnimating = false;
+let boardIntroSequenceId = 0;
+let currentBoardDebugMeta = null;
 
 window.MOVE_ANIM_DURATION = window.MOVE_ANIM_DURATION || 500;
 const size = 10;
+const BOARD_INTRO_TOTAL_MS = 1180;
+const BOARD_INTRO_START_DELAY_MS = 64;
+const BOARD_INTRO_HEAD_HOLD_MS = 96;
+const BOARD_INTRO_STEP_MIN_MS = 14;
+const BOARD_INTRO_STEP_MAX_MS = 28;
+const BOARD_SHELL_REVEAL_MS = 940;
+const BOARD_SHELL_FADE_MS = 130;
+const BOARD_ROW_REVEAL_STEP_MS = 32;
+const BOARD_ROW_REVEAL_SETTLE_MS = 54;
+const BOARD_UI_FADE_IN_MS = 260;
 
 const storedSettings = JSON.parse(
 	localStorage.getItem(ACTION_COUNT_RANGE_STORAGE_KEY) ||
 	localStorage.getItem(LEGACY_ACTION_COUNT_RANGE_STORAGE_KEY) ||
 	'null'
 );
-if (storedSettings) {
-	ACTION_COUNT_RANGE.min = storedSettings.min;
-	ACTION_COUNT_RANGE.max = storedSettings.max;
-}
+const normalizedActionCountRange = typeof window.coerceActionCountRange === 'function'
+	? window.coerceActionCountRange(storedSettings || ACTION_COUNT_RANGE, ACTION_COUNT_RANGE)
+	: (storedSettings || ACTION_COUNT_RANGE);
+ACTION_COUNT_RANGE.min = normalizedActionCountRange.min;
+ACTION_COUNT_RANGE.max = normalizedActionCountRange.max;
 
 const storedGameData = JSON.parse(localStorage.getItem('GameData'));
 GameData = normalizeGameData(storedGameData);
@@ -38,6 +52,9 @@ const gameUiSettings = normalizeGameUiSettings(storedGameUiSettings);
 const board = document.getElementById('board');
 const rolldice = document.getElementById('rolldice');
 const rollmaster = document.getElementById('rollmaster');
+const boardIntroWash = document.getElementById('boardIntroWash');
+const controls = document.getElementById('controls');
+const taskPanel = document.getElementById('taskPanel');
 
 const GAME_MODE = (String(window.GAME_MODE || new URLSearchParams(location.search).get('mode') || 'dual')).toLowerCase();
 const IS_DUAL = !(GAME_MODE === 'solo' || GAME_MODE === 'single' || GAME_MODE === 'one');
@@ -109,6 +126,45 @@ function applyGameUiSettings() {
 	}
 }
 
+function getBoardIntroUiTargets() {
+	return [roundInfo, controls, taskPanel].filter(Boolean);
+}
+
+function setBoardIntroUiHidden(hidden) {
+	getBoardIntroUiTargets().forEach((element) => {
+		element.classList.toggle('is-intro-hidden', !!hidden);
+	});
+}
+
+function resetBoardIntroPresentation() {
+	if (board) board.classList.remove('is-intro-running');
+	if (boardIntroWash) {
+		boardIntroWash.classList.remove('is-active', 'is-exiting');
+		boardIntroWash.classList.add('is-hidden');
+		boardIntroWash.style.removeProperty('--board-intro-top');
+		boardIntroWash.style.removeProperty('--board-intro-right');
+		boardIntroWash.style.removeProperty('--board-intro-bottom');
+		boardIntroWash.style.removeProperty('--board-intro-left');
+		boardIntroWash.style.removeProperty('--board-intro-radius');
+		boardIntroWash.style.removeProperty('clip-path');
+		boardIntroWash.style.removeProperty('box-shadow');
+		boardIntroWash.style.removeProperty('opacity');
+	}
+	setBoardIntroUiHidden(false);
+}
+
+function prepareBoardIntroPresentation() {
+	if (!shouldAnimateBoardIntro()) {
+		resetBoardIntroPresentation();
+		return;
+	}
+
+	if (boardIntroWash) {
+		boardIntroWash.classList.remove('is-hidden', 'is-active', 'is-exiting');
+	}
+	setBoardIntroUiHidden(true);
+}
+
 function updateVetoBadge() {
 	if (!zVetoBadge) return;
 	zVetoBadge.hidden = zEffectState.restInvalidToken <= 0;
@@ -118,6 +174,7 @@ if (board) board.style.display = '';
 if (rolldice) rolldice.style.display = '';
 if (rollmaster) rollmaster.style.display = IS_DUAL ? '' : 'none';
 applyGameUiSettings();
+prepareBoardIntroPresentation();
 initEmbeddedSettingsModal();
 
 function syncQuickDockClosedState() {
@@ -266,10 +323,10 @@ function generateMasterTask() {
 	return item ? { text: item.name, type: 'master' } : { text: t("game.noInstruction"), type: 'master' };
 }
 
-function getRandomSelectedName(items) {
+function getRandomSelectedName(scopeKey, items) {
 	const active = (items || []).filter(item => item && item.selected);
 	if (!active.length) return "";
-	return active[Math.floor(Math.random() * active.length)].name || "";
+	return getLocalizedItemName(scopeKey, active[Math.floor(Math.random() * active.length)]) || "";
 }
 
 function parseTrailingNumber(text) {
@@ -295,8 +352,12 @@ function applyForcedPosture(text, forcedPosture) {
 	if (!forcedPosture) return text;
 	const source = String(text || "");
 	const postureNames = (GameData.posture?.items || [])
-		.map(item => String(item?.name || "").trim())
+		.flatMap((item) => [
+			String(item?.name || "").trim(),
+			getLocalizedItemName("posture", item)
+		])
 		.filter(Boolean)
+		.filter((name, index, list) => list.indexOf(name) === index)
 		.sort((a, b) => b.length - a.length);
 
 	let remainder = source;
@@ -389,7 +450,7 @@ async function applyMasterInstruction(taskText) {
 	else if (text === ACTIVE_TEXT.countMinus10) zEffectState.countRule = { type: "add", value: -10 };
 	else if (text === ACTIVE_TEXT.doubleCount) zEffectState.countRule = { type: "multiply", value: 2 };
 	else if (text === ACTIVE_TEXT.halfUp) zEffectState.countRule = { type: "half", value: 0 };
-	else if (text === ACTIVE_TEXT.choosePosture) zEffectState.forcedPosture = getRandomSelectedName(GameData.posture?.items || []);
+	else if (text === ACTIVE_TEXT.choosePosture) zEffectState.forcedPosture = getRandomSelectedName("posture", GameData.posture?.items || []);
 	else if (text === ACTIVE_TEXT.splitWithRest) zEffectState.splitExecution = true;
 	else if (text === ACTIVE_TEXT.restInvalid) {
 		zEffectState.restInvalidToken = 1;
@@ -410,19 +471,19 @@ function generatePunishment(options = {}) {
 	else if (Array.isArray(options)) allowedTypes = options;
 	else allowedTypes = options.allowedTypes;
 
-	const getRandomActiveName = (items) => {
+	const getRandomActiveName = (scopeKey, items) => {
 		const activeItems = items.filter(item => item.selected);
 		return activeItems.length > 0
-			? activeItems[Math.floor(Math.random() * activeItems.length)].name
+			? getLocalizedItemName(scopeKey, activeItems[Math.floor(Math.random() * activeItems.length)])
 			: null;
 	};
 
 	const hasActiveItems = (items) => Array.isArray(items) && items.some(item => item && item.selected);
 
-	const getRandomTens = (min, max) => {
-		const minTens = Math.ceil(min / 10);
-		const maxTens = Math.floor(max / 10);
-		return (Math.floor(Math.random() * (maxTens - minTens + 1)) + minTens) * 10;
+	const getRandomActionCount = (min, max) => {
+		const step = window.ACTION_COUNT_RANGE_LIMITS?.step || 5;
+		const totalSteps = Math.max(0, Math.floor((max - min) / step));
+		return min + Math.floor(Math.random() * (totalSteps + 1)) * step;
 	};
 
 	const modules = [
@@ -431,9 +492,9 @@ function generatePunishment(options = {}) {
 			weight: GameData.prop.weight || 0,
 			available: () => hasActiveItems(GameData.prop.items),
 			handler: () => {
-				const postureName = getRandomActiveName(GameData.posture.items);
-				const propName = getRandomActiveName(GameData.prop.items);
-				const count = getRandomTens(ACTION_COUNT_RANGE.min, ACTION_COUNT_RANGE.max);
+				const postureName = getRandomActiveName('posture', GameData.posture.items);
+				const propName = getRandomActiveName('prop', GameData.prop.items);
+				const count = getRandomActionCount(ACTION_COUNT_RANGE.min, ACTION_COUNT_RANGE.max);
 
 				if (!propName) return { text: t("game.noTool"), type: 'error' };
 
@@ -448,19 +509,19 @@ function generatePunishment(options = {}) {
 			type: 'rest',
 			weight: GameData.reward.weight || 0,
 			available: () => hasActiveItems(GameData.reward.items),
-			handler: () => ({ text: getRandomActiveName(GameData.reward.items) || t("game.noRest") })
+			handler: () => ({ text: getRandomActiveName('reward', GameData.reward.items) || t("game.noRest") })
 		},
 		{
 			type: 'move',
 			weight: GameData.aod.weight || 0,
 			available: () => hasActiveItems(GameData.aod.items),
-			handler: () => ({ text: getRandomActiveName(GameData.aod.items) || t("game.noMove") })
+			handler: () => ({ text: getRandomActiveName('aod', GameData.aod.items) || t("game.noMove") })
 		},
 		{
 			type: 'sports',
 			weight: GameData.sports.weight || 0,
 			available: () => hasActiveItems(GameData.sports.items),
-			handler: () => ({ text: getRandomActiveName(GameData.sports.items) || t("game.noSports") })
+			handler: () => ({ text: getRandomActiveName('sports', GameData.sports.items) || t("game.noSports") })
 		}
 	];
 
@@ -534,6 +595,232 @@ function countBTaskModules(passiveMap) {
 	}
 	return counts;
 }
+
+function buildSelectionDebug(scopeKey, items) {
+	const list = Array.isArray(items) ? items : [];
+	const selectedItems = list
+		.filter((item) => item && item.selected)
+		.map((item) => ({
+			id: String(item.id || ""),
+			custom: !!item.custom,
+			rawName: String(item.name || "").trim(),
+			displayName: getLocalizedItemName(scopeKey, item)
+		}));
+
+	return {
+		scope: scopeKey,
+		totalCount: list.length,
+		selectedCount: selectedItems.length,
+		selectedItems
+	};
+}
+
+function buildPunishmentModuleStates(allowedTypes = null) {
+	const modules = [
+		{
+			type: "action",
+			label: "action",
+			scopeKey: "prop",
+			weight: Number(GameData.prop?.weight || 0),
+			items: GameData.prop?.items || []
+		},
+		{
+			type: "rest",
+			label: "rest",
+			scopeKey: "reward",
+			weight: Number(GameData.reward?.weight || 0),
+			items: GameData.reward?.items || []
+		},
+		{
+			type: "move",
+			label: "move",
+			scopeKey: "aod",
+			weight: Number(GameData.aod?.weight || 0),
+			items: GameData.aod?.items || []
+		},
+		{
+			type: "sports",
+			label: "sports",
+			scopeKey: "sports",
+			weight: Number(GameData.sports?.weight || 0),
+			items: GameData.sports?.items || []
+		}
+	];
+
+	const allowed = Array.isArray(allowedTypes) && allowedTypes.length
+		? new Set(allowedTypes)
+		: null;
+
+	return modules.map((module) => {
+		const selectedItems = (module.items || []).filter((item) => item && item.selected);
+		const enabledByPool = selectedItems.length > 0;
+		const enabledByAllowedTypes = !allowed || allowed.has(module.type);
+		const participates = enabledByAllowedTypes && enabledByPool && module.weight > 0;
+
+		return {
+			type: module.type,
+			label: module.label,
+			scopeKey: module.scopeKey,
+			weight: module.weight,
+			totalCount: Array.isArray(module.items) ? module.items.length : 0,
+			selectedCount: selectedItems.length,
+			enabledByAllowedTypes,
+			enabledByPool,
+			participates,
+			selectedItems: selectedItems.map((item) => ({
+				id: String(item.id || ""),
+				rawName: String(item.name || "").trim(),
+				displayName: getLocalizedItemName(module.scopeKey, item)
+			}))
+		};
+	});
+}
+
+function countTypes(rows) {
+	const counts = {
+		action: 0,
+		rest: 0,
+		move: 0,
+		sports: 0,
+		error: 0,
+		unknown: 0
+	};
+
+	(rows || []).forEach((row) => {
+		const type = String(row?.type || "unknown");
+		if (Object.prototype.hasOwnProperty.call(counts, type)) {
+			counts[type] += 1;
+		} else {
+			counts.unknown += 1;
+		}
+	});
+
+	return counts;
+}
+
+function samplePunishmentDistribution(iterations = 4000, allowedTypes = ["action", "rest", "move", "sports"]) {
+	const runs = Math.max(100, Number.parseInt(iterations, 10) || 4000);
+	const types = Array.isArray(allowedTypes) && allowedTypes.length ? allowedTypes : ["action", "rest", "move", "sports"];
+	const counts = {
+		action: 0,
+		rest: 0,
+		move: 0,
+		sports: 0,
+		error: 0,
+		unknown: 0
+	};
+
+	for (let i = 0; i < runs; i++) {
+		const result = generatePunishment(types);
+		const type = String(result?.type || "unknown");
+		if (Object.prototype.hasOwnProperty.call(counts, type)) {
+			counts[type] += 1;
+		} else {
+			counts.unknown += 1;
+		}
+	}
+
+	const rows = Object.entries(counts)
+		.filter(([, count]) => count > 0)
+		.map(([type, count]) => ({
+			type,
+			count,
+			ratio: `${((count / runs) * 100).toFixed(2)}%`
+		}));
+
+	return {
+		iterations: runs,
+		allowedTypes: [...types],
+		counts,
+		rows
+	};
+}
+
+function buildGameDebugSnapshot() {
+	if (!mapData || !current_punishment_passive || !current_task_master || !currentBoardDebugMeta) {
+		return null;
+	}
+
+	const passiveCells = Object.keys(current_punishment_passive)
+		.map((key) => {
+			const cell = Number.parseInt(key, 10);
+			const item = current_punishment_passive[key] || {};
+			return {
+				cell,
+				type: String(item.type || ""),
+				rawText: String(item.text || ""),
+				displayText: localizeBuiltinText(String(item.text || ""))
+			};
+		})
+		.sort((a, b) => a.cell - b.cell);
+
+	const masterCells = Object.keys(current_task_master)
+		.map((key) => {
+			const cell = Number.parseInt(key, 10);
+			const item = current_task_master[key] || {};
+			return {
+				cell,
+				rawText: String(item.text || ""),
+				displayText: localizeBuiltinText(String(item.text || ""))
+			};
+		})
+		.sort((a, b) => a.cell - b.cell);
+
+	const earlyZoneEnd = Math.min(18, Math.max(1, endNumber - 1));
+	const earlyPassiveCells = passiveCells.filter((cell) => cell.cell >= 2 && cell.cell <= earlyZoneEnd);
+	const earlyModuleStates = buildPunishmentModuleStates(["action", "move", "sports"]);
+	const allModuleStates = buildPunishmentModuleStates(["action", "rest", "move", "sports"]);
+
+	return {
+		generatedAt: new Date().toISOString(),
+		board: {
+			...currentBoardDebugMeta,
+			mode: IS_DUAL ? "dual" : "solo",
+			size: mapData.length,
+			filledCells: getNonZeroCount(mapData),
+			steps: endNumber
+		},
+		uiSettings: { ...gameUiSettings },
+		weights: {
+			action: Number(GameData.prop?.weight || 0),
+			rest: Number(GameData.reward?.weight || 0),
+			move: Number(GameData.aod?.weight || 0),
+			sports: Number(GameData.sports?.weight || 0),
+			active: Number(ActiveData.weight || 0)
+		},
+		moduleStates: {
+			all: allModuleStates,
+			earlyReplacementPool: earlyModuleStates
+		},
+		selections: {
+			posture: buildSelectionDebug("posture", GameData.posture?.items),
+			prop: buildSelectionDebug("prop", GameData.prop?.items),
+			reward: buildSelectionDebug("reward", GameData.reward?.items),
+			aod: buildSelectionDebug("aod", GameData.aod?.items),
+			sports: buildSelectionDebug("sports", GameData.sports?.items),
+			active: buildSelectionDebug("active", ActiveData.items)
+		},
+		passiveSummary: countBTaskModules(current_punishment_passive),
+		earlyPassiveSummary: {
+			endCell: earlyZoneEnd,
+			counts: countTypes(earlyPassiveCells)
+		},
+		passiveCells,
+		masterCells,
+		boardMatrix: mapData.map((row) => [...row])
+	};
+}
+
+function publishGameDebugSnapshot() {
+	const snapshot = buildGameDebugSnapshot();
+	if (!snapshot) return;
+	if (window.GameBoardDebug && typeof window.GameBoardDebug.setSnapshot === "function") {
+		window.GameBoardDebug.setSnapshot(snapshot);
+	}
+}
+
+window.__SFC_GET_GAME_DEBUG_SNAPSHOT = buildGameDebugSnapshot;
+window.__SFC_SAMPLE_PUNISHMENT_DISTRIBUTION = samplePunishmentDistribution;
 
 function formatCountRatio(count, total) {
 	if (!Number.isFinite(total) || total <= 0) return `${count}/0（0.0%）`;
@@ -814,15 +1101,296 @@ function generateBoard(boardIndex) {
 	const payload = resolveBoardPayload(`builtin:${boardIndex}`);
 	return generateBoardFromData(payload.board);
 }
+
+function wait(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function nextFrame() {
+	return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function clampNumber(value, min, max) {
+	return Math.min(max, Math.max(min, value));
+}
+
+function lerp(start, end, progress) {
+	return start + ((end - start) * progress);
+}
+
+function easeInOutSine(value) {
+	return -(Math.cos(Math.PI * value) - 1) / 2;
+}
+
+function easeInOutCubic(value) {
+	if (value < 0.5) return 4 * value * value * value;
+	return 1 - (Math.pow(-2 * value + 2, 3) / 2);
+}
+
+function easeOutCubic(value) {
+	return 1 - Math.pow(1 - value, 3);
+}
+
+function getBoardIntroWashCurve(progress) {
+	const t = clampNumber(progress, 0, 1);
+	if (t < 0.2) {
+		return 0.05 * easeInOutSine(t / 0.2);
+	}
+	if (t < 0.78) {
+		return 0.05 + (0.88 * easeInOutCubic((t - 0.2) / 0.58));
+	}
+	return 0.93 + (0.07 * easeOutCubic((t - 0.78) / 0.22));
+}
+
+function parseCssRgba(colorText) {
+	const fallback = { r: 0, g: 0, b: 0, a: 0.1 };
+	const match = String(colorText || "").trim().match(/^rgba?\(([^)]+)\)$/i);
+	if (!match) return fallback;
+
+	const parts = match[1].split(",").map((part) => part.trim());
+	if (parts.length < 3) return fallback;
+
+	const r = Number.parseFloat(parts[0]);
+	const g = Number.parseFloat(parts[1]);
+	const b = Number.parseFloat(parts[2]);
+	const a = parts[3] !== undefined ? Number.parseFloat(parts[3]) : 1;
+
+	if (![r, g, b, a].every(Number.isFinite)) return fallback;
+	return { r, g, b, a };
+}
+
+function formatRgbaColor(color) {
+	return `rgba(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)}, ${clampNumber(color.a, 0, 1).toFixed(3)})`;
+}
+
+function shouldAnimateBoardIntro() {
+	return !!gameUiSettings.enableBoardIntroAnimation;
+}
+
+function buildBoardIntroOrder(lastNumber) {
+	const order = [];
+	let left = 2;
+	let right = lastNumber - 1;
+
+	while (left <= right) {
+		order.push(left);
+		if (right !== left) order.push(right);
+		left += 1;
+		right -= 1;
+	}
+
+	return order;
+}
+
+function revealBoardIntroCell(cell) {
+	if (!cell) return;
+	cell.classList.remove('board-intro-pending');
+	cell.classList.add('board-intro-revealed');
+	setTimeout(() => {
+		cell.classList.remove('board-intro-revealed');
+	}, 260);
+}
+
+function revealBoardIntroRow(cells) {
+	if (!Array.isArray(cells)) return;
+
+	cells.forEach((cell) => {
+		if (!cell) return;
+		cell.classList.remove('board-intro-row-pending');
+		cell.classList.add('board-intro-row-revealed');
+		setTimeout(() => {
+			cell.classList.remove('board-intro-row-revealed');
+		}, 240);
+	});
+}
+
+function getBoardIntroWashTarget() {
+	if (!boardIntroWash || !board) return null;
+
+	const rect = board.getBoundingClientRect();
+	const top = Math.max(0, rect.top);
+	const left = Math.max(0, rect.left);
+	const right = Math.max(0, window.innerWidth - rect.right);
+	const bottom = Math.max(0, window.innerHeight - rect.bottom);
+	const radius = Number.parseFloat(getComputedStyle(board).borderTopLeftRadius) || 12;
+	const shadowColor = parseCssRgba(getComputedStyle(document.documentElement).getPropertyValue('--shadow-color'));
+
+	boardIntroWash.style.setProperty('--board-intro-top', `${top}px`);
+	boardIntroWash.style.setProperty('--board-intro-right', `${right}px`);
+	boardIntroWash.style.setProperty('--board-intro-bottom', `${bottom}px`);
+	boardIntroWash.style.setProperty('--board-intro-left', `${left}px`);
+	boardIntroWash.style.setProperty('--board-intro-radius', `${radius}px`);
+
+	return {
+		top,
+		right,
+		bottom,
+		left,
+		radius,
+		shadowColor
+	};
+}
+
+function applyBoardIntroWashFrame(target, progress) {
+	if (!boardIntroWash || !target) return;
+
+	const clipProgress = getBoardIntroWashCurve(progress);
+	const top = lerp(0, target.top, clipProgress);
+	const right = lerp(0, target.right, clipProgress);
+	const bottom = lerp(0, target.bottom, clipProgress);
+	const left = lerp(0, target.left, clipProgress);
+	const radius = lerp(0, target.radius, clipProgress);
+
+	const shadowProgressRaw = clampNumber((progress - 0.62) / 0.38, 0, 1);
+	const shadowProgress = easeOutCubic(shadowProgressRaw);
+	const shadowColor = {
+		...target.shadowColor,
+		a: target.shadowColor.a * shadowProgress
+	};
+
+	boardIntroWash.style.clipPath = `inset(${top.toFixed(2)}px ${right.toFixed(2)}px ${bottom.toFixed(2)}px ${left.toFixed(2)}px round ${radius.toFixed(2)}px)`;
+	boardIntroWash.style.boxShadow = `0 ${(4 * shadowProgress).toFixed(2)}px ${(20 * shadowProgress).toFixed(2)}px ${formatRgbaColor(shadowColor)}`;
+}
+
+async function playBoardIntroWash(sequenceId) {
+	if (!boardIntroWash) return;
+
+	boardIntroWash.classList.remove('is-hidden', 'is-active', 'is-exiting');
+	boardIntroWash.style.opacity = '1';
+	boardIntroWash.style.clipPath = 'inset(0 0 0 0 round 0px)';
+	boardIntroWash.style.boxShadow = '0 0 0 rgba(0, 0, 0, 0)';
+
+	await nextFrame();
+	await nextFrame();
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	const target = getBoardIntroWashTarget();
+	if (!target) return;
+
+	await new Promise((resolve) => {
+		const startedAt = performance.now();
+
+		function step(now) {
+			if (sequenceId !== boardIntroSequenceId) {
+				resolve();
+				return;
+			}
+
+			const progress = clampNumber((now - startedAt) / BOARD_SHELL_REVEAL_MS, 0, 1);
+			applyBoardIntroWashFrame(target, progress);
+
+			if (progress >= 1) {
+				resolve();
+				return;
+			}
+
+			requestAnimationFrame(step);
+		}
+
+		requestAnimationFrame(step);
+	});
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	boardIntroWash.classList.add('is-exiting');
+	await wait(BOARD_SHELL_FADE_MS);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	boardIntroWash.classList.add('is-hidden');
+	boardIntroWash.classList.remove('is-active', 'is-exiting');
+}
+
+function finishBoardIntroAnimation(sequenceId) {
+	if (sequenceId !== boardIntroSequenceId) return;
+	isBoardIntroAnimating = false;
+	resetBoardIntroPresentation();
+	setButtonsState();
+}
+
+async function playBoardIntroAnimation(cellMap, rowCells, lastNumber) {
+	if (!board) return;
+
+	const sequenceId = ++boardIntroSequenceId;
+	const order = buildBoardIntroOrder(lastNumber);
+	const usableDuration = Math.max(
+		BOARD_INTRO_STEP_MIN_MS,
+		BOARD_INTRO_TOTAL_MS - BOARD_INTRO_START_DELAY_MS - BOARD_INTRO_HEAD_HOLD_MS
+	);
+	const stepDelay = clampNumber(
+		Math.floor(usableDuration / Math.max(order.length, 1)),
+		BOARD_INTRO_STEP_MIN_MS,
+		BOARD_INTRO_STEP_MAX_MS
+	);
+
+	isBoardIntroAnimating = true;
+	board.classList.add('is-intro-running');
+	setBoardIntroUiHidden(true);
+	setButtonsState();
+
+	await playBoardIntroWash(sequenceId);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	for (const row of rowCells) {
+		if (sequenceId !== boardIntroSequenceId) return;
+		revealBoardIntroRow(row);
+		await wait(BOARD_ROW_REVEAL_STEP_MS);
+	}
+
+	await wait(BOARD_ROW_REVEAL_SETTLE_MS);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	await wait(BOARD_INTRO_START_DELAY_MS);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	revealBoardIntroCell(cellMap.get(1));
+	if (lastNumber !== 1) revealBoardIntroCell(cellMap.get(lastNumber));
+
+	if (!order.length) {
+		await wait(BOARD_INTRO_HEAD_HOLD_MS);
+		if (sequenceId !== boardIntroSequenceId) return;
+		setBoardIntroUiHidden(false);
+		await wait(BOARD_UI_FADE_IN_MS);
+		if (sequenceId !== boardIntroSequenceId) return;
+		finishBoardIntroAnimation(sequenceId);
+		return;
+	}
+
+	await wait(BOARD_INTRO_HEAD_HOLD_MS);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	for (const number of order) {
+		if (sequenceId !== boardIntroSequenceId) return;
+		revealBoardIntroCell(cellMap.get(number));
+		await wait(stepDelay);
+	}
+
+	setBoardIntroUiHidden(false);
+	await wait(BOARD_UI_FADE_IN_MS);
+	if (sequenceId !== boardIntroSequenceId) return;
+
+	finishBoardIntroAnimation(sequenceId);
+}
+
 function renderBoard(boardToken){
 	const payload = resolveBoardPayload(boardToken);
+	const shouldAnimateIntro = shouldAnimateBoardIntro();
 
+	boardIntroSequenceId += 1;
+	isBoardIntroAnimating = false;
+	current_board = payload.token;
+	currentBoardDebugMeta = {
+		token: payload.token,
+		type: payload.type,
+		name: payload.name || ""
+	};
 	mapData = payload.board;
 	const packs = generateBoardFromData(mapData);
 	current_punishment_passive = packs.passiveMap;
 	current_task_master = packs.masterMap;
+	publishGameDebugSnapshot();
 
 	board.innerHTML = '';
+	resetBoardIntroPresentation();
+	if (shouldAnimateIntro) prepareBoardIntroPresentation();
 
 	const startNumber = 1;
 	passive_location = 1;
@@ -834,6 +1402,9 @@ function renderBoard(boardToken){
 	lastRecordedActionAdjusted = false;
 	updateBTaskLiveCount();
 	endNumber = Math.max(...mapData.flat());
+	const cellMap = new Map();
+	const rowCells = [];
+	const fragment = document.createDocumentFragment();
 
 	const size = mapData.length;
 	board.style.display = 'grid';
@@ -842,6 +1413,7 @@ function renderBoard(boardToken){
 	board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
 
 	for (let i = 0; i < size; i++) {
+		const row = [];
 		for (let j = 0; j < size; j++) {
 			const cellValue = mapData[i][j];
 			const cell = document.createElement('div');
@@ -862,10 +1434,30 @@ function renderBoard(boardToken){
 				cell.addEventListener('click', () => showCellInfo(cellValue));
 				cell.innerHTML = '';
 				cell.dataset.number = cellValue;
+				cellMap.set(cellValue, cell);
+
+				if (shouldAnimateIntro) {
+					cell.classList.add('board-intro-pending');
+				}
 			}
 
-			board.appendChild(cell);
+			if (shouldAnimateIntro) {
+				cell.classList.add('board-intro-row-pending');
+			}
+
+			row.push(cell);
+			fragment.appendChild(cell);
 		}
+		rowCells.push(row);
+	}
+
+	board.appendChild(fragment);
+
+	if (shouldAnimateIntro) {
+		playBoardIntroAnimation(cellMap, rowCells, endNumber);
+	} else {
+		resetBoardIntroPresentation();
+		setButtonsState();
 	}
 
 	track("game_started", {
@@ -1003,7 +1595,6 @@ function showTimedCountdownDialog(taskType, taskText) {
 	const noteText = usedFallback
 		? t("game.countdown.fallback", { seconds })
 		: t("game.countdown.current", { value: formatCountdown(totalMs) });
-	const hintText = t("game.countdown.hint");
 	track(isSports ? "sports_countdown_started" : "rest_countdown_started", {
 		seconds,
 		used_fallback: usedFallback
@@ -1025,7 +1616,6 @@ function showTimedCountdownDialog(taskType, taskText) {
 					<div class="rest-countdown-progress-bar" id="restCountdownBar"></div>
 				</div>
 				<div class="rest-countdown-note">${noteText}</div>
-				<div class="rest-countdown-note">${hintText}</div>
 			</div>
 		`;
 
@@ -1333,15 +1923,15 @@ function updateRoundInfo() {
 function setButtonsState() {
 	if (!rolldice) return;
 	if (!IS_DUAL) {
-		rolldice.disabled = false;
+		rolldice.disabled = isBoardIntroAnimating;
 		rolldice.textContent = t("game.roll.single");
 		return;
 	}
 	if (rollmaster) {
-		rollmaster.disabled = roundMasterDone;
+		rollmaster.disabled = isBoardIntroAnimating || roundMasterDone;
 		rollmaster.textContent = roundMasterDone ? t("game.roll.done") : t("game.roll.masterIdle");
 	}
-	rolldice.disabled = roundPassiveDone;
+	rolldice.disabled = isBoardIntroAnimating || roundPassiveDone;
 	rolldice.textContent = roundPassiveDone ? t("game.roll.done") : t("game.roll.passiveIdle");
 }
 

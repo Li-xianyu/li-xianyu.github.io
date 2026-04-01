@@ -4,6 +4,9 @@ const MANUAL_AGREED_KEY = "manualAgreed";
 const GUIDE_STATE_KEY = "HOME_ONBOARDING_INTRO_V1_STATE";
 const LEGACY_INSTALL_ENTRY_HINT_KEY = "HOME_INSTALL_ENTRY_HINT_V1";
 const INSTALL_PROMPT_DISMISSED_KEY = "HOME_INSTALL_PROMPT_DISMISSED_V1";
+const GAME_BOARD_DEBUG_STORAGE_KEY = "SFC_GAME_BOARD_DEBUG_ENABLED";
+const HOME_DEBUG_TAP_COUNT = 5;
+const HOME_DEBUG_TAP_WINDOW_MS = 3000;
 
 let installEntryHintTimer = 0;
 let installEntryHintHandledThisSession = false;
@@ -11,6 +14,37 @@ let installEntryHintHandledThisSession = false;
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
 		window.trackEvent(eventName, payload);
+	}
+}
+
+function showHomeTmpTip(message){
+	if (!message) return;
+
+	const el = document.createElement('div');
+	el.className = 'tmp-tip';
+	el.textContent = message;
+	document.body.appendChild(el);
+	requestAnimationFrame(() => el.classList.add('show'));
+	window.setTimeout(() => {
+		el.classList.remove('show');
+		window.setTimeout(() => el.remove(), 200);
+	}, 1200);
+}
+
+function getStoredGameBoardDebugEnabled(){
+	try {
+		return localStorage.getItem(GAME_BOARD_DEBUG_STORAGE_KEY) === "1";
+	} catch (error) {
+		return false;
+	}
+}
+
+function setStoredGameBoardDebugEnabled(enabled){
+	try {
+		localStorage.setItem(GAME_BOARD_DEBUG_STORAGE_KEY, enabled ? "1" : "0");
+		return enabled;
+	} catch (error) {
+		return false;
 	}
 }
 
@@ -462,6 +496,7 @@ function createBoardDialog(){
 
 	const dialog = document.createElement('div');
 	dialog.className = 'board-dialog board-picker-dialog';
+	let layoutFrame = 0;
 
 	const title = document.createElement('h3');
 	title.className = 'punishment-title';
@@ -479,6 +514,16 @@ function createBoardDialog(){
 	const listContainer = document.createElement('div');
 	listContainer.className = 'board-list';
 	track("board_picker_opened");
+
+	const closeBoardDialog = (nextStep) => {
+		if (layoutFrame) {
+			cancelAnimationFrame(layoutFrame);
+			layoutFrame = 0;
+		}
+		window.removeEventListener("resize", handleResize);
+		overlay.remove();
+		if (typeof nextStep === "function") nextStep();
+	};
 
 	function renderBoardList(tab){
 		const list = tab === "custom" ? customBoards : builtInBoards;
@@ -510,11 +555,51 @@ function createBoardDialog(){
 					board_type: item.type,
 					board_steps: item.steps
 				});
-				overlay.remove();
-				document.body.appendChild(createModeDialog(item.token));
+				closeBoardDialog(() => {
+					document.body.appendChild(createModeDialog(item.token));
+				});
 			});
 
 			listContainer.appendChild(el);
+		});
+	}
+
+	function syncBoardPickerDialogLayout(){
+		if (!overlay.isConnected) return;
+
+		const activeBtn = segmented.querySelector(".board-seg-btn.active");
+		const activeTab = activeBtn?.dataset.tab || "builtin";
+		const previousVisibility = dialog.style.visibility;
+		const naturalHeights = [];
+
+		dialog.style.visibility = "hidden";
+		if (typeof window.clearFixedDialogHeight === "function") {
+			window.clearFixedDialogHeight(dialog);
+		}
+
+		["builtin", "custom"].forEach((tabKey) => {
+			renderBoardList(tabKey);
+			naturalHeights.push(Math.ceil(dialog.scrollHeight));
+		});
+
+		renderBoardList(activeTab);
+		if (activeBtn) moveIndicator(activeBtn);
+
+		if (typeof window.applyFixedDialogHeight === "function") {
+			window.applyFixedDialogHeight(dialog, overlay, Math.max(...naturalHeights, 0));
+		}
+
+		dialog.style.visibility = previousVisibility;
+	}
+
+	function scheduleBoardPickerDialogLayout(){
+		if (layoutFrame) {
+			cancelAnimationFrame(layoutFrame);
+		}
+
+		layoutFrame = requestAnimationFrame(() => {
+			layoutFrame = 0;
+			syncBoardPickerDialogLayout();
 		});
 	}
 
@@ -527,6 +612,12 @@ function createBoardDialog(){
 		indicator.style.left = `${btnRect.left - rootRect.left}px`;
 	}
 
+	function handleResize(){
+		const active = segmented.querySelector(".board-seg-btn.active");
+		if (active) moveIndicator(active);
+		scheduleBoardPickerDialogLayout();
+	}
+
 	const segBtns = segmented.querySelectorAll(".board-seg-btn");
 	segBtns.forEach(btn => {
 		btn.addEventListener("click", () => {
@@ -534,6 +625,7 @@ function createBoardDialog(){
 			btn.classList.add("active");
 			moveIndicator(btn);
 			renderBoardList(btn.dataset.tab);
+			scheduleBoardPickerDialogLayout();
 			track("board_tab_switched", { tab: btn.dataset.tab });
 		});
 	});
@@ -542,17 +634,15 @@ function createBoardDialog(){
 		const active = segmented.querySelector(".board-seg-btn.active");
 		if (active) moveIndicator(active);
 		renderBoardList("builtin");
+		scheduleBoardPickerDialogLayout();
 	});
 
-	window.addEventListener("resize", () => {
-		const active = segmented.querySelector(".board-seg-btn.active");
-		if (active) moveIndicator(active);
-	});
+	window.addEventListener("resize", handleResize);
 
 	const cancelBtn = document.createElement('button');
 	cancelBtn.className = 'punishment-button';
 	cancelBtn.textContent = t("home.boardDialog.cancel");
-	cancelBtn.addEventListener('click', () => overlay.remove());
+	cancelBtn.addEventListener('click', () => closeBoardDialog());
 
 	const footer = document.createElement('div');
 	footer.className = 'dialog-buttons';
@@ -667,6 +757,24 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (xProfileLink){
 		xProfileLink.addEventListener('click', () => {
 			track("x_profile_opened");
+		});
+	}
+
+	const homeSignatureQuote = document.getElementById('homeSignatureQuote');
+	if (homeSignatureQuote){
+		let tapTimestamps = [];
+		homeSignatureQuote.addEventListener('click', () => {
+			const now = Date.now();
+			tapTimestamps = tapTimestamps.filter((time) => now - time <= HOME_DEBUG_TAP_WINDOW_MS);
+			tapTimestamps.push(now);
+
+			if (tapTimestamps.length < HOME_DEBUG_TAP_COUNT) return;
+
+			tapTimestamps = [];
+			const nextEnabled = !getStoredGameBoardDebugEnabled();
+			setStoredGameBoardDebugEnabled(nextEnabled);
+			showHomeTmpTip(nextEnabled ? t("home.debug.enabled") : t("home.debug.disabled"));
+			track("home_debug_mode_toggled", { enabled: nextEnabled });
 		});
 	}
 });

@@ -204,8 +204,12 @@ window.__I18N_DICTIONARIES.en = {
 		},
 		note: "Supports custom boards and rule parameters, so you can tune things before each session.",
 		social: {
-			nameHtml: "<s>@yunshanlxy</s> <strong>(capital got me)</strong>",
-			line: "X, seriously? You leave all that trash up but suspend one indie tool maker. If you have the guts, go block my GitHub too."
+			handle: "@LiXianYu101",
+			quote: "Today I outgrow yesterday, tomorrow I laugh at today."
+		},
+		debug: {
+			enabled: "Debug mode enabled",
+			disabled: "Debug mode disabled"
 		},
 		installHint: {
 			title: "You can install from the top-right menu",
@@ -272,6 +276,7 @@ window.__I18N_DICTIONARIES.en = {
 		maxCount: "Maximum count:",
 		weightsLegend: "Module weight settings",
 		weightsTip: "Weights control the relative chance of each module when random content is generated. Higher weight means higher chance.",
+		weightsInteractionTip: "Tap a legend item or a ring segment to select a module, then adjust or toggle it below.",
 		weightProp: "Core module weight:",
 		weightReward: "Rest module weight:",
 		weightAod: "Move module weight:",
@@ -281,12 +286,14 @@ window.__I18N_DICTIONARIES.en = {
 		activeLegend: "Z module weight",
 		activeTip: "This weight is reserved for a future mode where instructions also join the random pool. Right now it does not affect board rendering.",
 		activeWeight: "Instruction weight:",
-		uiLegend: "In-game display",
-		uiTip: "Controls whether the B-task prediction entry and live total are shown on the game page. Both are enabled by default.",
+		uiLegend: "In-game EX options",
+		uiTip: "Controls the task-panel EX items and the board intro animation on the game page. All are enabled by default.",
 		togglePredictionTitle: "B-task prediction indicator",
 		togglePredictionDesc: "Shows the exclamation button in the task panel so you can open prediction and stats.",
 		toggleLiveCountTitle: "Live actual total",
 		toggleLiveCountDesc: "Keeps the accumulated actual count visible in the task panel during a round.",
+		toggleBoardIntroTitle: "Board intro animation",
+		toggleBoardIntroDesc: "When the game page opens, show the full pale grid first, then quickly reveal the start, end, and path cells.",
 		dataTransferLegend: "Local data transfer",
 		dataTransferTip: "Export your current local configuration and custom boards as a backup, or import a previous backup to restore them on this device.",
 		dataTransferButton: "Import / Export Data",
@@ -298,7 +305,7 @@ window.__I18N_DICTIONARIES.en = {
 			export: "Export",
 			import: "Import"
 		},
-		transferExportTip: "The export contains rule settings, B/Z pools, in-game display options, custom boards, board draft, language, and theme.",
+		transferExportTip: "The export contains rule settings, B/Z pools, EX options, custom boards, board draft, language, and theme.",
 		transferImportTip: "Paste a backup JSON here, or choose a local `.json` file. Importing will overwrite the corresponding local data on this device.",
 		transferChooseFile: "Choose JSON File",
 		transferNoFile: "No file selected",
@@ -327,7 +334,7 @@ window.__I18N_DICTIONARIES.en = {
 		transferImportRangeInvalid: "The action count range in this backup is invalid.",
 		transferImportGameDataInvalid: "The B module data in this backup is invalid.",
 		transferImportActiveDataInvalid: "The Z module data in this backup is invalid.",
-		transferImportUiInvalid: "The in-game display settings in this backup are invalid.",
+		transferImportUiInvalid: "The EX settings in this backup are invalid.",
 		transferImportBoardsInvalid: "The custom board data in this backup is invalid.",
 		transferImportDraftInvalid: "The board draft data in this backup is invalid.",
 		categoryLabels: {
@@ -366,8 +373,8 @@ window.__I18N_DICTIONARIES.en = {
 		rewardTip: "Tip: texts with numbers plus sec/min units in Chinese or English, such as “Rest 3 min”, “rest 5s”, or “rest 10min”, will trigger a countdown. Plain text also works.",
 		aodTip: "Tip: “Move forward 1-3 cells / Move backward 1-3 cells” only changes position for now and does not trigger extra content on the destination cell.",
 		errorTitle: "Error",
-		errorMultipleOfTen: "Please enter a multiple of 10.",
-		errorMinLessThanMax: "The minimum value must be smaller than the maximum value."
+		errorMultipleOfTen: "Please enter a value between 5 and 100 in steps of 5.",
+		errorMinLessThanMax: "The maximum value must be at least 5 higher than the minimum value."
 	},
 	createBoards: {
 		title: "Create Board",
