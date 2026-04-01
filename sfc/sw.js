@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260401-20";
+const CACHE_VERSION = "20260401-22";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
@@ -21,7 +21,6 @@ const PRECACHE_PATHS = [
 	"./js/ui.js",
 	"./js/pwa.js",
 	"./js/index.js",
-	"./js/game_board_debug.js",
 	"./js/home.js",
 	"./js/home_onboarding_intro.js",
 	"./js/Data.js",

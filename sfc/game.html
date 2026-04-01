@@ -63,7 +63,6 @@
 	<script src="js/ui.js?v=20260401-2"></script>
 	<script src="js/pwa.js?v=20260331-1"></script>
 	<script src="js/Data.js?v=20260401-2"></script>
-	<script src="js/game_board_debug.js?v=20260401-4"></script>
 	<script>
 		// Game mode: dual / solo
 		(() => {
@@ -72,47 +71,109 @@
 			window.GAME_MODE = (m === 'solo' || m === 'dual') ? m : 'dual';
 		})();
 	</script>
-	<script src="js/index.js?v=20260401-6"></script>
 
 	<script>
-	function getUrlParam(key) {
-		const params = new URLSearchParams(window.location.search);
-		return params.get(key);
-	}
+		(() => {
+			const GAME_BOARD_DEBUG_STORAGE_KEY_NAME = "SFC_GAME_BOARD_DEBUG_ENABLED";
+			const GAME_BOARD_DEBUG_SCRIPT_SRC = "js/game_board_debug.js?v=20260401-6";
+			const GAME_INDEX_SCRIPT_SRC = "js/index.js?v=20260401-6";
+			const ERUDA_SCRIPT_SRC = "https://cdn.jsdelivr.net/npm/eruda";
 
-	function getValidBoardToken() {
-		const token = (getUrlParam("id") || "").trim();
+			function isGameBoardDebugEnabled() {
+				try {
+					const storedValue = localStorage.getItem(GAME_BOARD_DEBUG_STORAGE_KEY_NAME);
+					if (storedValue === "1") return true;
+					if (storedValue === "0") return false;
+					return localStorage.getItem("debug") === "true";
+				} catch (error) {
+					return false;
+				}
+			}
 
-		if (!token) return "builtin:1";
+			function loadScript(src) {
+				return new Promise((resolve, reject) => {
+					const existingScript = document.querySelector(`script[src="${src}"]`);
+					if (existingScript) {
+						resolve(existingScript);
+						return;
+					}
 
-		if (token.startsWith("builtin:") || token.startsWith("custom:")){
-			return token;
-		}
+					const script = document.createElement("script");
+					script.src = src;
+					script.async = true;
+					script.onload = () => resolve(script);
+					script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+					document.body.appendChild(script);
+				});
+			}
 
-		/* Support legacy numeric links. */
-		const n = parseInt(token, 10);
-		if (!isNaN(n) && n > 0 && n <= Boards.length){
-			return `builtin:${n}`;
-		}
+			async function setupDebugToolsIfNeeded() {
+				if (!isGameBoardDebugEnabled()) return;
 
-		return "builtin:1";
-	}
+				const erudaTask = loadScript(ERUDA_SCRIPT_SRC)
+					.then(() => {
+						if (window.eruda && !window.__SFC_ERUDA_INITIALIZED) {
+							window.__SFC_ERUDA_INITIALIZED = true;
+							window.eruda.init({
+								tool: ["console", "elements", "network", "resources", "info"]
+							});
+							window.eruda.show("console");
+							console.info("[GameDebug] Mobile debug console enabled.");
+						}
+					})
+					.catch((error) => {
+						console.warn("[GameDebug] Failed to load Eruda.", error);
+					});
 
-	function initGame() {
-		try {
-			const boardToken = getValidBoardToken();
-			renderBoard(boardToken);
-		} catch (error) {
-			console.error('Failed to initialize game:', error);
-			renderBoard('builtin:1');
-		}
-	}
+				const localDebugTask = loadScript(GAME_BOARD_DEBUG_SCRIPT_SRC).catch((error) => {
+					console.warn("[GameDebug] Failed to load local debug helpers.", error);
+				});
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initGame);
-	} else {
-		initGame();
-	}
-</script>
+				await Promise.allSettled([erudaTask, localDebugTask]);
+			}
+
+			function getUrlParam(key) {
+				const params = new URLSearchParams(window.location.search);
+				return params.get(key);
+			}
+
+			function getValidBoardToken() {
+				const token = (getUrlParam("id") || "").trim();
+
+				if (!token) return "builtin:1";
+
+				if (token.startsWith("builtin:") || token.startsWith("custom:")){
+					return token;
+				}
+
+				/* Support legacy numeric links. */
+				const n = parseInt(token, 10);
+				if (!isNaN(n) && n > 0 && n <= Boards.length){
+					return `builtin:${n}`;
+				}
+
+				return "builtin:1";
+			}
+
+			async function initGamePage() {
+				try {
+					await setupDebugToolsIfNeeded();
+					await loadScript(GAME_INDEX_SCRIPT_SRC);
+					renderBoard(getValidBoardToken());
+				} catch (error) {
+					console.error("Failed to initialize game:", error);
+					if (typeof renderBoard === "function") {
+						renderBoard("builtin:1");
+					}
+				}
+			}
+
+			if (document.readyState === "loading") {
+				document.addEventListener("DOMContentLoaded", initGamePage, { once: true });
+			} else {
+				initGamePage();
+			}
+		})();
+	</script>
 </body>
 </html>

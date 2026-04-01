@@ -1,17 +1,17 @@
 "use strict";
 
-const GAME_BOARD_DEBUG_STORAGE_KEY = "SFC_GAME_BOARD_DEBUG_ENABLED";
-const GAME_BOARD_DEBUG_ENABLED = (() => {
-	try {
-		const storedValue = localStorage.getItem(GAME_BOARD_DEBUG_STORAGE_KEY);
-		if (storedValue === "1") return true;
-		if (storedValue === "0") return false;
-	} catch (error) {}
-	return false;
-})();
-const GAME_BOARD_DEBUG_DEFAULT_ITERATIONS = 4000;
-
 (function initGameBoardDebug(global) {
+	const GAME_BOARD_DEBUG_STORAGE_KEY = "SFC_GAME_BOARD_DEBUG_ENABLED";
+	const GAME_BOARD_DEBUG_ENABLED = (() => {
+		try {
+			const storedValue = localStorage.getItem(GAME_BOARD_DEBUG_STORAGE_KEY);
+			if (storedValue === "1") return true;
+			if (storedValue === "0") return false;
+			return localStorage.getItem("debug") === "true";
+		} catch (error) {}
+		return false;
+	})();
+	const GAME_BOARD_DEBUG_DEFAULT_ITERATIONS = 4000;
 	let latestSnapshot = null;
 
 	function normalizeIterations(iterations) {
