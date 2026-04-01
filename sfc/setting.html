@@ -1608,7 +1608,10 @@ function createCustomChip(scopeKey, item, index){
 	const deleteBtn = document.createElement("button");
 	deleteBtn.type = "button";
 	deleteBtn.className = "custom-chip-delete";
-	deleteBtn.textContent = "脳";
+	const deleteIcon = document.createElement("i");
+	deleteIcon.className = "bi bi-x-lg";
+	deleteIcon.setAttribute("aria-hidden", "true");
+	deleteBtn.appendChild(deleteIcon);
 	deleteBtn.setAttribute("aria-label", t("settings.deleteAria", { name: item.name }));
 
 	deleteBtn.addEventListener("click", async (event) => {

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260401-19";
+const CACHE_VERSION = "20260401-20";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
