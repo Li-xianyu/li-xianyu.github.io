@@ -22,7 +22,7 @@
 	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260401-4">
+	<link rel="stylesheet" href="css/setting.css?v=20260402-1">
 	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body>
@@ -55,7 +55,8 @@
 
 			<fieldset>
 				<legend data-i18n="settings.rangeLegend">Single-hit count range</legend>
-				<div class="count-range-control">
+				<p class="tip count-range-tip">Drag either end to set the min and max, or hold the center pill to move the whole range together.</p>
+				<div class="count-range-control is-intro-pending" id="countRangeControl">
 					<div class="count-range-summary">
 						<output class="count-range-value" id="countRangeValue" for="minCount maxCount">
 							<span class="count-range-number" id="countRangeMinLabel">20</span>
@@ -345,6 +346,16 @@ const ACTION_COUNT_RANGE_UI_LIMITS = window.ACTION_COUNT_RANGE_LIMITS || Object.
 	minGap: 5
 });
 const ACTION_COUNT_SCALE_FADE_DELAY_MS = 420;
+const ACTION_COUNT_RANGE_INTRO_TOTAL_MS = 2280;
+const ACTION_COUNT_RANGE_INTRO = Object.freeze({
+	trackRevealDelay: 48,
+	fillExpandDelay: 620,
+	fillSettleDelay: 1240,
+	detailsRevealDelay: 1780,
+	bubbleRevealDelay: 1880,
+	scaleRevealDelay: 1960,
+	scaleHideDelay: 980
+});
 const MODULE_WEIGHT_TOTAL = 100;
 const MODULE_WEIGHT_STEP = 5;
 const MODULE_WEIGHT_RING = Object.freeze({
@@ -378,6 +389,21 @@ const actionCountRangeDragState = {
 const actionCountRangeScaleState = {
 	hideTimer: 0
 };
+const actionCountRangeIntroState = {
+	active: false,
+	hasAnimatedIn: false,
+	timerIds: []
+};
+const ACTION_COUNT_RANGE_COPY = Object.freeze({
+	zh: Object.freeze({
+		tip: "拖动两端可以调整最小值和最大值，按住中间小胶囊则可以整段平移区间。",
+		bubble: "平移已选区间"
+	}),
+	en: Object.freeze({
+		tip: "Drag either end to set the min and max, or hold the center pill to move the whole range together.",
+		bubble: "Move selected range"
+	})
+});
 const moduleWeightUiState = {
 	selectedKey: null,
 	hasAnimatedIn: false,
@@ -401,6 +427,22 @@ let embedScrollState = {
 function track(eventName, payload){
 	if (typeof window.trackEvent === "function"){
 		window.trackEvent(eventName, payload);
+	}
+}
+
+function getActionCountRangeCopyLanguage(){
+	const lang = String((typeof window.getLanguage === "function" ? window.getLanguage() : document.documentElement.lang) || "").toLowerCase();
+	return (lang === "zh" || lang.startsWith("zh")) ? "zh" : "en";
+}
+
+function applyActionCountRangeCopy(){
+	const copy = ACTION_COUNT_RANGE_COPY[getActionCountRangeCopyLanguage()] || ACTION_COUNT_RANGE_COPY.en;
+	const tip = document.querySelector(".count-range-tip");
+	const bubble = document.getElementById("countRangeBubble");
+	if (tip) tip.textContent = copy.tip;
+	if (bubble) {
+		bubble.setAttribute("aria-label", copy.bubble);
+		bubble.setAttribute("title", copy.bubble);
 	}
 }
 
@@ -518,6 +560,7 @@ function initEmbedScrollBridge(){
 document.addEventListener("DOMContentLoaded", () => {
 	initSegmented();
 
+	applyActionCountRangeCopy();
 	loadSettingsB();
 	initActionCountRangeControls();
 	loadGameUiSettings();
@@ -552,6 +595,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	}
 });
+
+window.addEventListener("i18n:change", applyActionCountRangeCopy);
 
 function clampActionCountValue(value, min, max){
 	return Math.min(max, Math.max(min, value));
@@ -620,7 +665,48 @@ function holdActionCountRangeScale(){
 	setActionCountRangeScaleVisible(true);
 }
 
+function clearActionCountRangeIntroTimers(){
+	actionCountRangeIntroState.timerIds.forEach((timerId) => window.clearTimeout(timerId));
+	actionCountRangeIntroState.timerIds = [];
+}
+
+function queueActionCountRangeIntroStep(callback, delay){
+	const timerId = window.setTimeout(() => {
+		actionCountRangeIntroState.timerIds = actionCountRangeIntroState.timerIds.filter((value) => value !== timerId);
+		callback();
+	}, delay);
+	actionCountRangeIntroState.timerIds.push(timerId);
+	return timerId;
+}
+
+function getActionCountRangeUiMetrics(range, options = {}){
+	const rangeSlider = options.rangeSlider || document.getElementById("countRangeSlider");
+	const total = ACTION_COUNT_RANGE_UI_LIMITS.max - ACTION_COUNT_RANGE_UI_LIMITS.min;
+	const startPercent = ((range.min - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
+	const endPercent = ((range.max - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
+	const sliderWidth = rangeSlider ? (rangeSlider.clientWidth || rangeSlider.getBoundingClientRect().width || 0) : 0;
+	const midpointPercent = startPercent + ((endPercent - startPercent) / 2);
+	const bubbleLeftPx = sliderWidth > 0 ? (sliderWidth * midpointPercent) / 100 : 0;
+
+	return {
+		startPercent,
+		endPercent,
+		fillWidthPercent: Math.max(0, endPercent - startPercent),
+		bubbleLeftPx
+	};
+}
+
+function setActionCountRangeInteractiveEnabled(enabled){
+	const minInput = document.getElementById("minCount");
+	const maxInput = document.getElementById("maxCount");
+	const rangeBubble = document.getElementById("countRangeBubble");
+	if (minInput) minInput.disabled = !enabled;
+	if (maxInput) maxInput.disabled = !enabled;
+	if (rangeBubble) rangeBubble.disabled = !enabled;
+}
+
 function updateActionCountRangeUi(range){
+	const rangeControl = document.getElementById("countRangeControl");
 	const rangeValue = document.getElementById("countRangeValue");
 	const rangeMinLabel = document.getElementById("countRangeMinLabel");
 	const rangeMaxLabel = document.getElementById("countRangeMaxLabel");
@@ -631,18 +717,24 @@ function updateActionCountRangeUi(range){
 	const maxInput = document.getElementById("maxCount");
 	if (!rangeSlider || !minInput || !maxInput) return;
 
-	const total = ACTION_COUNT_RANGE_UI_LIMITS.max - ACTION_COUNT_RANGE_UI_LIMITS.min;
-	const startPercent = ((range.min - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
-	const endPercent = ((range.max - ACTION_COUNT_RANGE_UI_LIMITS.min) / total) * 100;
+	const metrics = getActionCountRangeUiMetrics(range, { rangeSlider });
 	if (rangeValue) {
 		rangeValue.style.removeProperty("--count-range-display-start");
 		rangeValue.style.removeProperty("--count-range-display-end");
 	}
 	if (rangeMinLabel) rangeMinLabel.textContent = `${range.min}`;
 	if (rangeMaxLabel) rangeMaxLabel.textContent = `${range.max}`;
+	if (actionCountRangeIntroState.active) {
+		if (rangeBubble) {
+			rangeBubble.style.left = `${metrics.bubbleLeftPx}px`;
+		}
+		minInput.setAttribute("aria-valuetext", `${range.min}`);
+		maxInput.setAttribute("aria-valuetext", `${range.max}`);
+		return;
+	}
 	if (rangeFill) {
-		rangeFill.style.left = `${startPercent}%`;
-		rangeFill.style.width = `${Math.max(0, endPercent - startPercent)}%`;
+		rangeFill.style.left = `${metrics.startPercent}%`;
+		rangeFill.style.width = `${metrics.fillWidthPercent}%`;
 	}
 	if (rangeBubble) {
 		const sliderWidth = rangeSlider.clientWidth || rangeSlider.getBoundingClientRect().width || 0;
@@ -650,7 +742,7 @@ function updateActionCountRangeUi(range){
 		const fillRect = rangeFill ? rangeFill.getBoundingClientRect() : null;
 		const rawMidpointPx = fillRect
 			? (fillRect.left - sliderRect.left) + (fillRect.width / 2)
-			: ((startPercent + ((endPercent - startPercent) / 2)) / 100) * sliderWidth;
+			: metrics.bubbleLeftPx;
 		rangeBubble.style.left = `${rawMidpointPx}px`;
 	}
 
@@ -705,11 +797,14 @@ function setActionCountRangeInputs(range, options = {}){
 }
 
 function initActionCountRangeControls(){
+	const rangeControl = document.getElementById("countRangeControl");
 	const minInput = document.getElementById("minCount");
 	const maxInput = document.getElementById("maxCount");
 	const rangeSlider = document.getElementById("countRangeSlider");
 	const rangeBubble = document.getElementById("countRangeBubble");
-	if (!minInput || !maxInput || !rangeSlider || !rangeBubble) return;
+	const rangeTrack = rangeSlider ? rangeSlider.querySelector(".count-range-track") : null;
+	const rangeFill = document.getElementById("countRangeFill");
+	if (!rangeControl || !minInput || !maxInput || !rangeSlider || !rangeBubble || !rangeTrack || !rangeFill) return;
 
 	const bindRangeInput = (input, handle) => {
 		const activateHandle = () => setActionCountRangeActiveHandle(handle);
@@ -801,8 +896,89 @@ function initActionCountRangeControls(){
 		updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
 	});
 
+	const playActionCountRangeIntro = () => {
+		if (actionCountRangeIntroState.active || actionCountRangeIntroState.hasAnimatedIn) {
+			rangeControl.classList.remove("is-intro-pending", "is-intro-running", "is-intro-details-visible", "is-intro-bubble-visible");
+			setActionCountRangeInteractiveEnabled(true);
+			updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
+			return;
+		}
+
+		actionCountRangeIntroState.active = true;
+		clearActionCountRangeIntroTimers();
+		setActionCountRangeInteractiveEnabled(false);
+		clearActionCountRangeScaleFadeTimer();
+		setActionCountRangeScaleVisible(false);
+
+		const finalRange = normalizeActionCountRangeInputs(minInput.value, maxInput.value);
+		const finalMetrics = getActionCountRangeUiMetrics(finalRange, { rangeSlider });
+		updateActionCountRangeUi(finalRange);
+
+		rangeControl.classList.add("is-intro-pending");
+		rangeControl.classList.remove("is-intro-running", "is-intro-details-visible", "is-intro-bubble-visible", "is-scale-visible");
+
+		rangeTrack.style.transition = "none";
+		rangeFill.style.transition = "none";
+		rangeTrack.style.transform = "translateY(-50%) scaleX(0)";
+		rangeTrack.style.opacity = "1";
+		rangeFill.style.opacity = "1";
+		rangeFill.style.left = "0%";
+		rangeFill.style.width = "0%";
+		rangeBubble.style.left = `${finalMetrics.bubbleLeftPx}px`;
+
+		void rangeSlider.offsetWidth;
+
+		rangeTrack.style.removeProperty("transition");
+		rangeFill.style.removeProperty("transition");
+
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				rangeControl.classList.add("is-intro-running");
+				rangeControl.classList.remove("is-intro-pending");
+
+				queueActionCountRangeIntroStep(() => {
+					rangeTrack.style.transform = "translateY(-50%) scaleX(1)";
+				}, ACTION_COUNT_RANGE_INTRO.trackRevealDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					rangeFill.style.left = "0%";
+					rangeFill.style.width = "100%";
+				}, ACTION_COUNT_RANGE_INTRO.fillExpandDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					rangeFill.style.left = `${finalMetrics.startPercent}%`;
+					rangeFill.style.width = `${finalMetrics.fillWidthPercent}%`;
+				}, ACTION_COUNT_RANGE_INTRO.fillSettleDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					rangeControl.classList.add("is-intro-details-visible");
+				}, ACTION_COUNT_RANGE_INTRO.detailsRevealDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					rangeControl.classList.add("is-intro-bubble-visible");
+				}, ACTION_COUNT_RANGE_INTRO.bubbleRevealDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					holdActionCountRangeScale();
+					scheduleActionCountRangeScaleFade(ACTION_COUNT_RANGE_INTRO.scaleHideDelay);
+				}, ACTION_COUNT_RANGE_INTRO.scaleRevealDelay);
+
+				queueActionCountRangeIntroStep(() => {
+					actionCountRangeIntroState.active = false;
+					actionCountRangeIntroState.hasAnimatedIn = true;
+					rangeControl.classList.remove("is-intro-running", "is-intro-details-visible", "is-intro-bubble-visible");
+					rangeTrack.style.removeProperty("transform");
+					rangeTrack.style.removeProperty("opacity");
+					rangeFill.style.removeProperty("opacity");
+					setActionCountRangeInteractiveEnabled(true);
+					updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
+				}, ACTION_COUNT_RANGE_INTRO_TOTAL_MS);
+			});
+		});
+	};
+
 	setActionCountRangeActiveHandle("max");
-	updateActionCountRangeUi(normalizeActionCountRangeInputs(minInput.value, maxInput.value));
+	playActionCountRangeIntro();
 }
 
 /* =========================
