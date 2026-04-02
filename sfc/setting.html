@@ -22,7 +22,7 @@
 	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
-	<link rel="stylesheet" href="css/setting.css?v=20260402-2">
+	<link rel="stylesheet" href="css/setting.css?v=20260402-3">
 	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body>
@@ -133,23 +133,30 @@
 				</div>
 			</fieldset>
 
-			<section class="module-card" aria-labelledby="modulePoolTitle">
-				<div class="module-card-head">
-					<h2 class="module-card-title" id="modulePoolTitle" data-i18n="settings.modulePoolTitle">Execution content pool</h2>
-					<p class="module-card-tip" data-i18n-html="settings.modulePoolTipHtml">Tap an item to toggle it on or off (dark = enabled, light = disabled). Categories with <span class="plus-badge">+</span> support custom additions.</p>
-				</div>
+			<fieldset class="module-pool-shell">
+				<legend id="modulePoolTitle" data-i18n="settings.modulePoolTitle">Execution content pool</legend>
+				<p class="tip module-pool-tip" data-i18n-html="settings.modulePoolTipHtml">Use the five summaries below to edit one module at a time. Categories with <span class="plus-badge">+</span> allow custom chips.</p>
 				<div id="settings-container"></div>
-			</section>
+			</fieldset>
 		</section>
 
 		<!-- ========== Z module (ActiveData) ========== -->
 		<section class="tab-panel" id="panel-z" style="display:none;">
-			<fieldset class="weight-settings-container">
+			<fieldset class="weight-settings-container active-weight-container">
 				<legend data-i18n="settings.activeLegend">Z module weight</legend>
 				<p class="tip" data-i18n="settings.activeTip">This weight is reserved for a future mode where instructions also join the random pool. Right now it does not affect board rendering.</p>
-				<div class="input-container">
-					<label for="weight-active" data-i18n="settings.activeWeight">Instruction weight:</label>
-					<input type="number" id="weight-active" value="30" min="0" step="1">
+				<div class="active-weight-ui">
+					<p class="active-weight-label" data-i18n="settings.activeWeight">Instruction weight:</p>
+					<div class="module-weight-stepper active-weight-stepper" role="group" id="activeWeightStepper">
+						<button class="module-weight-step-btn" id="activeWeightDecreaseBtn" type="button">
+							<i class="bi bi-dash-lg" aria-hidden="true"></i>
+						</button>
+						<output class="module-weight-step-value active-weight-value" id="activeWeightValue" for="weight-active">30%</output>
+						<button class="module-weight-step-btn" id="activeWeightIncreaseBtn" type="button">
+							<i class="bi bi-plus-lg" aria-hidden="true"></i>
+						</button>
+					</div>
+					<input class="sr-only" type="number" id="weight-active" value="30" min="0" step="1" tabindex="-1" aria-hidden="true">
 				</div>
 			</fieldset>
 
@@ -313,8 +320,8 @@
 			</div>
 		</div>
 	</div>
-<script src="lang/zh.js?v=20260401-5"></script>
-<script src="lang/en.js?v=20260401-5"></script>
+<script src="lang/zh.js?v=20260402-1"></script>
+<script src="lang/en.js?v=20260402-1"></script>
 <script src="js/i18n.js?v=20260327-2"></script>
 <script src="js/ui.js?v=20260401-2"></script>
 <script src="js/pwa.js?v=20260331-1"></script>
@@ -372,6 +379,14 @@ const MODULE_WEIGHT_META = Object.freeze([
 	{ key: "aod", color: "#58c0b0", zh: "位移", en: "Move" },
 	{ key: "sports", color: "#ef6f7f", zh: "运动", en: "Sports" }
 ]);
+const MODULE_POOL_SCOPE_ORDER = Object.freeze(["posture", "prop", "reward", "aod", "sports"]);
+const MODULE_POOL_ACCENT_MAP = Object.freeze({
+	posture: "#6d7ef7",
+	prop: "#7769f6",
+	reward: "#8d87e8",
+	aod: "#6e97d3",
+	sports: "#9880d0"
+});
 
 const dataTransferState = {
 	activeTab: "export",
@@ -412,6 +427,9 @@ const moduleWeightUiState = {
 	currentWeightMap: null,
 	targetWeightMap: null,
 	animationFrame: 0
+};
+const modulePoolUiState = {
+	activeScopeKey: null
 };
 const manageState = {
 	activeTab: "presets",
@@ -566,6 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	loadGameUiSettings();
 	loadGameDataB();
 	loadActiveDataZ();
+	initActiveWeightControl();
 
 	applyManageCopy();
 	renderSettingsB();
@@ -597,6 +616,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("i18n:change", applyActionCountRangeCopy);
+window.addEventListener("i18n:change", () => {
+	syncModuleWeightControlFromGameData();
+	renderSettingsB();
+	renderSettingsZ();
+	syncActiveWeightControl();
+	requestAnimationFrame(() => observeFieldsets());
+});
 
 function clampActionCountValue(value, min, max){
 	return Math.min(max, Math.max(min, value));
@@ -1758,6 +1784,265 @@ function getItemDisplayName(scopeKey, item){
 	return String(item && item.name || "").trim();
 }
 
+function updateModulePoolSummaryButton(scopeKey){
+	if (!scopeKey || scopeKey === "active") return;
+
+	const label = getCategoryLabels()[scopeKey] || scopeKey;
+	const summaryText = getModulePoolSummaryText(scopeKey);
+	const summaryBtn = document.querySelector(`#settings-container .module-pool-summary-btn[data-scope-key="${scopeKey}"]`);
+	if (!summaryBtn) return;
+
+	summaryBtn.setAttribute("aria-label", `${label} ${summaryText}`);
+	summaryBtn.title = `${label} ${summaryText}`;
+}
+
+function updateModulePoolMetricCard(scopeKey){
+	if (!scopeKey || scopeKey === "active") return;
+
+	const stats = getModulePoolStats(scopeKey);
+	const label = getCategoryLabels()[scopeKey] || scopeKey;
+	const metricCard = document.querySelector(`#settings-container .module-pool-metric-card[data-scope-key="${scopeKey}"]`);
+	if (!metricCard) return;
+
+	const isEmpty = stats.enabled <= 0;
+	metricCard.classList.toggle("is-empty", isEmpty);
+	metricCard.setAttribute("aria-label", isEmpty ? `${label} ${t("settings.modulePoolStatusNone")}` : `${label} ${stats.enabled}/${stats.total}`);
+
+	const countNode = metricCard.querySelector("[data-metric-count]");
+	const enabledNode = metricCard.querySelector("[data-metric-enabled]");
+	const totalNode = metricCard.querySelector("[data-metric-total]");
+	const stateNode = metricCard.querySelector("[data-metric-state]");
+	const fillNode = metricCard.querySelector("[data-metric-fill]");
+	const barNode = metricCard.querySelector("[data-metric-bar]");
+	if (countNode) countNode.setAttribute("aria-label", isEmpty ? t("settings.modulePoolStatusNone") : `${stats.enabled}/${stats.total}`);
+	if (enabledNode) {
+		enabledNode.textContent = String(stats.enabled);
+		enabledNode.hidden = isEmpty;
+	}
+	if (totalNode) {
+		totalNode.textContent = `/${stats.total}`;
+		totalNode.hidden = isEmpty;
+	}
+	if (stateNode) {
+		stateNode.textContent = t("settings.modulePoolStatusNone");
+		stateNode.hidden = !isEmpty;
+	}
+	if (fillNode) fillNode.style.width = `${stats.ratio * 100}%`;
+	if (barNode) {
+		barNode.setAttribute("aria-valuemax", String(stats.total));
+		barNode.setAttribute("aria-valuenow", String(stats.enabled));
+		barNode.hidden = isEmpty;
+	}
+}
+
+function updateModulePoolMetricActiveState(activeScopeKey){
+	const metricCards = document.querySelectorAll("#settings-container .module-pool-metric-card[data-scope-key]");
+	metricCards.forEach((card) => {
+		card.classList.toggle("is-active", !!activeScopeKey && card.dataset.scopeKey === activeScopeKey);
+	});
+}
+
+function pulseModulePoolMetricCard(scopeKey){
+	if (!scopeKey || scopeKey === "active") return;
+
+	const metricCard = document.querySelector(`#settings-container .module-pool-metric-card[data-scope-key="${scopeKey}"]`);
+	if (!metricCard) return;
+
+	metricCard.classList.remove("is-pulse");
+	void metricCard.offsetWidth;
+	metricCard.classList.add("is-pulse");
+
+	clearTimeout(metricCard._pulseTimer);
+	metricCard._pulseTimer = setTimeout(() => {
+		metricCard.classList.remove("is-pulse");
+	}, 280);
+}
+
+function renderModulePoolScopedChipGroup(buttonGroup, scopeKey, items, options = {}){
+	let visualIndex = 0;
+
+	(items || []).forEach((item) => {
+		if (item?.custom) buttonGroup.appendChild(createCustomChip(scopeKey, item, visualIndex));
+		else buttonGroup.appendChild(createSelectButton(scopeKey, item, visualIndex));
+		visualIndex += 1;
+	});
+
+	if (options.includeAddChip && isEditableScope(scopeKey)) {
+		const addChip = createAddChip(scopeKey, visualIndex);
+		addChip.classList.add("module-pool-add-chip");
+		buttonGroup.appendChild(addChip);
+	}
+}
+
+function createModulePoolChipSection(scopeKey, options = {}){
+	const {
+		title,
+		count = 0,
+		items = [],
+		emptyText = "",
+		includeAddChip = false,
+		tone = "enabled"
+	} = options;
+
+	const section = document.createElement("section");
+	section.className = `module-pool-chip-section module-pool-chip-section-${tone}`;
+
+	const head = document.createElement("div");
+	head.className = "module-pool-chip-section-head";
+
+	const heading = document.createElement("h3");
+	heading.className = "module-pool-chip-section-title";
+	heading.textContent = title;
+
+	const countBadge = document.createElement("span");
+	countBadge.className = "module-pool-chip-section-count";
+	countBadge.textContent = String(count);
+
+	head.append(heading, countBadge);
+	section.appendChild(head);
+
+	if (!items.length && !includeAddChip) {
+		const emptyState = document.createElement("p");
+		emptyState.className = "module-pool-chip-empty";
+		emptyState.textContent = emptyText;
+		section.appendChild(emptyState);
+		return section;
+	}
+
+	const buttonGroup = document.createElement("div");
+	buttonGroup.className = "button-group module-pool-chip-group";
+	renderModulePoolScopedChipGroup(buttonGroup, scopeKey, items, { includeAddChip });
+	section.appendChild(buttonGroup);
+	return section;
+}
+
+function createModulePoolDetailContent(scopeKey){
+	if (!scopeKey || (scopeKey !== "active" && !GameData?.[scopeKey])) {
+		const emptyState = document.createElement("p");
+		emptyState.className = "module-pool-empty-state";
+		emptyState.textContent = t("settings.modulePoolSelectPrompt");
+		return emptyState;
+	}
+
+	const label = getCategoryLabels()[scopeKey] || scopeKey;
+	const stats = getModulePoolStats(scopeKey);
+	const summaryText = getModulePoolSummaryText(scopeKey);
+	const fieldset = document.createElement("fieldset");
+	fieldset.className = "module-pool-detail-card";
+	fieldset.style.setProperty("--module-pool-accent", getModulePoolAccent(scopeKey));
+	fieldset.setAttribute("aria-label", `${label} ${summaryText}`);
+
+	const legend = document.createElement("legend");
+	legend.className = "sr-only";
+	legend.textContent = label;
+	fieldset.appendChild(legend);
+
+	const head = document.createElement("div");
+	head.className = "module-pool-detail-head";
+
+	const info = document.createElement("div");
+	info.className = "module-pool-detail-info";
+
+	const title = document.createElement("h3");
+	title.className = "module-pool-detail-title";
+	title.textContent = label;
+
+	info.appendChild(title);
+
+	const bulkActions = document.createElement("div");
+	bulkActions.className = "module-pool-bulk-actions";
+
+	const actionConfigs = [
+		{
+			action: "all",
+			label: t("settings.modulePoolSelectAll"),
+			disabled: stats.total <= 0 || stats.enabled >= stats.total,
+			handler: () => updateScopeItemsSelection(scopeKey, () => true)
+		},
+		{
+			action: "none",
+			label: t("settings.modulePoolSelectNone"),
+			disabled: stats.total <= 0 || stats.enabled <= 0,
+			handler: () => updateScopeItemsSelection(scopeKey, () => false)
+		},
+		{
+			action: "invert",
+			label: t("settings.modulePoolInvert"),
+			disabled: stats.total <= 0,
+			handler: () => updateScopeItemsSelection(scopeKey, (item) => !item?.selected)
+		}
+	];
+
+	actionConfigs.forEach((config) => {
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "module-pool-bulk-btn";
+		btn.dataset.action = config.action;
+		btn.disabled = !!config.disabled;
+		btn.setAttribute("aria-label", config.label);
+		btn.title = config.label;
+
+		const text = document.createElement("span");
+		text.textContent = config.label;
+
+		btn.appendChild(text);
+		btn.addEventListener("click", config.handler);
+		bulkActions.appendChild(btn);
+	});
+
+	head.append(info, bulkActions);
+	fieldset.appendChild(head);
+
+	const extraTip = getModulePoolExtraTip(scopeKey);
+	if (extraTip) {
+		const extra = document.createElement("p");
+		extra.className = "module-pool-detail-extra tip";
+		extra.textContent = extraTip;
+		fieldset.appendChild(extra);
+	}
+
+	const items = getScopeItems(scopeKey);
+	const enabledItems = items.filter((item) => item?.selected);
+	const disabledItems = items.filter((item) => !item?.selected);
+	const sections = document.createElement("div");
+	sections.className = "module-pool-chip-sections";
+
+	sections.appendChild(createModulePoolChipSection(scopeKey, {
+		title: t("settings.modulePoolEnabledSection"),
+		count: enabledItems.length,
+		items: enabledItems,
+		includeAddChip: isEditableScope(scopeKey),
+		emptyText: t("settings.modulePoolEnabledEmpty"),
+		tone: "enabled"
+	}));
+	sections.appendChild(createModulePoolChipSection(scopeKey, {
+		title: t("settings.modulePoolDisabledSection"),
+		count: disabledItems.length,
+		items: disabledItems,
+		emptyText: t("settings.modulePoolDisabledEmpty"),
+		tone: "disabled"
+	}));
+
+	fieldset.appendChild(sections);
+	return fieldset;
+}
+
+function syncModulePoolScopeUi(scopeKey){
+	if (!scopeKey || scopeKey === "active") return;
+
+	updateModulePoolSummaryButton(scopeKey);
+	updateModulePoolMetricCard(scopeKey);
+	updateModulePoolMetricActiveState(modulePoolUiState.activeScopeKey);
+	if (modulePoolUiState.activeScopeKey === scopeKey) pulseModulePoolMetricCard(scopeKey);
+	if (modulePoolUiState.activeScopeKey !== scopeKey) return;
+
+	const detailSlot = document.querySelector("#settings-container .module-pool-detail-slot");
+	if (!detailSlot) return;
+	detailSlot.classList.remove("is-visible");
+	detailSlot.replaceChildren(createModulePoolDetailContent(scopeKey));
+	requestAnimationFrame(() => detailSlot.classList.add("is-visible"));
+}
+
 function createSelectButton(scopeKey, item, index){
 	const btn = document.createElement("button");
 	btn.type = "button";
@@ -1769,6 +2054,8 @@ function createSelectButton(scopeKey, item, index){
 		item.selected = !item.selected;
 		btn.classList.toggle("selected", item.selected);
 		persistScopeState(scopeKey);
+		if (scopeKey === "active") rerenderScope(scopeKey);
+		else syncModulePoolScopeUi(scopeKey);
 	});
 
 	return btn;
@@ -1835,6 +2122,182 @@ function renderChipGroup(buttonGroup, scopeKey, items){
 	if (isEditableScope(scopeKey)) {
 		buttonGroup.appendChild(createAddChip(scopeKey, visualIndex));
 	}
+}
+
+function getModulePoolScopeKeys(){
+	return MODULE_POOL_SCOPE_ORDER.filter((scopeKey) => GameData?.[scopeKey]);
+}
+
+function getModulePoolAccent(scopeKey){
+	return MODULE_POOL_ACCENT_MAP[scopeKey] || "#7769f6";
+}
+
+function getModulePoolStats(scopeKey){
+	const items = getScopeItems(scopeKey);
+	const total = items.length;
+	const enabled = countSelectedItems(items);
+	return {
+		total,
+		enabled,
+		ratio: total > 0 ? (enabled / total) : 0
+	};
+}
+
+function getModulePoolStatusLabel(scopeKey){
+	const stats = getModulePoolStats(scopeKey);
+	if (stats.enabled <= 0) return t("settings.modulePoolStatusNone");
+	if (stats.total > 0 && stats.enabled >= stats.total) return t("settings.modulePoolStatusFull");
+	if (stats.ratio >= 0.6) return t("settings.modulePoolStatusRich");
+	return t("settings.modulePoolStatusLight");
+}
+
+function getModulePoolSummaryText(scopeKey){
+	const stats = getModulePoolStats(scopeKey);
+	return formatInlineCopy(t("settings.modulePoolSummaryMeta"), {
+		enabled: stats.enabled,
+		total: stats.total,
+		status: getModulePoolStatusLabel(scopeKey)
+	});
+}
+
+function getModulePoolExtraTip(scopeKey){
+	if (scopeKey === "sports") return t("settings.sportsTip");
+	if (scopeKey === "reward") return t("settings.rewardTip");
+	if (scopeKey === "aod") return t("settings.aodTip");
+	return "";
+}
+
+function updateScopeItemsSelection(scopeKey, updater){
+	const items = getScopeItems(scopeKey);
+	let changed = false;
+
+	items.forEach((item, index) => {
+		const nextSelected = !!updater(item, index);
+		if (!!item?.selected === nextSelected) return;
+		item.selected = nextSelected;
+		changed = true;
+	});
+
+	if (!changed) return;
+	persistScopeState(scopeKey);
+	if (scopeKey === "active") rerenderScope(scopeKey);
+	else syncModulePoolScopeUi(scopeKey);
+}
+
+function createModulePoolSummaryButton(scopeKey){
+	const label = getCategoryLabels()[scopeKey] || scopeKey;
+	const summaryText = getModulePoolSummaryText(scopeKey);
+	const isActive = modulePoolUiState.activeScopeKey === scopeKey;
+	const btn = document.createElement("button");
+	btn.type = "button";
+	btn.className = `module-pool-summary-btn${isActive ? " is-active" : ""}`;
+	btn.dataset.scopeKey = scopeKey;
+	btn.style.setProperty("--module-pool-accent", getModulePoolAccent(scopeKey));
+	btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+	btn.setAttribute("aria-label", `${label} ${summaryText}`);
+	btn.title = `${label} ${summaryText}`;
+
+	const title = document.createElement("span");
+	title.className = "module-pool-summary-title";
+	title.textContent = label;
+
+	btn.appendChild(title);
+	btn.addEventListener("click", () => {
+		if (modulePoolUiState.activeScopeKey === scopeKey) return;
+		modulePoolUiState.activeScopeKey = scopeKey;
+		renderSettingsB();
+		requestAnimationFrame(() => {
+			pulseModulePoolMetricCard(scopeKey);
+			observeFieldsets();
+		});
+	});
+
+	return btn;
+}
+
+function createModulePoolMetricCard(scopeKey, options = {}){
+	const label = getCategoryLabels()[scopeKey] || scopeKey;
+	const stats = getModulePoolStats(scopeKey);
+	const isEmpty = stats.enabled <= 0;
+	const isActiveCard = !!options.forceActive || modulePoolUiState.activeScopeKey === scopeKey;
+	const card = document.createElement("div");
+	card.className = `module-pool-metric-card${isEmpty ? " is-empty" : ""}${isActiveCard ? " is-active" : ""}`;
+	card.dataset.scopeKey = scopeKey;
+	card.style.setProperty("--module-pool-accent", getModulePoolAccent(scopeKey));
+	card.setAttribute("aria-label", isEmpty ? `${label} ${t("settings.modulePoolStatusNone")}` : `${label} ${stats.enabled}/${stats.total}`);
+
+	const head = document.createElement("div");
+	head.className = "module-pool-metric-head";
+
+	const title = document.createElement("span");
+	title.className = "module-pool-metric-title";
+	title.textContent = label;
+
+	const count = document.createElement("span");
+	count.className = "module-pool-metric-count";
+	count.dataset.metricCount = "1";
+	count.setAttribute("aria-label", isEmpty ? t("settings.modulePoolStatusNone") : `${stats.enabled}/${stats.total}`);
+
+	const enabled = document.createElement("span");
+	enabled.className = "module-pool-metric-count-main";
+	enabled.dataset.metricEnabled = "1";
+	enabled.textContent = String(stats.enabled);
+	enabled.hidden = isEmpty;
+
+	const total = document.createElement("span");
+	total.className = "module-pool-metric-count-sub";
+	total.dataset.metricTotal = "1";
+	total.textContent = `/${stats.total}`;
+	total.hidden = isEmpty;
+
+	const state = document.createElement("span");
+	state.className = "module-pool-metric-state";
+	state.dataset.metricState = "1";
+	state.textContent = t("settings.modulePoolStatusNone");
+	state.hidden = !isEmpty;
+
+	count.append(enabled, total, state);
+
+	head.append(title, count);
+
+	const bar = document.createElement("div");
+	bar.className = "module-pool-metric-bar";
+	bar.dataset.metricBar = "1";
+	bar.setAttribute("role", "progressbar");
+	bar.setAttribute("aria-label", label);
+	bar.setAttribute("aria-valuemin", "0");
+	bar.setAttribute("aria-valuemax", String(stats.total));
+	bar.setAttribute("aria-valuenow", String(stats.enabled));
+	bar.hidden = isEmpty;
+
+	const fill = document.createElement("span");
+	fill.className = "module-pool-metric-fill";
+	fill.dataset.metricFill = "1";
+	fill.style.width = `${stats.ratio * 100}%`;
+
+	bar.appendChild(fill);
+	card.append(head, bar);
+	return card;
+}
+
+function renderModulePoolMetrics(settingsContainer, scopeKeys, options = {}){
+	const metricsGrid = document.createElement("div");
+	metricsGrid.className = "module-pool-metrics-grid";
+	metricsGrid.setAttribute("role", "group");
+	metricsGrid.setAttribute("aria-label", options.ariaLabel || t("settings.modulePoolSummaryGroupAria"));
+	scopeKeys.forEach((scopeKey) => {
+		metricsGrid.appendChild(createModulePoolMetricCard(scopeKey, options));
+	});
+	settingsContainer.appendChild(metricsGrid);
+}
+
+function renderModulePoolDetail(settingsContainer, scopeKey){
+	const detailSlot = document.createElement("div");
+	detailSlot.className = "module-pool-detail-slot";
+	detailSlot.setAttribute("aria-live", "polite");
+	settingsContainer.appendChild(detailSlot);
+	detailSlot.appendChild(createModulePoolDetailContent(scopeKey));
+	requestAnimationFrame(() => detailSlot.classList.add("is-visible"));
 }
 
 function rerenderScope(scopeKey){
@@ -2080,41 +2543,28 @@ async function removeCustomItem(scopeKey, item){
 function renderSettingsB() {
 	const settingsContainer = document.getElementById("settings-container");
 	settingsContainer.innerHTML = "";
+	const scopeKeys = getModulePoolScopeKeys();
+	if (!scopeKeys.length) return;
+	if (modulePoolUiState.activeScopeKey && !scopeKeys.includes(modulePoolUiState.activeScopeKey)) {
+		modulePoolUiState.activeScopeKey = null;
+	}
 
-	Object.keys(GameData).forEach(category => {
-		const fieldset = document.createElement("fieldset");
-		const legend = document.createElement("legend");
-		legend.textContent = getCategoryLabels()[category] || category;
-		fieldset.appendChild(legend);
+	renderModulePoolMetrics(settingsContainer, scopeKeys);
 
-		if (category === "sports") {
-			const tip = document.createElement("p");
-			tip.className = "tip";
-			tip.textContent = t("settings.sportsTip");
-			fieldset.appendChild(tip);
-		}
+	const actionZone = document.createElement("div");
+	actionZone.className = "module-pool-action-zone";
+	settingsContainer.appendChild(actionZone);
 
-		if (category === "reward") {
-			const tip = document.createElement("p");
-			tip.className = "tip";
-			tip.textContent = t("settings.rewardTip");
-			fieldset.appendChild(tip);
-		}
-
-		if (category === "aod") {
-			const tip = document.createElement("p");
-			tip.className = "tip";
-			tip.textContent = t("settings.aodTip");
-			fieldset.appendChild(tip);
-		}
-
-		const buttonGroup = document.createElement("div");
-		buttonGroup.className = "button-group";
-		renderChipGroup(buttonGroup, category, GameData[category].items || []);
-
-		fieldset.appendChild(buttonGroup);
-		settingsContainer.appendChild(fieldset);
+	const summaryRow = document.createElement("div");
+	summaryRow.className = "module-pool-summary-row";
+	summaryRow.setAttribute("role", "group");
+	summaryRow.setAttribute("aria-label", t("settings.modulePoolTitle"));
+	scopeKeys.forEach((scopeKey) => {
+		summaryRow.appendChild(createModulePoolSummaryButton(scopeKey));
 	});
+	actionZone.appendChild(summaryRow);
+
+	renderModulePoolDetail(actionZone, modulePoolUiState.activeScopeKey);
 }
 
 /* =========================
@@ -2123,7 +2573,7 @@ function renderSettingsB() {
 function loadActiveDataZ(){
 	const storedActive = JSON.parse(localStorage.getItem("ActiveData"));
 	ActiveData = normalizeActiveData(storedActive);
-	document.getElementById("weight-active").value = (ActiveData.weight !== undefined ? ActiveData.weight : 30);
+	setActiveWeightValue(ActiveData.weight !== undefined ? ActiveData.weight : 30);
 }
 
 function renderSettingsZ(){
@@ -2131,16 +2581,28 @@ function renderSettingsZ(){
 	container.innerHTML = "";
 
 	const fieldset = document.createElement("fieldset");
+	fieldset.className = "module-pool-shell active-pool-shell";
 	const legend = document.createElement("legend");
 	legend.textContent = getCategoryLabels().active || "Z";
 	fieldset.appendChild(legend);
 
-	const buttonGroup = document.createElement("div");
-	buttonGroup.className = "button-group";
-	renderChipGroup(buttonGroup, "active", ActiveData.items || []);
+	const tip = document.createElement("p");
+	tip.className = "tip module-pool-tip";
+	tip.textContent = t("settings.activePoolTip");
+	fieldset.appendChild(tip);
 
-	fieldset.appendChild(buttonGroup);
+	renderModulePoolMetrics(fieldset, ["active"], {
+		forceActive: true,
+		ariaLabel: getCategoryLabels().active || "Z"
+	});
+
+	const actionZone = document.createElement("div");
+	actionZone.className = "module-pool-action-zone active-pool-action-zone";
+	actionZone.appendChild(createModulePoolDetailContent("active"));
+	fieldset.appendChild(actionZone);
+
 	container.appendChild(fieldset);
+	syncActiveWeightControl();
 }
 
 /* =========================
@@ -2245,6 +2707,72 @@ function getNumericInputValue(id, fallbackValue){
 	const input = document.getElementById(id);
 	const value = Number.parseInt(input.value, 10);
 	return Number.isFinite(value) ? value : fallbackValue;
+}
+
+function normalizeActiveWeightValue(value){
+	const parsedValue = Number(value);
+	if (!Number.isFinite(parsedValue)) return 0;
+	return Math.max(0, Math.round(parsedValue));
+}
+
+function syncActiveWeightControl(){
+	const input = document.getElementById("weight-active");
+	const output = document.getElementById("activeWeightValue");
+	const decreaseBtn = document.getElementById("activeWeightDecreaseBtn");
+	const increaseBtn = document.getElementById("activeWeightIncreaseBtn");
+	const stepper = document.getElementById("activeWeightStepper");
+	if (!input || !output || !decreaseBtn || !increaseBtn || !stepper) return;
+
+	const value = normalizeActiveWeightValue(getNumericInputValue("weight-active", ActiveData?.weight));
+	input.value = String(value);
+	output.textContent = `${value}%`;
+	decreaseBtn.disabled = value <= 0;
+	increaseBtn.disabled = false;
+	decreaseBtn.setAttribute("aria-label", t("settings.activeWeightDecrease"));
+	increaseBtn.setAttribute("aria-label", t("settings.activeWeightIncrease"));
+	decreaseBtn.title = t("settings.activeWeightDecrease");
+	increaseBtn.title = t("settings.activeWeightIncrease");
+	stepper.setAttribute("aria-label", t("settings.activeWeight"));
+
+	if (ActiveData && typeof ActiveData === "object") {
+		ActiveData.weight = value;
+	}
+}
+
+function setActiveWeightValue(value){
+	const input = document.getElementById("weight-active");
+	if (!input) return;
+	input.value = String(normalizeActiveWeightValue(value));
+	syncActiveWeightControl();
+}
+
+function adjustActiveWeight(delta){
+	const input = document.getElementById("weight-active");
+	if (!input) return;
+	setActiveWeightValue(getNumericInputValue("weight-active", ActiveData?.weight) + delta);
+}
+
+function initActiveWeightControl(){
+	const input = document.getElementById("weight-active");
+	const decreaseBtn = document.getElementById("activeWeightDecreaseBtn");
+	const increaseBtn = document.getElementById("activeWeightIncreaseBtn");
+	if (!input || !decreaseBtn || !increaseBtn) return;
+
+	if (decreaseBtn.dataset.bound !== "1") {
+		decreaseBtn.dataset.bound = "1";
+		decreaseBtn.addEventListener("click", () => adjustActiveWeight(-1));
+	}
+	if (increaseBtn.dataset.bound !== "1") {
+		increaseBtn.dataset.bound = "1";
+		increaseBtn.addEventListener("click", () => adjustActiveWeight(1));
+	}
+	if (input.dataset.bound !== "1") {
+		input.dataset.bound = "1";
+		input.addEventListener("input", syncActiveWeightControl);
+		input.addEventListener("change", syncActiveWeightControl);
+	}
+
+	syncActiveWeightControl();
 }
 
 function getActionCountRangeValidationError(minVal, maxVal){
@@ -2801,7 +3329,7 @@ function applySettingsPresetSnapshot(snapshot){
 	renderSettingsB();
 
 	ActiveData = normalized.activeData;
-	document.getElementById("weight-active").value = normalized.activeData.weight;
+	setActiveWeightValue(normalized.activeData.weight);
 	renderSettingsZ();
 
 	const predictionToggle = document.getElementById("toggleBTaskPrediction");
@@ -2838,7 +3366,7 @@ function applyRuleSettingsResetSnapshot(snapshot){
 	renderSettingsB();
 
 	ActiveData = normalizeImportedActiveData(normalized.activeData);
-	document.getElementById("weight-active").value = ActiveData.weight;
+	setActiveWeightValue(ActiveData.weight);
 	renderSettingsZ();
 
 	requestAnimationFrame(() => {
