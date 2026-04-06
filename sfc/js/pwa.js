@@ -8,8 +8,6 @@
 	let deferredPrompt = null;
 	let installButton = null;
 	const stateListeners = new Set();
-	const hadServiceWorkerControllerAtBoot = !!navigator.serviceWorker?.controller;
-	let swReloadTriggered = false;
 
 	function track(eventName, payload) {
 		if (typeof window.trackEvent === "function") {
@@ -314,13 +312,6 @@
 				});
 			}
 
-			if (hadServiceWorkerControllerAtBoot && !swReloadTriggered) {
-				navigator.serviceWorker.addEventListener("controllerchange", () => {
-					if (swReloadTriggered) return;
-					swReloadTriggered = true;
-					window.location.reload();
-				}, { once: true });
-			}
 		} catch (error) {
 			console.warn("[PWA] service worker registration failed", error);
 		}

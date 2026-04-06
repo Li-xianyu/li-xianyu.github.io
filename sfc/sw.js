@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260406-2";
+const CACHE_VERSION = "20260406-3";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
@@ -39,7 +39,6 @@ self.addEventListener("install", (event) => {
 	event.waitUntil(
 		caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
 	);
-	self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -53,7 +52,7 @@ self.addEventListener("activate", (event) => {
 					return caches.delete(key);
 				})
 			)
-		).then(() => self.clients.claim())
+		)
 	);
 });
 
