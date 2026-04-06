@@ -24,6 +24,27 @@
 			} catch (error) {}
 		})();
 	</script>
+	<script>
+		(() => {
+			try {
+				const params = new URLSearchParams(location.search);
+				const boardToken = (params.get("id") || "").trim();
+				const rawMode = (params.get("mode") || "").trim().toLowerCase();
+				const mode = rawMode === "solo" ? "solo" : "dual";
+				if (!boardToken) return;
+
+				const store = JSON.parse(localStorage.getItem("SFC_GAME_SESSIONS_V1") || "null");
+				if (!store || typeof store !== "object") return;
+
+				const snapshot = store[`${boardToken}::${mode}`];
+				if (!snapshot || typeof snapshot !== "object") return;
+				if (String(snapshot.boardToken || "") !== boardToken) return;
+				if (String(snapshot.mode || "") !== mode) return;
+
+				document.documentElement.setAttribute("data-has-saved-game", "1");
+			} catch (error) {}
+		})();
+	</script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
 	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
 	<link rel="stylesheet" href="css/index.css?v=20260401-4">
@@ -31,7 +52,7 @@
 </head>
 <body class="game-page">
 
-	<div class="board-intro-wash" id="boardIntroWash" aria-hidden="true"></div>
+	<div class="board-intro-wash is-hidden" id="boardIntroWash" aria-hidden="true"></div>
 	<div class="round-info" id="roundInfo" data-i18n="game.roundInitial">Round 1</div>
 	<div class="board" id="board"></div>
 
@@ -75,8 +96,8 @@
 	<script>
 		(() => {
 			const GAME_BOARD_DEBUG_STORAGE_KEY_NAME = "SFC_GAME_BOARD_DEBUG_ENABLED";
-			const GAME_BOARD_DEBUG_SCRIPT_SRC = "js/game_board_debug.js?v=20260401-6";
-			const GAME_INDEX_SCRIPT_SRC = "js/index.js?v=20260401-6";
+			const GAME_BOARD_DEBUG_SCRIPT_SRC = "js/game_board_debug.js?v=20260406-1";
+			const GAME_INDEX_SCRIPT_SRC = "js/index.js?v=20260406-1";
 			const ERUDA_SCRIPT_SRC = "https://cdn.jsdelivr.net/npm/eruda";
 
 			function isGameBoardDebugEnabled() {
@@ -159,9 +180,16 @@
 				try {
 					await setupDebugToolsIfNeeded();
 					await loadScript(GAME_INDEX_SCRIPT_SRC);
-					renderBoard(getValidBoardToken());
+					if (typeof window.initGameSession === "function") {
+						await window.initGameSession(getValidBoardToken());
+					} else {
+						renderBoard(getValidBoardToken());
+					}
 				} catch (error) {
 					console.error("Failed to initialize game:", error);
+					if (typeof window.showFatalGameMessage === "function") {
+						window.showFatalGameMessage(error && (error.stack || error.message) ? (error.stack || error.message) : "Failed to initialize game.");
+					}
 					if (typeof renderBoard === "function") {
 						renderBoard("builtin:1");
 					}

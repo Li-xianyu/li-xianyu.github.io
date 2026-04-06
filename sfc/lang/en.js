@@ -558,6 +558,15 @@ window.__I18N_DICTIONARIES.en = {
 			confirm: "Confirm",
 			cancel: "Cancel"
 		},
+		resumeGame: {
+			title: "Resume game",
+			board: "Board",
+			round: "Round",
+			totalHits: "Actual total hits",
+			question: "An unfinished game was found. Continue from where you left off?",
+			confirm: "Continue",
+			cancel: "Start over"
+		},
 		tips: {
 			masterDone: "Z already rolled this round",
 			passiveDone: "B already rolled this round"

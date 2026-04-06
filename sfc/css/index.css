@@ -1082,6 +1082,10 @@ html[data-board-intro-disabled="1"] .board-intro-wash{
 	display:none;
 }
 
+html[data-has-saved-game="1"] .board-intro-wash{
+	display:none;
+}
+
 /* ===== 回合 + 按钮 ===== */
 .round-info{
 	font-size:16px;
@@ -1614,6 +1618,16 @@ body.dice-focus .task-panel{
 	padding:16px;
 }
 
+.resume-game-overlay{
+	background:rgba(45, 31, 92, 0.18);
+	backdrop-filter:blur(18px) saturate(112%);
+	-webkit-backdrop-filter:blur(18px) saturate(112%);
+}
+
+[data-theme="dark"] .resume-game-overlay{
+	background:rgba(10, 8, 20, 0.42);
+}
+
 .tabbed-dialog-overlay{
 	align-items:center;
 	overflow-y:auto;
@@ -1647,6 +1661,20 @@ body.dice-focus .task-panel{
 	overflow:hidden;
 }
 
+.resume-game-dialog{
+	width:min(92vw, 360px);
+	max-width:360px;
+	background:linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(247,242,255,0.78) 100%);
+	border:1px solid rgba(255,255,255,0.56);
+	box-shadow:0 28px 70px rgba(44,30,88,0.22), inset 0 1px 0 rgba(255,255,255,0.58);
+}
+
+[data-theme="dark"] .resume-game-dialog{
+	background:linear-gradient(180deg, rgba(41,31,82,0.92) 0%, rgba(29,22,59,0.9) 100%);
+	border-color:rgba(255,255,255,0.14);
+	box-shadow:0 28px 70px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
 /* 标题固定（你之前用 punishment-title，继续兼容） */
 .punishment-title{
 	margin:0;
@@ -1658,8 +1686,19 @@ body.dice-focus .task-panel{
 	border-bottom:1px solid rgba(0,0,0,0.06);
 }
 
+.resume-game-dialog .punishment-title{
+	color:#2f2152;
+	background:linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.06) 100%);
+	border-bottom:1px solid rgba(95,68,168,0.14);
+}
+
 [data-theme="dark"] .punishment-title{
 	border-bottom:1px solid rgba(255,255,255,0.10);
+}
+
+[data-theme="dark"] .resume-game-dialog .punishment-title{
+	color:rgba(255,255,255,0.94);
+	border-bottom-color:rgba(255,255,255,0.10);
 }
 
 /* 内容滚动 */
@@ -1680,6 +1719,14 @@ body.dice-focus .task-panel{
 .punishment-content{
 	scrollbar-width: thin; 
 	scrollbar-color: rgba(120,120,120,.55) rgba(0,0,0,0);
+}
+
+.resume-game-content{
+	color:#4b3b73;
+}
+
+[data-theme="dark"] .resume-game-content{
+	color:rgba(255,255,255,0.76);
 }
 
 /* 3) Chromium / WebKit（Chrome / Edge / Safari）- 日间灰色 */
@@ -1775,6 +1822,36 @@ body.dice-focus .task-panel{
 	font-weight:700;
 	white-space:nowrap;
 	font-variant-numeric:tabular-nums;
+}
+
+.resume-game-dialog .b-task-stats-section{
+	gap:10px;
+	margin-bottom:12px !important;
+	padding:12px 14px;
+	border-radius:12px;
+	background:rgba(255,255,255,0.34);
+	border:1px solid rgba(113,82,196,0.12);
+}
+
+[data-theme="dark"] .resume-game-dialog .b-task-stats-section{
+	background:rgba(255,255,255,0.05);
+	border-color:rgba(255,255,255,0.10);
+}
+
+.resume-game-dialog .b-task-stats-row span{
+	color:#5b4b84;
+}
+
+.resume-game-dialog .b-task-stats-row strong{
+	color:#24173f;
+}
+
+[data-theme="dark"] .resume-game-dialog .b-task-stats-row span{
+	color:rgba(255,255,255,0.68);
+}
+
+[data-theme="dark"] .resume-game-dialog .b-task-stats-row strong{
+	color:rgba(255,255,255,0.96);
 }
 
 .b-task-stats-value-wrap{
@@ -1964,8 +2041,16 @@ body.dice-focus .task-panel{
 	flex-direction:column;
 }
 
+.resume-game-dialog .dialog-buttons{
+	border-top:1px solid rgba(95,68,168,0.10);
+}
+
 [data-theme="dark"] .dialog-buttons{
 	border-top:1px solid rgba(255,255,255,0.10);
+}
+
+[data-theme="dark"] .resume-game-dialog .dialog-buttons{
+	border-top-color:rgba(255,255,255,0.08);
 }
 
 /* 按钮 */
@@ -1985,11 +2070,26 @@ body.dice-focus .task-panel{
 	line-height:1.4;
 }
 
+.resume-game-dialog .punishment-button{
+	width:100%;
+	margin:0;
+	background:rgba(255,255,255,0.58);
+	border-color:rgba(83,58,150,0.14);
+	box-shadow:0 8px 24px rgba(78,55,145,0.10);
+}
+
 [data-theme="dark"] .punishment-button{
 	background: rgba(255,255,255,0.10);
 	border: 1px solid rgba(255,255,255,0.14);
 	color: rgba(255,255,255,0.92);
 	box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+
+[data-theme="dark"] .resume-game-dialog .punishment-button{
+	background:rgba(255,255,255,0.08);
+	border-color:rgba(255,255,255,0.10);
+	color:rgba(255,255,255,0.90);
+	box-shadow:none;
 }
 
 .punishment-button:hover{
@@ -2002,6 +2102,28 @@ body.dice-focus .task-panel{
 }
 
 .punishment-button:active{ transform: scale(.98); }
+
+.resume-game-dialog #confirmResume{
+	background:linear-gradient(135deg, rgba(127,71,255,0.94), rgba(255,107,154,0.88));
+	border-color:transparent;
+	color:#fff;
+	box-shadow:0 14px 30px rgba(111,76,204,0.24);
+}
+
+.resume-game-dialog #cancelResume{
+	background:rgba(255,255,255,0.42);
+	color:#3d2963;
+}
+
+[data-theme="dark"] .resume-game-dialog #confirmResume{
+	background:linear-gradient(135deg, rgba(157,122,255,0.90), rgba(255,107,154,0.78));
+	color:#fff;
+}
+
+[data-theme="dark"] .resume-game-dialog #cancelResume{
+	background:rgba(255,255,255,0.06);
+	color:rgba(255,255,255,0.88);
+}
 
 /* 你那俩按钮 id 继续保留 */
 #confirmRestart{

@@ -65,6 +65,8 @@ const bTaskStatsBtn = document.getElementById('bTaskStatsBtn');
 const bTaskLiveCount = document.getElementById('bTaskLiveCount');
 const SETTINGS_PARENT_MESSAGE_TYPE = 'sfc:settings-saved';
 const SETTINGS_SCROLL_MESSAGE_TYPE = 'sfc:settings-scroll-progress';
+const GAME_SESSION_STORAGE_KEY = 'SFC_GAME_SESSIONS_V1';
+const GAME_SESSION_VERSION = 1;
 
 let settingsEmbedOverlay = null;
 
@@ -114,6 +116,219 @@ const zEffectState = {
 	restInvalidToken: 0
 };
 let roundPassiveSnapshot = null;
+
+function cloneGameSessionValue(value) {
+	if (typeof cloneStructuredData === 'function') {
+		return cloneStructuredData(value);
+	}
+	return JSON.parse(JSON.stringify(value));
+}
+
+function showFatalGameMessage(message) {
+	const text = String(message || 'Game failed to initialize.');
+	if (!document.body) return;
+
+	let box = document.getElementById('gameFatalMessage');
+	if (!box) {
+		box = document.createElement('div');
+		box.id = 'gameFatalMessage';
+		box.style.position = 'fixed';
+		box.style.left = '50%';
+		box.style.top = '50%';
+		box.style.transform = 'translate(-50%, -50%)';
+		box.style.zIndex = '10001';
+		box.style.width = 'min(88vw, 420px)';
+		box.style.padding = '16px 18px';
+		box.style.borderRadius = '14px';
+		box.style.background = 'rgba(255,255,255,0.96)';
+		box.style.color = '#222';
+		box.style.boxShadow = '0 20px 60px rgba(0,0,0,0.18)';
+		box.style.fontSize = '14px';
+		box.style.lineHeight = '1.6';
+		box.style.whiteSpace = 'pre-wrap';
+		document.body.appendChild(box);
+	}
+	box.textContent = text;
+}
+
+function getGameSessionModeKey() {
+	return IS_DUAL ? 'dual' : 'solo';
+}
+
+function getGameSessionId(boardToken = current_board, mode = getGameSessionModeKey()) {
+	return `${String(boardToken || '').trim()}::${String(mode || '').trim()}`;
+}
+
+function readGameSessionStore() {
+	try {
+		const parsed = JSON.parse(localStorage.getItem(GAME_SESSION_STORAGE_KEY) || 'null');
+		return parsed && typeof parsed === 'object' ? parsed : {};
+	} catch (error) {
+		console.warn('[Game] Failed to read saved game sessions.', error);
+		return {};
+	}
+}
+
+function writeGameSessionStore(store) {
+	try {
+		const entries = store && typeof store === 'object' ? Object.entries(store) : [];
+		if (!entries.length) {
+			localStorage.removeItem(GAME_SESSION_STORAGE_KEY);
+			return;
+		}
+		localStorage.setItem(GAME_SESSION_STORAGE_KEY, JSON.stringify(store));
+	} catch (error) {
+		console.warn('[Game] Failed to write saved game sessions.', error);
+	}
+}
+
+function readGameSessionSnapshot(boardToken = current_board, mode = getGameSessionModeKey()) {
+	const store = readGameSessionStore();
+	if (!store || typeof store !== 'object') return null;
+	return store[getGameSessionId(boardToken, mode)] || null;
+}
+
+function clearGameSessionSnapshot(boardToken = current_board, mode = getGameSessionModeKey()) {
+	try {
+		const store = readGameSessionStore();
+		if (!store || typeof store !== 'object') {
+			localStorage.removeItem(GAME_SESSION_STORAGE_KEY);
+			return;
+		}
+		delete store[getGameSessionId(boardToken, mode)];
+		writeGameSessionStore(store);
+	} catch (error) {
+		console.warn('[Game] Failed to clear saved game session.', error);
+	}
+}
+
+function isGameFinished() {
+	if (!Number.isFinite(endNumber) || endNumber <= 1) return false;
+	return passive_location === endNumber || master_location === endNumber;
+}
+
+function hasGameProgress() {
+	if (passive_location > 1 || master_location > 1) return true;
+	if (roundNo > 1) return true;
+	if (roundMasterDone || roundPassiveDone) return true;
+	if (actualActionTotal > 0 || actualActionTriggerCount > 0) return true;
+	if (zEffectState.restInvalidToken > 0) return true;
+	const masterText = document.getElementById('taskMaster')?.textContent || '';
+	const passiveText = document.getElementById('taskPassive')?.textContent || '';
+	return !!(masterText && masterText !== t("common.status.dash")) || !!(passiveText && passiveText !== t("common.status.dash"));
+}
+
+function isValidBoardMatrix(value) {
+	if (!Array.isArray(value) || value.length <= 0) return false;
+	return value.every((row) =>
+		Array.isArray(row) &&
+		row.length === value.length &&
+		row.every((cell) => Number.isFinite(cell))
+	);
+}
+
+function buildGameSessionSnapshot() {
+	if (!current_board || !isValidBoardMatrix(mapData) || !current_punishment_passive || !current_task_master) {
+		return null;
+	}
+	if (isGameFinished() || !hasGameProgress()) {
+		return null;
+	}
+
+	return {
+		version: GAME_SESSION_VERSION,
+		savedAt: Date.now(),
+		mode: getGameSessionModeKey(),
+		boardToken: current_board,
+		boardMeta: currentBoardDebugMeta ? cloneGameSessionValue(currentBoardDebugMeta) : null,
+		mapData: cloneGameSessionValue(mapData),
+		passiveMap: cloneGameSessionValue(current_punishment_passive),
+		masterMap: cloneGameSessionValue(current_task_master),
+		passiveLocation: Number(passive_location || 1),
+		masterLocation: Number(master_location || 1),
+		endNumber: Number(endNumber || 0),
+		roundNo: Number(roundNo || 1),
+		roundMasterDone: !!roundMasterDone,
+		roundPassiveDone: !!roundPassiveDone,
+		actualActionTotal: Number(actualActionTotal || 0),
+		actualActionTriggerCount: Number(actualActionTriggerCount || 0),
+		lastRecordedActionRound: Number(lastRecordedActionRound || 0),
+		lastRecordedActionCount: Number(lastRecordedActionCount || 0),
+		lastRecordedActionAdjusted: !!lastRecordedActionAdjusted,
+		zEffectState: cloneGameSessionValue(zEffectState),
+		roundPassiveSnapshot: roundPassiveSnapshot ? cloneGameSessionValue(roundPassiveSnapshot) : null,
+		taskMasterText: document.getElementById('taskMaster')?.textContent || t("common.status.dash"),
+		taskPassiveText: document.getElementById('taskPassive')?.textContent || t("common.status.dash")
+	};
+}
+
+function persistGameSessionSnapshot() {
+	const snapshot = buildGameSessionSnapshot();
+	if (!snapshot) {
+		clearGameSessionSnapshot();
+		return;
+	}
+
+	try {
+		const store = readGameSessionStore();
+		store[getGameSessionId(snapshot.boardToken, snapshot.mode)] = snapshot;
+		writeGameSessionStore(store);
+	} catch (error) {
+		console.warn('[Game] Failed to save game session.', error);
+	}
+}
+
+function normalizeStoredGameSession(rawSnapshot, expectedBoardToken, expectedMode = getGameSessionModeKey()) {
+	if (!rawSnapshot || typeof rawSnapshot !== 'object') return null;
+	if (Number(rawSnapshot.version) !== GAME_SESSION_VERSION) return null;
+	if (String(rawSnapshot.mode || '') !== String(expectedMode || '')) return null;
+	if (String(rawSnapshot.boardToken || '') !== String(expectedBoardToken || '')) return null;
+	if (!isValidBoardMatrix(rawSnapshot.mapData)) return null;
+	if (!rawSnapshot.passiveMap || typeof rawSnapshot.passiveMap !== 'object') return null;
+	if (!rawSnapshot.masterMap || typeof rawSnapshot.masterMap !== 'object') return null;
+
+	const maxCell = Math.max(...rawSnapshot.mapData.flat().filter((value) => Number.isFinite(value)));
+	if (!Number.isFinite(maxCell) || maxCell <= 1) return null;
+
+	const passiveLocation = Math.max(1, Math.min(maxCell, Number(rawSnapshot.passiveLocation || 1)));
+	const masterLocation = Math.max(1, Math.min(maxCell, Number(rawSnapshot.masterLocation || 1)));
+	if (passiveLocation === maxCell || masterLocation === maxCell) return null;
+
+	return {
+		version: GAME_SESSION_VERSION,
+		savedAt: Number(rawSnapshot.savedAt || 0),
+		mode: String(rawSnapshot.mode || ''),
+		boardToken: String(rawSnapshot.boardToken || expectedBoardToken || ''),
+		boardMeta: rawSnapshot.boardMeta && typeof rawSnapshot.boardMeta === 'object'
+			? cloneGameSessionValue(rawSnapshot.boardMeta)
+			: null,
+		mapData: cloneGameSessionValue(rawSnapshot.mapData),
+		passiveMap: cloneGameSessionValue(rawSnapshot.passiveMap),
+		masterMap: cloneGameSessionValue(rawSnapshot.masterMap),
+		passiveLocation,
+		masterLocation,
+		endNumber: maxCell,
+		roundNo: Math.max(1, Number(rawSnapshot.roundNo || 1)),
+		roundMasterDone: !!rawSnapshot.roundMasterDone,
+		roundPassiveDone: !!rawSnapshot.roundPassiveDone,
+		actualActionTotal: Math.max(0, Number(rawSnapshot.actualActionTotal || 0)),
+		actualActionTriggerCount: Math.max(0, Number(rawSnapshot.actualActionTriggerCount || 0)),
+		lastRecordedActionRound: Math.max(0, Number(rawSnapshot.lastRecordedActionRound || 0)),
+		lastRecordedActionCount: Math.max(0, Number(rawSnapshot.lastRecordedActionCount || 0)),
+		lastRecordedActionAdjusted: !!rawSnapshot.lastRecordedActionAdjusted,
+		zEffectState: {
+			countRule: rawSnapshot.zEffectState?.countRule || null,
+			forcedPosture: String(rawSnapshot.zEffectState?.forcedPosture || ''),
+			splitExecution: !!rawSnapshot.zEffectState?.splitExecution,
+			restInvalidToken: Math.max(0, Number(rawSnapshot.zEffectState?.restInvalidToken || 0))
+		},
+		roundPassiveSnapshot: rawSnapshot.roundPassiveSnapshot && typeof rawSnapshot.roundPassiveSnapshot === 'object'
+			? cloneGameSessionValue(rawSnapshot.roundPassiveSnapshot)
+			: null,
+		taskMasterText: String(rawSnapshot.taskMasterText || t("common.status.dash")),
+		taskPassiveText: String(rawSnapshot.taskPassiveText || t("common.status.dash"))
+	};
+}
 
 function applyGameUiSettings() {
 	if (bTaskStatsBtn) {
@@ -438,6 +653,7 @@ function tryApplyMasterEffectsToCurrentRound() {
 	}
 	setTaskText("passive", t("game.taskPrefixApplied", { text: localizeBuiltinText(finalDisplay) }));
 	showTip(t("game.taskApplied"));
+	persistGameSessionSnapshot();
 }
 
 async function applyMasterInstruction(taskText) {
@@ -455,6 +671,7 @@ async function applyMasterInstruction(taskText) {
 	else if (text === ACTIVE_TEXT.restInvalid) {
 		zEffectState.restInvalidToken = 1;
 		updateVetoBadge();
+		persistGameSessionSnapshot();
 		await showInfoDialog(t("game.veto.title"), t("game.veto.granted"));
 	}
 	else if (text === ACTIVE_TEXT.forceRest5m) {
@@ -1370,37 +1587,52 @@ async function playBoardIntroAnimation(cellMap, rowCells, lastNumber) {
 	finishBoardIntroAnimation(sequenceId);
 }
 
-function renderBoard(boardToken){
-	const payload = resolveBoardPayload(boardToken);
-	const shouldAnimateIntro = shouldAnimateBoardIntro();
+function renderBoard(boardToken, options = {}){
+	const restoredState = options.restoreState || null;
+	const payload = resolveBoardPayload(restoredState?.boardToken || boardToken);
+	const shouldAnimateIntro = !restoredState && !options.disableIntro && shouldAnimateBoardIntro();
 
 	boardIntroSequenceId += 1;
 	isBoardIntroAnimating = false;
-	current_board = payload.token;
+	current_board = restoredState?.boardToken || payload.token;
 	currentBoardDebugMeta = {
-		token: payload.token,
-		type: payload.type,
-		name: payload.name || ""
+		token: restoredState?.boardMeta?.token || payload.token,
+		type: restoredState?.boardMeta?.type || payload.type,
+		name: restoredState?.boardMeta?.name || payload.name || ""
 	};
-	mapData = payload.board;
-	const packs = generateBoardFromData(mapData);
-	current_punishment_passive = packs.passiveMap;
-	current_task_master = packs.masterMap;
-	publishGameDebugSnapshot();
+	mapData = restoredState ? cloneGameSessionValue(restoredState.mapData) : payload.board;
+	if (!isValidBoardMatrix(mapData)) {
+		throw new Error('[Game] Invalid board matrix during render.');
+	}
+	if (restoredState) {
+		current_punishment_passive = cloneGameSessionValue(restoredState.passiveMap);
+		current_task_master = cloneGameSessionValue(restoredState.masterMap);
+	} else {
+		const packs = generateBoardFromData(mapData);
+		current_punishment_passive = packs.passiveMap;
+		current_task_master = packs.masterMap;
+	}
 
 	board.innerHTML = '';
 	resetBoardIntroPresentation();
 	if (shouldAnimateIntro) prepareBoardIntroPresentation();
 
 	const startNumber = 1;
-	passive_location = 1;
-	master_location = 1;
-	actualActionTotal = 0;
-	actualActionTriggerCount = 0;
-	lastRecordedActionRound = 0;
-	lastRecordedActionCount = 0;
-	lastRecordedActionAdjusted = false;
-	updateBTaskLiveCount();
+	passive_location = restoredState ? restoredState.passiveLocation : 1;
+	master_location = restoredState ? restoredState.masterLocation : 1;
+	actualActionTotal = restoredState ? restoredState.actualActionTotal : 0;
+	actualActionTriggerCount = restoredState ? restoredState.actualActionTriggerCount : 0;
+	lastRecordedActionRound = restoredState ? restoredState.lastRecordedActionRound : 0;
+	lastRecordedActionCount = restoredState ? restoredState.lastRecordedActionCount : 0;
+	lastRecordedActionAdjusted = restoredState ? restoredState.lastRecordedActionAdjusted : false;
+	roundNo = restoredState ? restoredState.roundNo : 1;
+	roundMasterDone = restoredState ? restoredState.roundMasterDone : false;
+	roundPassiveDone = restoredState ? restoredState.roundPassiveDone : false;
+	zEffectState.countRule = restoredState?.zEffectState?.countRule || null;
+	zEffectState.forcedPosture = restoredState?.zEffectState?.forcedPosture || "";
+	zEffectState.splitExecution = !!restoredState?.zEffectState?.splitExecution;
+	zEffectState.restInvalidToken = Math.max(0, Number(restoredState?.zEffectState?.restInvalidToken || 0));
+	roundPassiveSnapshot = restoredState?.roundPassiveSnapshot ? cloneGameSessionValue(restoredState.roundPassiveSnapshot) : null;
 	endNumber = Math.max(...mapData.flat());
 	const cellMap = new Map();
 	const rowCells = [];
@@ -1452,6 +1684,7 @@ function renderBoard(boardToken){
 	}
 
 	board.appendChild(fragment);
+	publishGameDebugSnapshot();
 
 	if (shouldAnimateIntro) {
 		playBoardIntroAnimation(cellMap, rowCells, endNumber);
@@ -1459,6 +1692,11 @@ function renderBoard(boardToken){
 		resetBoardIntroPresentation();
 		setButtonsState();
 	}
+	updateRoundInfo();
+	updateVetoBadge();
+	updateBTaskLiveCount();
+	setTaskText('master', restoredState?.taskMasterText || t("common.status.dash"));
+	setTaskText('passive', restoredState?.taskPassiveText || t("common.status.dash"));
 
 	track("game_started", {
 		mode: IS_DUAL ? "dual" : "solo",
@@ -1669,6 +1907,7 @@ function setTaskText(role, text) {
 	const el = document.getElementById(role === 'master' ? 'taskMaster' : 'taskPassive');
 	if (!el) return;
 	el.textContent = text || t("common.status.dash");
+	persistGameSessionSnapshot();
 }
 
 function updateBTaskLiveCount() {
@@ -1903,6 +2142,7 @@ async function shouldConsumeRestVeto(restText) {
 	if (!useVeto) return false;
 	zEffectState.restInvalidToken -= 1;
 	updateVetoBadge();
+	persistGameSessionSnapshot();
 	await showInfoDialog(t("game.veto.title"), t("game.veto.used"));
 	return true;
 }
@@ -1911,6 +2151,7 @@ function updateRoundInfo() {
 	if (!roundInfo) return;
 	if (!IS_DUAL) {
 		roundInfo.textContent = t("game.roundSingle", { round: roundNo });
+		persistGameSessionSnapshot();
 		return;
 	}
 	const done = [];
@@ -1918,6 +2159,7 @@ function updateRoundInfo() {
 	if (roundPassiveDone) done.push('B');
 	const suffix = done.length ? t("game.roundSuffix", { done: done.join(" / ") }) : "";
 	roundInfo.textContent = t("game.roundDual", { round: roundNo, suffix });
+	persistGameSessionSnapshot();
 }
 
 function setButtonsState() {
@@ -1941,6 +2183,7 @@ function tryAdvanceRound() {
 		roundPassiveDone = false;
 		setButtonsState();
 		updateRoundInfo();
+		persistGameSessionSnapshot();
 		return;
 	}
 	if (roundMasterDone && roundPassiveDone) {
@@ -1949,6 +2192,7 @@ function tryAdvanceRound() {
 		roundPassiveDone = false;
 		setButtonsState();
 		updateRoundInfo();
+		persistGameSessionSnapshot();
 	}
 }
 
@@ -2066,6 +2310,7 @@ async function moveBySteps(steps, role) {
 			if (role === 'master') master_location = nextLocation;
 			else passive_location = nextLocation;
 		}
+		persistGameSessionSnapshot();
 	} finally {
 		isMoving = false;
 	}
@@ -2379,6 +2624,116 @@ function showEndGameDialog() {
 	});
 }
 
+function showResumeGameDialog(snapshot) {
+	const copy = {
+		title: t("game.resumeGame.title", {}, "继续上局"),
+		board: t("game.resumeGame.board", {}, "棋盘"),
+		round: t("game.resumeGame.round", {}, "回合"),
+		totalHits: t("game.resumeGame.totalHits", {}, "已累计触发总数"),
+		question: t("game.resumeGame.question", {}, "检测到上一局还没结束，要继续吗？"),
+		confirm: t("game.resumeGame.confirm", {}, "继续"),
+		cancel: t("game.resumeGame.cancel", {}, "重新开始")
+	};
+	const summaryHtml = `
+		<div class="b-task-stats-section" style="margin-bottom:8px;">
+			<div class="b-task-stats-row">
+				<span>${copy.board}</span>
+				<strong>${escapeHtml(snapshot.boardMeta?.name || snapshot.boardToken || '-')}</strong>
+			</div>
+			<div class="b-task-stats-row">
+				<span>${copy.round}</span>
+				<strong>${snapshot.roundNo}</strong>
+			</div>
+			<div class="b-task-stats-row">
+				<span>${copy.totalHits}</span>
+				<strong>${snapshot.actualActionTotal}</strong>
+			</div>
+		</div>
+	`;
+
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.className = 'punishment-overlay resume-game-overlay';
+
+		const dialog = document.createElement('div');
+		dialog.className = 'punishment-dialog resume-game-dialog';
+		dialog.innerHTML = `
+			<h3 class="punishment-title">${copy.title}</h3>
+			<div class="punishment-content resume-game-content">${summaryHtml}${copy.question}</div>
+			<div class="dialog-buttons">
+				<button class="punishment-button" id="confirmResume">${copy.confirm}</button>
+				<button class="punishment-button" id="cancelResume">${copy.cancel}</button>
+			</div>
+		`;
+
+		const btnWrap = dialog.querySelector('.dialog-buttons');
+		btnWrap.style.display = 'flex';
+		btnWrap.style.gap = '10px';
+		btnWrap.style.marginTop = '20px';
+
+		dialog.querySelector('#confirmResume').addEventListener('click', () => {
+			track("saved_game_resume_confirmed");
+			overlay.remove();
+			resolve(true);
+		});
+
+		dialog.querySelector('#cancelResume').addEventListener('click', () => {
+			track("saved_game_resume_cancelled");
+			overlay.remove();
+			resolve(false);
+		});
+
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) {
+				playDialogShake(btnWrap);
+			}
+		});
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+	});
+}
+
+async function initGameSession(boardToken) {
+	const sessionMode = getGameSessionModeKey();
+	const storedSnapshot = normalizeStoredGameSession(readGameSessionSnapshot(boardToken, sessionMode), boardToken, sessionMode);
+	if (storedSnapshot) {
+		const shouldResume = await showResumeGameDialog(storedSnapshot);
+		if (shouldResume) {
+			try {
+				renderBoard(boardToken, { restoreState: storedSnapshot });
+				persistGameSessionSnapshot();
+				return;
+			} catch (error) {
+				console.error('[Game] Failed to restore saved session. Starting a new game instead.', error);
+				clearGameSessionSnapshot(boardToken, sessionMode);
+				renderBoard(boardToken, { disableIntro: true });
+				return;
+			}
+		}
+		clearGameSessionSnapshot(boardToken, sessionMode);
+		renderBoard(boardToken, { disableIntro: true });
+		return;
+	}
+
+	renderBoard(boardToken);
+}
+
+window.addEventListener('error', (event) => {
+	const message = event?.error?.stack || event?.error?.message || event?.message;
+	if (!message) return;
+	console.error('[Game] Unhandled error:', event.error || event.message);
+	showFatalGameMessage(message);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+	const reason = event?.reason;
+	const message = reason?.stack || reason?.message || String(reason || '');
+	if (!message) return;
+	console.error('[Game] Unhandled promise rejection:', reason);
+	showFatalGameMessage(message);
+});
+
 let isProcessing = false;
 
 async function handleRoll(role) {
@@ -2398,11 +2753,13 @@ async function handleRoll(role) {
 		}
 
 		if (role === 'passive' && passive_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
 		}
 		if (role === 'master' && master_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
@@ -2420,11 +2777,13 @@ async function handleRoll(role) {
 		await moveBySteps(randomSteps, role);
 
 		if (role === 'passive' && passive_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
 		}
 		if (role === 'master' && master_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
@@ -2434,11 +2793,13 @@ async function handleRoll(role) {
 		if (role === 'master') await showMasterResult(master_location);
 
 		if (role === 'passive' && passive_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
 		}
 		if (role === 'master' && master_location === endNumber) {
+			clearGameSessionSnapshot();
 			const userChoice = await showEndGameDialog();
 			if (userChoice) window.location.reload();
 			return;
@@ -2466,3 +2827,6 @@ async function handleRoll(role) {
 rolldice.addEventListener('click', () => handleRoll('passive'));
 if (rollmaster) rollmaster.addEventListener('click', () => handleRoll('master'));
 if (bTaskStatsBtn) bTaskStatsBtn.addEventListener('click', showBTaskStatsDialog);
+window.initGameSession = initGameSession;
+window.showFatalGameMessage = showFatalGameMessage;
+window.addEventListener('pagehide', persistGameSessionSnapshot);
