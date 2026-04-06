@@ -2654,6 +2654,10 @@ function showResumeGameDialog(snapshot) {
 	return new Promise((resolve) => {
 		const overlay = document.createElement('div');
 		overlay.className = 'punishment-overlay resume-game-overlay';
+		if (boardIntroWash) {
+			boardIntroWash.classList.add('is-hidden');
+			boardIntroWash.classList.remove('is-active', 'is-exiting');
+		}
 
 		const dialog = document.createElement('div');
 		dialog.className = 'punishment-dialog resume-game-dialog';
