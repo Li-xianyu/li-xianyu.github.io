@@ -462,8 +462,13 @@ window.__I18N_DICTIONARIES.zh = {
 		title: "游戏中...",
 		roundInitial: "第 1 回合",
 		roundSingle: "第 {round} 回合",
-		roundDual: "第 {round} 回合{suffix}",
+		roundDual: "第 {round} 回合{suffix}{distance}",
 		roundSuffix: "（已投：{done}）",
+		distHalved: " Z步数减半",
+		distDoubled: " B翻倍",
+		distMasterReduced: " Z步数-1",
+		distMid: " B×1.5",
+		distReduced: " 齐头并进",
 		taskMasterTitle: "Z任务",
 		taskPassiveTitle: "B任务",
 		vetoBadge: "一票否决",
@@ -560,6 +565,11 @@ window.__I18N_DICTIONARIES.zh = {
 			cancel: "取消"
 		},
 		tips: {
+			distMasterHalved: "Z领先B≥8格，Z本回合步数减半",
+			distBDoubled: "B领先Z≥8格，B任务翻倍",
+			distMasterReduced: "Z领先B 3-7格，Z本回合步数-1",
+			distBMid: "B领先Z 3-7格，B任务×1.5",
+			distBothReduced: "双方差≤2格，齐头并进，任务量减轻",
 			masterDone: "Z本回合已投",
 			passiveDone: "B本回合已投"
 		}

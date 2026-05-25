@@ -461,8 +461,13 @@ window.__I18N_DICTIONARIES.en = {
 		title: "In Game...",
 		roundInitial: "Round 1",
 		roundSingle: "Round {round}",
-		roundDual: "Round {round}{suffix}",
+		roundDual: "Round {round}{suffix}{distance}",
 		roundSuffix: " ({done} rolled)",
+		distHalved: " Z-halved",
+		distDoubled: " B-doubled",
+		distMasterReduced: " Z-1",
+		distMid: " B×1.5",
+		distReduced: " close-range",
 		taskMasterTitle: "Z Task",
 		taskPassiveTitle: "B Task",
 		vetoBadge: "Veto",
@@ -568,6 +573,11 @@ window.__I18N_DICTIONARIES.en = {
 			cancel: "Start over"
 		},
 		tips: {
+			distMasterHalved: "Z ahead ≥8, Z's dice halved",
+			distBDoubled: "B ahead ≥8, B's count doubled",
+			distMasterReduced: "Z ahead 3-7, Z's dice -1",
+			distBMid: "B ahead 3-7, B's count ×1.5",
+			distBothReduced: "Within 2, both reduced",
 			masterDone: "Z already rolled this round",
 			passiveDone: "B already rolled this round"
 		}
