@@ -5,6 +5,9 @@
 		return;
 	}
 
+	const IS_DEV = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+	const warn = IS_DEV ? function(...args) { console.warn("[PWA]", ...args); } : function() {};
+
 	let deferredPrompt = null;
 	let installButton = null;
 	const stateListeners = new Set();
@@ -65,7 +68,7 @@
 			try {
 				listener(state);
 			} catch (error) {
-				console.warn("[PWA] state listener failed", error);
+				warn("state listener failed", error);
 			}
 		});
 
@@ -130,13 +133,14 @@
 		return getI18nValue("pwa.browserAdvice", { fallback: { title: "", lead: "", steps: [] } });
 	}
 
-	function showInstallHelp(source) {
-		const copy = getInstallHelpCopy();
+	function showDialog(copy, trackEventName, source) {
 		const overlay = document.createElement("div");
 		overlay.className = "punishment-overlay";
 
 		const dialog = document.createElement("div");
 		dialog.className = "punishment-dialog";
+		dialog.setAttribute("role", "dialog");
+		dialog.setAttribute("aria-modal", "true");
 
 		const title = document.createElement("h3");
 		title.className = "punishment-title";
@@ -177,63 +181,18 @@
 			}
 		});
 
-		track("pwa_install_help_opened", {
+		track(trackEventName, {
 			source: source || "unknown",
 			platform: isIosSafari() ? "ios_safari" : "browser_menu"
 		});
 	}
 
+	function showInstallHelp(source) {
+		showDialog(getInstallHelpCopy(), "pwa_install_help_opened", source);
+	}
+
 	function showBrowserAdvice(source) {
-		const copy = getBrowserAdviceCopy();
-		const overlay = document.createElement("div");
-		overlay.className = "punishment-overlay";
-
-		const dialog = document.createElement("div");
-		dialog.className = "punishment-dialog";
-
-		const title = document.createElement("h3");
-		title.className = "punishment-title";
-		title.textContent = copy.title;
-
-		const content = document.createElement("div");
-		content.className = "punishment-content";
-		content.innerHTML = `
-			<div class="legal-disclaimer">
-				<strong>${copy.title}</strong>
-				<div>${copy.lead}</div>
-				<ol class="install-help-list">
-					${copy.steps.map((step) => `<li>${step}</li>`).join("")}
-				</ol>
-			</div>
-		`;
-
-		const actions = document.createElement("div");
-		actions.className = "dialog-buttons";
-
-		const confirmBtn = document.createElement("button");
-		confirmBtn.type = "button";
-		confirmBtn.className = "punishment-button";
-		confirmBtn.id = "confirmRestart";
-		confirmBtn.textContent = t("pwa.install.ok");
-		confirmBtn.addEventListener("click", () => {
-			overlay.remove();
-		});
-
-		actions.appendChild(confirmBtn);
-		dialog.append(title, content, actions);
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-
-		overlay.addEventListener("click", (event) => {
-			if (event.target === overlay && typeof window.playDialogShake === "function") {
-				window.playDialogShake(confirmBtn);
-			}
-		});
-
-		track("pwa_browser_advice_opened", {
-			source: source || "unknown",
-			platform: isIosSafari() ? "ios_safari" : "browser_menu"
-		});
+		showDialog(getBrowserAdviceCopy(), "pwa_browser_advice_opened", source);
 	}
 
 	async function promptInstall(source) {
@@ -266,7 +225,7 @@
 				outcome
 			};
 		} catch (error) {
-			console.warn("[PWA] install prompt failed", error);
+			warn("install prompt failed", error);
 			return {
 				ok: false,
 				outcome: "failed"
@@ -302,18 +261,18 @@
 		}
 
 		try {
-			const registration = await navigator.serviceWorker.register("./sw.js", {
+			const registration = await navigator.serviceWorker.register("./sw.js?v=" + window.APP_VERSION, {
 				updateViaCache: "none"
 			});
 
 			if (typeof registration.update === "function") {
 				registration.update().catch((error) => {
-					console.warn("[PWA] service worker update check failed", error);
+					warn("service worker update check failed", error);
 				});
 			}
 
 		} catch (error) {
-			console.warn("[PWA] service worker registration failed", error);
+			warn("service worker registration failed", error);
 		}
 	}
 

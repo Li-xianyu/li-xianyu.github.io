@@ -46,6 +46,7 @@ build/
 release/
 package/
 backup/
+tools/release/
 
 # ========================
 # 备份文件

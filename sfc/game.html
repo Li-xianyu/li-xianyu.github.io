@@ -3,11 +3,21 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="theme-color" content="#f8f4ff">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title data-i18n="game.title">In Game...</title>
-	<link rel="icon" href="img/favicon.png?v=20260308-1" sizes="any">
-	<link rel="apple-touch-icon" href="img/favicon.png?v=20260308-1">
-	<link rel="manifest" href="manifest.webmanifest">
+	<script src="js/version.js"></script>
+	<script>
+	(function(){var v=window.APP_VERSION;
+	document.write(
+	'<link rel="icon" href="img/favicon.png?v='+v+'" sizes="any">'+
+	'<link rel="apple-touch-icon" href="img/favicon.png?v='+v+'">'+
+	'<link rel="manifest" href="manifest.webmanifest?v='+v+'">'+
+	'<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" integrity="sha384-fFxL8wXRpg9gVqGpY+URMtLr3fLL0WBbo4NBQ+IWwMDYjIjI5VQ46XlJm5+BUlXJ" crossorigin="anonymous">'+
+	'<link rel="stylesheet" href="css/ui.css?v='+v+'">'+
+	'<link rel="stylesheet" href="css/index.css?v='+v+'">'+
+	'<script defer src="/js/umami-loader.js?v='+v+'"><\/script>'
+	);})();
+	</script>
 	<meta name="application-name" content="Dual Protocol" data-i18n-content="common.appName">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -45,10 +55,6 @@
 			} catch (error) {}
 		})();
 	</script>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css">
-	<link rel="stylesheet" href="css/ui.css?v=20260331-1">
-	<link rel="stylesheet" href="css/index.css?v=20260406-3">
-	<script defer src="/js/umami-loader.js?v=20260328-1"></script>
 </head>
 <body class="game-page">
 
@@ -78,12 +84,18 @@
 		</div>
 	</div>
 
-	<script src="lang/zh.js?v=20260401-5"></script>
-	<script src="lang/en.js?v=20260401-5"></script>
-	<script src="js/i18n.js?v=20260327-2"></script>
-	<script src="js/ui.js?v=20260401-2"></script>
-	<script src="js/pwa.js?v=20260331-1"></script>
-	<script src="js/Data.js?v=20260401-2"></script>
+	<script>
+	(function(){var v=window.APP_VERSION;
+	var V='?v='+v;
+	document.write(
+	'<script src="lang/zh.js'+V+'"><\/script>'+
+	'<script src="lang/en.js'+V+'"><\/script>'+
+	'<script src="js/i18n.js'+V+'"><\/script>'+
+	'<script src="js/ui.js'+V+'"><\/script>'+
+	'<script src="js/pwa.js'+V+'"><\/script>'+
+	'<script src="js/Data.js'+V+'"><\/script>'
+	);})();
+	</script>
 	<script>
 		// Game mode: dual / solo
 		(() => {
@@ -95,9 +107,10 @@
 
 	<script>
 		(() => {
+			const V = window.APP_VERSION;
 			const GAME_BOARD_DEBUG_STORAGE_KEY_NAME = "SFC_GAME_BOARD_DEBUG_ENABLED";
-			const GAME_BOARD_DEBUG_SCRIPT_SRC = "js/game_board_debug.js?v=20260406-3";
-			const GAME_INDEX_SCRIPT_SRC = "js/index.js?v=20260406-3";
+			const GAME_BOARD_DEBUG_SCRIPT_SRC = "js/game_board_debug.js?v=" + V;
+			const GAME_INDEX_SCRIPT_SRC = "js/index.js?v=" + V;
 			const ERUDA_SCRIPT_SRC = "https://cdn.jsdelivr.net/npm/eruda";
 
 			function isGameBoardDebugEnabled() {

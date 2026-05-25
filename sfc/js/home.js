@@ -322,26 +322,7 @@ function scheduleInstallEntryHint(trigger, delay = 240){
 }
 
 function initInstallEntryHintFlow(){
-	if (!window.PWAInstall) return;
-	localStorage.removeItem(LEGACY_INSTALL_ENTRY_HINT_KEY);
-
-	window.PWAInstall.onChange((state) => {
-		if (state && state.canInstall && !state.isStandalone){
-			scheduleInstallEntryHint("pwa_state_change", 220);
-		}
-	});
-
-	window.addEventListener("home:manualAgreed", () => {
-		scheduleInstallEntryHint("manual_agreed", 260);
-	});
-
-	window.addEventListener("home:onboardingFinished", () => {
-		scheduleInstallEntryHint("onboarding_finished", 280);
-	});
-
-	if (localStorage.getItem(MANUAL_AGREED_KEY)) {
-		scheduleInstallEntryHint("home_ready", 420);
-	}
+	// install hint dialog disabled — quick-dock menu + spotlight card suffice
 }
 
 function createManualDialog(){

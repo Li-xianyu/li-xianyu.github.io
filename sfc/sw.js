@@ -1,4 +1,4 @@
-const CACHE_VERSION = "20260406-3";
+const CACHE_VERSION = "20260525-01";
 const STATIC_CACHE = `sfc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sfc-runtime-${CACHE_VERSION}`;
 
@@ -25,6 +25,7 @@ const PRECACHE_PATHS = [
 	"./js/home_onboarding_intro.js",
 	"./js/Data.js",
 	"./js/create_boards.js",
+	"./js/game_board_debug.js",
 	"./lang/zh.js",
 	"./lang/en.js",
 	"./img/favicon.png",
