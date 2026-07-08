@@ -462,7 +462,7 @@ window.__I18N_DICTIONARIES.zh = {
 		title: "游戏中...",
 		roundInitial: "第 1 回合",
 		roundSingle: "第 {round} 回合",
-		roundDual: "第 {round} 回合{suffix}{distance}",
+		roundDual: "第 {round} 回合{suffix}",
 		roundSuffix: "（已投：{done}）",
 		distHalved: " Z步数减半",
 		distDoubled: " B翻倍",

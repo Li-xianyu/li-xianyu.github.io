@@ -28,7 +28,68 @@
 				<span class="hero-chip" data-i18n="home.chips.dualSolo">Dual & Solo</span>
 			</div>
 
-			<h1 class="game-title" data-i18n="common.appName">Dual Protocol</h1>
+			<div class="galaxy-container">
+				<!-- 背景虚线轨道 -->
+				<svg class="orbit-bg">
+					<circle cx="50%" cy="50%" class="orbit-line line-outer" />
+					<circle cx="50%" cy="50%" class="orbit-line line-inner" />
+				</svg>
+
+				<!-- 核心心跳圆 -->
+				<div class="central-core">
+					<div class="heart-shape" aria-hidden="true">
+						<svg viewBox="0 0 32 29.6" class="heart-svg">
+							<path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2
+							c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/>
+						</svg>
+					</div>
+					<div class="core-inner">
+						<h1 class="game-title" data-i18n="common.appName">Dual Protocol</h1>
+					</div>
+					<div class="core-pulse"></div>
+				</div>
+
+				<!-- 内轨道环 (顺时针公转) -->
+				<div class="orbit-ring inner-ring">
+					<div class="orbit-slot" id="slot-start" style="--slot-angle: -45deg;">
+						<div class="orbit-uprighter">
+							<button id="startGame" class="galaxy-node node-primary" type="button">
+								<span class="node-icon">🎮</span>
+								<span class="node-text" data-i18n="home.buttons.start.title">Start Game</span>
+							</button>
+						</div>
+					</div>
+					<div class="orbit-slot" id="slot-settings" style="--slot-angle: 135deg;">
+						<div class="orbit-uprighter">
+							<button id="gameSettings" class="galaxy-node" type="button">
+								<span class="node-icon">⚙️</span>
+								<span class="node-text" data-i18n="home.buttons.settings.title">Game Settings</span>
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- 外轨道环 (逆时针公转) -->
+				<div class="orbit-ring outer-ring">
+					<div class="orbit-slot" id="slot-manual" style="--slot-angle: 30deg;">
+						<div class="orbit-uprighter">
+							<button id="gameManual" class="galaxy-node" type="button">
+								<span class="node-icon">📖</span>
+								<span class="node-text" data-i18n="home.buttons.manual.title">Usage Notes</span>
+							</button>
+						</div>
+					</div>
+					<div class="orbit-slot" id="slot-devlog" style="--slot-angle: -150deg;">
+						<div class="orbit-uprighter">
+							<button id="devLog" class="galaxy-node" type="button">
+								<span class="node-icon">📝</span>
+								<span class="node-text" data-i18n="home.buttons.devlog.title">Dev Log</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<p class="hero-subtitle" data-i18n="home.hero.subtitle">Rules are yours, dice are destiny</p>
 
 			<div class="install-spotlight" id="installSpotlight" hidden>
@@ -44,43 +105,6 @@
 				<div class="install-spotlight-actions">
 					<button class="install-spotlight-btn install-spotlight-btn-primary" id="installSpotlightAction" type="button" data-i18n="home.installSpotlight.action">Install now</button>
 					<button class="install-spotlight-btn install-spotlight-btn-secondary" id="installSpotlightGuide" type="button" data-i18n="home.installSpotlight.guide">Browser advice</button>
-				</div>
-			</div>
-
-			<div class="menu-buttons">
-				<button class="menu-btn menu-btn-primary" id="startGame" type="button">
-					<span class="menu-btn-icon" aria-hidden="true">🎮</span>
-					<span class="menu-btn-copy">
-						<span class="menu-btn-title" data-i18n="home.buttons.start.title">Start Game</span>
-						<span class="menu-btn-desc" data-i18n="home.buttons.start.desc">Throw the first die and today’s round begins</span>
-					</span>
-					<span class="menu-btn-arrow" aria-hidden="true">→</span>
-				</button>
-
-				<div class="menu-secondary-grid">
-					<button class="menu-btn menu-btn-secondary" id="gameSettings" type="button">
-						<span class="menu-btn-icon" aria-hidden="true">⚙️</span>
-						<span class="menu-btn-copy">
-							<span class="menu-btn-title" data-i18n="home.buttons.settings.title">Game Settings</span>
-							<span class="menu-btn-desc" data-i18n="home.buttons.settings.desc">Tune weights and rule parameters, then draw custom board routes</span>
-						</span>
-					</button>
-
-					<button class="menu-btn menu-btn-secondary" id="gameManual" type="button">
-						<span class="menu-btn-icon" aria-hidden="true">📖</span>
-						<span class="menu-btn-copy">
-							<span class="menu-btn-title" data-i18n="home.buttons.manual.title">Usage Notes</span>
-							<span class="menu-btn-desc" data-i18n="home.buttons.manual.desc">Read the guide, privacy notes, and terms</span>
-						</span>
-					</button>
-
-					<button class="menu-btn menu-btn-secondary" id="devLog" type="button">
-						<span class="menu-btn-icon" aria-hidden="true">📝</span>
-						<span class="menu-btn-copy">
-							<span class="menu-btn-title" data-i18n="home.buttons.devlog.title">Dev Log</span>
-							<span class="menu-btn-desc" data-i18n="home.buttons.devlog.desc">See the iteration trail and how this thing evolved</span>
-						</span>
-					</button>
 				</div>
 			</div>
 

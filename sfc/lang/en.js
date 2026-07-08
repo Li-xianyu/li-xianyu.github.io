@@ -461,7 +461,7 @@ window.__I18N_DICTIONARIES.en = {
 		title: "In Game...",
 		roundInitial: "Round 1",
 		roundSingle: "Round {round}",
-		roundDual: "Round {round}{suffix}{distance}",
+		roundDual: "Round {round}{suffix}",
 		roundSuffix: " ({done} rolled)",
 		distHalved: " Z-halved",
 		distDoubled: " B-doubled",

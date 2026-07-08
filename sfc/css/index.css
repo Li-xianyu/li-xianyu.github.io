@@ -101,48 +101,21 @@ body.game-page{
 	position:relative;
 	width:100%;
 	box-sizing:border-box;
-	padding:clamp(24px, 5vw, 42px);
-	border-radius:28px;
-	background:var(--dialog-bg);
-	border:1px solid var(--dialog-border);
-	backdrop-filter:blur(24px);
-	-webkit-backdrop-filter:blur(24px);
-	box-shadow:0 26px 80px rgba(44,30,88,.10);
-	overflow:hidden;
+	padding:clamp(20px, 4vw, 36px);
+	background:transparent;
+	border:none;
+	box-shadow:none;
+	overflow:visible;
 	animation:homePanelIn .6s cubic-bezier(0.22,0.61,0.36,1) both;
 }
 
-.hero-panel::before{
-	content:"";
-	position:absolute;
-	inset:0;
-	border-radius:inherit;
-	background:linear-gradient(135deg, rgba(255,255,255,.40) 0%, rgba(255,255,255,0) 42%);
-	opacity:.7;
-	pointer-events:none;
-}
-
+.hero-panel::before,
 .hero-panel::after{
-	content:"";
-	position:absolute;
-	inset:auto -80px -120px auto;
-	width:240px;
-	height:240px;
-	border-radius:50%;
-	background:radial-gradient(circle, rgba(127,71,255,.12) 0%, rgba(127,71,255,0) 68%);
-	pointer-events:none;
+	display:none !important;
 }
 
 body.home-page[data-theme="dark"] .hero-panel{
-	box-shadow:0 26px 80px rgba(0,0,0,.28);
-}
-
-body.home-page[data-theme="dark"] .hero-panel::before{
-	background:linear-gradient(135deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 42%);
-}
-
-body.home-page[data-theme="dark"] .hero-panel::after{
-	background:radial-gradient(circle, rgba(157,122,255,.16) 0%, rgba(157,122,255,0) 68%);
+	box-shadow:none;
 }
 
 .hero-chip-row{
@@ -414,160 +387,349 @@ body.home-page[data-theme="dark"] .install-spotlight-btn-secondary:hover{
 	background:rgba(255,255,255,.14);
 }
 
-.menu-buttons{
-	display:grid;
-	gap:14px;
-	margin-top:18px;
+/* ==================== 双轨星系布局 v3 ==================== */
+.galaxy-container {
+	--orbit-r-inner: 105px;
+	--orbit-r-outer: 168px;
+	--orbit-speed-inner: 42s;
+	--orbit-speed-outer: 62s;
+	--node-size: 76px;
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	max-width: 440px;
+	margin: 10px auto 6px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 2;
 }
 
-.menu-secondary-grid{
-	display:grid;
-	grid-template-columns:repeat(3, minmax(0, 1fr));
-	gap:12px;
+/* --- 轨道背景虚线 --- */
+.orbit-bg {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+	z-index: 1;
 }
 
-.menu-btn{
-	width:100%;
-	padding:16px 18px;
-	box-sizing:border-box;
-	background:rgba(255,255,255,.58);
-	color:var(--text-color);
-	border:1px solid rgba(255,255,255,.42);
-	border-radius:22px;
-	cursor:pointer;
-	font:inherit;
-	transition:
-		transform var(--transition-speed),
-		background var(--transition-speed),
-		box-shadow var(--transition-speed),
-		border-color var(--transition-speed);
-	box-shadow:0 14px 30px rgba(32,22,62,.08);
-	display:flex;
-	align-items:center;
-	gap:14px;
-	text-align:left;
-	position:relative;
-	isolation:isolate;
-	overflow:hidden;
+.orbit-line {
+	cx: 50%;
+	cy: 50%;
+	fill: none;
+	stroke: color-mix(in srgb, var(--passive-color) 24%, transparent);
+	stroke-dasharray: 5 7;
+	stroke-width: 1.2;
+	filter: drop-shadow(0 0 1px color-mix(in srgb, var(--passive-color) 16%, transparent));
 }
 
-.menu-btn::before{
-	content:"";
-	position:absolute;
-	inset:0;
-	background:linear-gradient(135deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 40%);
-	opacity:.8;
-	pointer-events:none;
+.orbit-line.line-outer { r: var(--orbit-r-outer); }
+.orbit-line.line-inner { r: var(--orbit-r-inner); }
+
+[data-theme="dark"] .orbit-line {
+	stroke: color-mix(in srgb, var(--passive-color) 30%, transparent);
+	filter: drop-shadow(0 0 3px color-mix(in srgb, var(--passive-color) 28%, transparent));
 }
 
-.menu-btn-primary{
-	padding:18px 20px;
-	background:transparent;
-	color:#fff;
-	border:none;
-	box-shadow:0 18px 40px rgba(106,69,184,.25);
+/* --- 中心核心 --- */
+.central-core {
+	position: relative;
+	width: 88px;
+	height: 88px;
+	background: linear-gradient(135deg, var(--black-cell) 0%, var(--passive-color) 100%);
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	box-shadow:
+		0 0 18px color-mix(in srgb, var(--passive-color) 32%, transparent),
+		0 0 40px color-mix(in srgb, var(--black-cell) 18%, transparent),
+		inset 0 1px 3px rgba(255,255,255,0.25);
+	border: 2px solid color-mix(in srgb, var(--passive-color) 50%, transparent);
+	z-index: 3;
+	transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), border-color 0.3s, box-shadow 0.3s;
+	overflow: hidden;
 }
 
-.menu-btn-primary::after{
-	content:"";
-	position:absolute;
-	inset:0;
-	border-radius:inherit;
-	background:linear-gradient(135deg, var(--black-cell) 0%, var(--current-color) 100%);
-	z-index:-1;
+.central-core:hover {
+	transform: scale(1.08);
+	border-color: var(--passive-color);
+	box-shadow:
+		0 0 28px color-mix(in srgb, var(--passive-color) 50%, transparent),
+		0 0 56px color-mix(in srgb, var(--black-cell) 28%, transparent),
+		inset 0 1px 4px rgba(255,255,255,0.3);
 }
 
-.menu-btn-primary::before{
-	background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 42%);
-	opacity:.65;
+/* 霓虹爱心 */
+.heart-shape {
+	position: absolute;
+	width: 60px;
+	height: 60px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	opacity: 0.18;
+	pointer-events: none;
+	animation: heart-beat 1.8s infinite ease-in-out;
+	z-index: 1;
 }
 
-.menu-btn-secondary{
-	background:rgba(255,255,255,.56);
+.heart-svg {
+	width: 100%;
+	height: 100%;
+	fill: #fff;
+	filter: drop-shadow(0 0 6px var(--passive-color));
 }
 
-body.home-page[data-theme="dark"] .menu-btn-secondary{
-	background:rgba(255,255,255,.08);
-	color:var(--dialog-text);
-	border-color:rgba(255,255,255,.10);
-	box-shadow:0 16px 32px rgba(0,0,0,.20);
+.central-core:hover .heart-shape {
+	opacity: 0.4;
+	animation-duration: 1s;
 }
 
-body.home-page[data-theme="dark"] .menu-btn::before{
-	background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 40%);
+.core-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 6px;
+	text-align: center;
+	color: white;
+	z-index: 2;
 }
 
-.menu-btn-icon{
-	width:46px;
-	height:46px;
-	border-radius:15px;
-	display:grid;
-	place-items:center;
-	flex:none;
-	font-size:20px;
-	background:rgba(127,71,255,.12);
-	color:inherit;
-	box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+.central-core .game-title {
+	font-size: 13px;
+	font-weight: 900;
+	line-height: 1.1;
+	color: #fff;
+	text-shadow: 0 0 10px rgba(255,255,255,0.5);
+	margin: 0;
+	letter-spacing: 0.02em;
 }
 
-.menu-btn-primary .menu-btn-icon{
-	background:rgba(255,255,255,.16);
-	border:none;
-	box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+/* --- 轨道环容器 (旋转载体) --- */
+.orbit-ring {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0;
+	height: 0;
+	z-index: 2;
 }
 
-body.home-page[data-theme="dark"] .menu-btn-secondary .menu-btn-icon{
-	background:rgba(157,122,255,.14);
-	box-shadow:none;
+.inner-ring { animation: spin-cw var(--orbit-speed-inner) linear infinite; }
+.outer-ring { animation: spin-ccw var(--orbit-speed-outer) linear infinite; }
+
+/* 悬停暂停 */
+.galaxy-container:hover .orbit-ring,
+.galaxy-container:hover .orbit-uprighter {
+	animation-play-state: paused;
 }
 
-.menu-btn-copy{
-	min-width:0;
-	display:grid;
-	gap:4px;
+/* --- 轨道槽位 (静态定位到圆周上) --- */
+.orbit-slot {
+	position: absolute;
+	width: 0;
+	height: 0;
 }
 
-.menu-btn-title{
-	font-size:16px;
-	font-weight:700;
-	line-height:1.2;
+.inner-ring .orbit-slot {
+	transform: rotate(var(--slot-angle)) translateY(calc(-1 * var(--orbit-r-inner)));
 }
 
-.menu-btn-desc{
-	font-size:13px;
-	line-height:1.5;
-	opacity:.78;
+.outer-ring .orbit-slot {
+	transform: rotate(var(--slot-angle)) translateY(calc(-1 * var(--orbit-r-outer)));
 }
 
-.menu-btn-arrow{
-	margin-left:auto;
-	font-size:18px;
-	line-height:1;
-	opacity:.72;
-	transition:transform var(--transition-speed), opacity var(--transition-speed);
+/* --- 扶正器 (反转旋转使节点始终朝上) --- */
+.orbit-uprighter {
+	position: absolute;
+	width: 0;
+	height: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
-.menu-btn:hover{
-	transform:translateY(-2px);
-	box-shadow:0 18px 36px rgba(32,22,62,.14);
+/* 内轨节点 (逆时针抵消) */
+#slot-start .orbit-uprighter {
+	animation: upright-start var(--orbit-speed-inner) linear infinite;
+}
+#slot-settings .orbit-uprighter {
+	animation: upright-settings var(--orbit-speed-inner) linear infinite;
 }
 
-.menu-btn:hover .menu-btn-arrow{
-	transform:translateX(3px);
-	opacity:.95;
+/* 外轨节点 (顺时针抵消) */
+#slot-manual .orbit-uprighter {
+	animation: upright-manual var(--orbit-speed-outer) linear infinite;
+}
+#slot-devlog .orbit-uprighter {
+	animation: upright-devlog var(--orbit-speed-outer) linear infinite;
 }
 
-body.home-page[data-theme="dark"] .menu-btn:hover{
-	box-shadow:0 20px 38px rgba(0,0,0,.28);
+/* --- 节点按钮 --- */
+.galaxy-node {
+	width: var(--node-size);
+	height: var(--node-size);
+	flex-shrink: 0;
+	box-sizing: border-box;
+	margin: 0;
+	border-radius: 50%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 2px;
+	border: 1px solid color-mix(in srgb, var(--passive-color) 18%, transparent);
+	color: var(--text-color);
+	background: var(--dialog-bg);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	box-shadow:
+		0 6px 18px rgba(0,0,0,0.06),
+		0 0 0 1px color-mix(in srgb, var(--passive-color) 6%, transparent);
+	cursor: pointer;
+	padding: 0 4px;
+	font: inherit;
+	transition: border-color 0.3s, box-shadow 0.3s;
+	/* 用 scale 属性做悬停放大，不和 animation 的 transform 冲突 */
+	scale: 1;
+	transition: scale 0.3s cubic-bezier(0.175,0.885,0.32,1.275), border-color 0.3s, box-shadow 0.3s;
 }
 
-.menu-btn:active{
-	transform:translateY(0) scale(.985);
+[data-theme="dark"] .galaxy-node {
+	background: color-mix(in srgb, var(--dialog-bg) 85%, var(--black-cell));
+	border-color: color-mix(in srgb, var(--passive-color) 18%, transparent);
+	box-shadow:
+		0 8px 22px rgba(0,0,0,0.25),
+		0 0 10px color-mix(in srgb, var(--black-cell) 12%, transparent);
 }
 
-.menu-btn:focus-visible{
-	outline:2px solid var(--current-color);
-	outline-offset:3px;
+.galaxy-node:hover {
+	scale: 1.12;
+	border-color: var(--passive-color);
+	box-shadow:
+		0 6px 22px color-mix(in srgb, var(--passive-color) 28%, transparent),
+		0 0 14px color-mix(in srgb, var(--passive-color) 22%, transparent);
+}
+
+[data-theme="dark"] .galaxy-node:hover {
+	box-shadow:
+		0 8px 26px rgba(0,0,0,0.35),
+		0 0 18px color-mix(in srgb, var(--passive-color) 30%, transparent);
+}
+
+.galaxy-node:active { scale: 0.96; }
+
+/* 主按钮 (开始游戏) */
+.galaxy-node.node-primary {
+	border-color: color-mix(in srgb, var(--passive-color) 40%, transparent);
+	box-shadow:
+		0 6px 18px color-mix(in srgb, var(--passive-color) 14%, transparent),
+		0 0 10px color-mix(in srgb, var(--passive-color) 10%, transparent);
+}
+
+.node-icon { font-size: 20px; }
+.node-text {
+	font-size: 11px;
+	font-weight: 700;
+	text-align: center;
+	line-height: 1.15;
+}
+
+/* 呼吸光圈 */
+.core-pulse {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	background: var(--passive-color);
+	opacity: 0.18;
+	z-index: -1;
+	animation: pulse-ring 3s infinite;
+}
+
+/* --- 副标题 (移出核心，在星盘下方浮空) --- */
+.hero-panel > .hero-subtitle {
+	text-align: center;
+	margin: 0 auto 4px;
+}
+
+/* ==================== Keyframes ==================== */
+@keyframes spin-cw {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(360deg); }
+}
+
+@keyframes spin-ccw {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(-360deg); }
+}
+
+/* 内轨顺时针 → 节点反转逆时针，同时抵消槽位静态角 */
+/* slot-start: --slot-angle = -45deg → 抵消角 = 45deg */
+@keyframes upright-start {
+	from { transform: rotate(45deg); }
+	to   { transform: rotate(calc(45deg - 360deg)); }
+}
+
+/* slot-settings: --slot-angle = 135deg → 抵消角 = -135deg */
+@keyframes upright-settings {
+	from { transform: rotate(-135deg); }
+	to   { transform: rotate(calc(-135deg - 360deg)); }
+}
+
+/* 外轨逆时针 → 节点反转顺时针 */
+/* slot-manual: --slot-angle = 30deg → 抵消角 = -30deg */
+@keyframes upright-manual {
+	from { transform: rotate(-30deg); }
+	to   { transform: rotate(calc(-30deg + 360deg)); }
+}
+
+/* slot-devlog: --slot-angle = -150deg → 抵消角 = 150deg */
+@keyframes upright-devlog {
+	from { transform: rotate(150deg); }
+	to   { transform: rotate(calc(150deg + 360deg)); }
+}
+
+@keyframes pulse-ring {
+	0%   { transform: scale(0.96); opacity: 0.18; }
+	50%  { transform: scale(1.14); opacity: 0.02; }
+	100% { transform: scale(0.96); opacity: 0.18; }
+}
+
+@keyframes heart-beat {
+	0%   { transform: scale(0.94); }
+	30%  { transform: scale(1.06); }
+	60%  { transform: scale(0.9); }
+	100% { transform: scale(0.94); }
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 420px) {
+	.galaxy-container {
+		max-width: 320px;
+		margin: 4px auto 2px;
+		--orbit-r-inner: 78px;
+		--orbit-r-outer: 126px;
+		--node-size: 64px;
+	}
+
+	.central-core {
+		width: 76px;
+		height: 76px;
+	}
+
+	.heart-shape {
+		width: 50px;
+		height: 50px;
+	}
+
+	.central-core .game-title { font-size: 11px; }
+	.node-icon { font-size: 16px; }
+	.node-text { font-size: 9px; }
 }
 
 .home-note{
@@ -1098,6 +1260,23 @@ html[data-has-saved-game="1"] .board-intro-wash{
 		opacity .26s ease,
 		transform .34s cubic-bezier(0.22,0.61,0.36,1),
 		filter .34s ease;
+}
+
+.dist-status{
+	font-size:13px;
+	font-weight:600;
+	color:#c0392b;
+	margin-bottom:6px;
+	text-align:center;
+	line-height:1.5;
+}
+[data-theme="dark"] .dist-status{
+	color:#e67e22;
+}
+.dist-status-desc{
+	font-size:12px;
+	font-weight:400;
+	opacity:.65;
 }
 
 .controls{
@@ -1788,6 +1967,14 @@ body.dice-focus .task-panel{
 		rgba(157,122,255,.70),
 		rgba(127,71,255,.48)
 	);
+}
+
+.dist-annot{
+	color: #c0392b;
+	font-weight: 600;
+}
+[data-theme="dark"] .dist-annot{
+	color: #e67e22;
 }
 
 .b-task-stats-content{

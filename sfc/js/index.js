@@ -1657,6 +1657,7 @@ function renderBoard(boardToken, options = {}){
 		distanceModifiers.masterReduced = false;
 		distanceModifiers.actionCountMid = false;
 	}
+	if (IS_DUAL) updateDistStatus();
 	roundPassiveSnapshot = restoredState?.roundPassiveSnapshot ? cloneGameSessionValue(restoredState.roundPassiveSnapshot) : null;
 	endNumber = Math.max(...mapData.flat());
 	const cellMap = new Map();
@@ -2104,7 +2105,7 @@ function showTip(msg) {
 	setTimeout(() => {
 		el.classList.remove('show');
 		setTimeout(() => el.remove(), 200);
-	}, 1200);
+	}, 3000);
 }
 
 function showInfoDialog(title, message) {
@@ -2183,13 +2184,7 @@ function updateRoundInfo() {
 	if (roundMasterDone) done.push('Z');
 	if (roundPassiveDone) done.push('B');
 	const suffix = done.length ? t("game.roundSuffix", { done: done.join(" / ") }) : "";
-	let distTag = "";
-	if (distanceModifiers.masterHalved) distTag = t("game.distHalved");
-	else if (distanceModifiers.actionCountDoubled) distTag = t("game.distDoubled");
-	else if (distanceModifiers.masterReduced) distTag = t("game.distMasterReduced");
-	else if (distanceModifiers.actionCountMid) distTag = t("game.distMid");
-	else if (distanceModifiers.bothReduced) distTag = t("game.distReduced");
-	roundInfo.textContent = t("game.roundDual", { round: roundNo, suffix, distance: distTag });
+	roundInfo.textContent = t("game.roundDual", { round: roundNo, suffix });
 	persistGameSessionSnapshot();
 }
 
@@ -2227,13 +2222,57 @@ function updateDistanceModifiers() {
 	}
 }
 
-function getDistanceTip() {
-	if (distanceModifiers.masterHalved) return t("game.tips.distMasterHalved");
-	if (distanceModifiers.actionCountDoubled) return t("game.tips.distBDoubled");
-	if (distanceModifiers.masterReduced) return t("game.tips.distMasterReduced");
-	if (distanceModifiers.actionCountMid) return t("game.tips.distBMid");
-	if (distanceModifiers.bothReduced) return t("game.tips.distBothReduced");
-	return "";
+function updateDistStatus() {
+	const el = document.getElementById('distStatus');
+	if (!el) return;
+	let label = "", desc = "";
+	if (distanceModifiers.masterHalved) { label = t("game.distHalved").trim(); desc = t("game.tips.distMasterHalved"); }
+	else if (distanceModifiers.actionCountDoubled) { label = t("game.distDoubled").trim(); desc = t("game.tips.distBDoubled"); }
+	else if (distanceModifiers.masterReduced) { label = t("game.distMasterReduced").trim(); desc = t("game.tips.distMasterReduced"); }
+	else if (distanceModifiers.actionCountMid) { label = t("game.distMid").trim(); desc = t("game.tips.distBMid"); }
+	else if (distanceModifiers.bothReduced) { label = t("game.distReduced").trim(); desc = t("game.tips.distBothReduced"); }
+	el.innerHTML = label ? `${label}<br><span class="dist-status-desc">${desc}</span>` : "";
+	el.hidden = !label;
+}
+
+function applyDistanceToPassiveTask() {
+	const snapshot = roundPassiveSnapshot;
+	if (!snapshot || snapshot.type !== "action") return;
+	const text = snapshot.displayText;
+	const numMatch = text.match(/\d+/);
+	if (!numMatch) return;
+	const curCount = parseInt(numMatch[0], 10);
+	if (!Number.isFinite(curCount) || curCount <= 0) return;
+
+	let distCount = curCount;
+	let suffix = "";
+	if (distanceModifiers.actionCountDoubled) { distCount = Math.min(curCount * 2, 999); suffix = "x2"; }
+	else if (distanceModifiers.actionCountMid) { distCount = Math.min(Math.ceil(curCount * 1.5), 999); suffix = "x1.5"; }
+	else if (distanceModifiers.bothReduced) { distCount = Math.max(1, Math.floor(curCount / 2)); suffix = "/2"; }
+	if (!suffix) return;
+
+	const numStr = numMatch[0];
+	const numPos = text.indexOf(numStr);
+	let newText = text.slice(0, numPos) + String(distCount) + text.slice(numPos + numStr.length);
+	const zEnd = newText.indexOf('）');
+	newText = zEnd !== -1
+		? newText.slice(0, zEnd + 1) + suffix + newText.slice(zEnd + 1)
+		: newText + suffix;
+
+	snapshot.displayText = newText;
+	if (snapshot.targetNumber && current_punishment_passive[snapshot.targetNumber]) {
+		current_punishment_passive[snapshot.targetNumber].text = newText;
+	}
+	if (lastRecordedActionRound === roundNo) {
+		const delta = distCount - lastRecordedActionCount;
+		if (delta !== 0) {
+			actualActionTotal += delta;
+			lastRecordedActionCount = distCount;
+			updateBTaskLiveCount();
+		}
+	}
+	setTaskText("passive", t("game.taskPrefixApplied", { text: localizeBuiltinText(newText) }));
+	persistGameSessionSnapshot();
 }
 
 function tryAdvanceRound() {
@@ -2247,8 +2286,8 @@ function tryAdvanceRound() {
 	}
 	if (roundMasterDone && roundPassiveDone) {
 		updateDistanceModifiers();
-		const tip = getDistanceTip();
-		if (tip) showTip(tip);
+		updateDistStatus();
+		applyDistanceToPassiveTask();
 		roundNo += 1;
 		roundMasterDone = false;
 		roundPassiveDone = false;
@@ -2383,29 +2422,23 @@ async function showPassiveResult(targetNumber) {
 	if (!punishment) return Promise.resolve();
 	track("passive_result_shown", { type: punishment.type || "unknown" });
 
-	let snapshotText = String(punishment.text || "");
+	const baseText = String(punishment.text || "");
+	let splitInfo = null;
+	let actionCountForRecord = 0;
+	let displayText = baseText;
+
 	if (punishment.type === "action") {
-		const parsedNum = parseTrailingNumber(snapshotText);
-		if (parsedNum) {
-			let newCount = parsedNum.value;
-			if (distanceModifiers.actionCountDoubled) {
-				newCount = Math.min(parsedNum.value * 2, 999);
-			} else if (distanceModifiers.actionCountMid) {
-				newCount = Math.min(Math.ceil(parsedNum.value * 1.5), 999);
-			} else if (distanceModifiers.bothReduced) {
-				newCount = Math.max(1, Math.floor(parsedNum.value / 2));
-			}
-			if (newCount !== parsedNum.value) {
-				snapshotText = snapshotText.slice(0, parsedNum.start) + newCount + snapshotText.slice(parsedNum.end);
-			}
-		}
+		const transformed = transformActionByZEffects(baseText);
+		displayText = transformed.text;
+		splitInfo = transformed.splitInfo;
+		actionCountForRecord = Number.isFinite(transformed.finalCount) ? transformed.finalCount : 0;
 	}
 	roundPassiveSnapshot = {
 		round: roundNo,
 		type: punishment.type,
 		targetNumber,
-		baseText: snapshotText,
-		displayText: snapshotText
+		baseText: baseText,
+		displayText: displayText
 	};
 
 	const typeMap = {
@@ -2424,15 +2457,6 @@ async function showPassiveResult(targetNumber) {
 		end: t("game.prefix.end")
 	};
 
-	let displayText = snapshotText;
-	let splitInfo = null;
-	let actionCountForRecord = 0;
-	if (punishment.type === "action") {
-		const transformed = transformActionByZEffects(snapshotText);
-		displayText = transformed.text;
-		splitInfo = transformed.splitInfo;
-		actionCountForRecord = extractActionCountForRecord(displayText, transformed.finalCount);
-	}
 	setTaskText('passive', `${panelPrefix[punishment.type] || t("game.prefix.content")}: ${localizeBuiltinText(displayText)}`);
 
 	if (punishment.type === 'rest') {
@@ -2459,9 +2483,11 @@ async function showPassiveResult(targetNumber) {
 		const splitLine = splitInfo
 			? t("game.splitExecution", { first: splitInfo.first, second: splitInfo.second }).replace(/^[；;]\s*/, "")
 			: "";
+		let contentHtml = escapeHtml(localizedDisplayText);
+		if (splitInfo) contentHtml += `<br><br>${escapeHtml(splitLine)}`;
 		dialog.innerHTML = `
 			<h3 class="punishment-title">${typeMap[punishment.type] || t("game.typeMap.hint")}</h3>
-			<div class="punishment-content">${escapeHtml(localizedDisplayText)}${splitInfo ? `<br><br>${escapeHtml(splitLine)}` : ''}</div>
+			<div class="punishment-content">${contentHtml}</div>
 			<button class="punishment-button" id="confirmBtn">${t("common.actions.confirmOk")}</button>
 		`;
 
