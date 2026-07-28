@@ -122,7 +122,7 @@ function initPwaInstallSpotlight(){
 	}
 
 	function applyState(state){
-		if (!state || state.isStandalone || isInstallPromptDismissed()){
+		if (!state || state.isStandalone || isInstallPromptDismissed() || !localStorage.getItem(MANUAL_AGREED_KEY) || isHomeOnboardingPending()){
 			spotlight.hidden = true;
 			return;
 		}
@@ -176,6 +176,18 @@ function initPwaInstallSpotlight(){
 	});
 
 	window.PWAInstall.onChange(applyState);
+
+	window.addEventListener("home:onboardingFinished", () => {
+		if (window.PWAInstall && typeof window.PWAInstall.getState === "function") {
+			applyState(window.PWAInstall.getState());
+		}
+	});
+
+	window.addEventListener("home:manualAgreed", () => {
+		if (window.PWAInstall && typeof window.PWAInstall.getState === "function") {
+			applyState(window.PWAInstall.getState());
+		}
+	});
 }
 
 function isInstallPromptDismissed(){

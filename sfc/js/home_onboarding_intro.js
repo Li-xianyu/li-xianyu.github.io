@@ -204,16 +204,44 @@
 		}
 	}
 
+	let idleTimer = null;
+
+	function cancelIdleGuide() {
+		if (idleTimer) {
+			clearTimeout(idleTimer);
+			idleTimer = null;
+		}
+	}
+
+	function scheduleIdleGuide(delayMs = 3500) {
+		cancelIdleGuide();
+		if (!canStart()) return;
+		idleTimer = setTimeout(() => {
+			idleTimer = null;
+			if (canStart()) {
+				startIntroGuide();
+			}
+		}, delayMs);
+	}
+
 	document.addEventListener("DOMContentLoaded", () => {
 		forceCleanupIntroArtifacts();
 		if (canStart()) {
-			setTimeout(startIntroGuide, 220);
+			scheduleIdleGuide(3500);
 		}
 	});
 
 	window.addEventListener("home:manualAgreed", () => {
 		if (canStart()) {
-			setTimeout(startIntroGuide, 180);
+			scheduleIdleGuide(3500);
 		}
+	});
+
+	["click", "touchstart"].forEach((evtType) => {
+		document.addEventListener(evtType, (e) => {
+			if (e.target && !e.target.closest(".introjs-overlay, .introjs-tooltip")) {
+				cancelIdleGuide();
+			}
+		}, { capture: true, passive: true });
 	});
 })();
