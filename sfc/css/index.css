@@ -571,6 +571,10 @@ body.home-page[data-theme="dark"] .install-spotlight-btn-secondary:hover{
 
 /* --- 节点按钮 --- */
 .galaxy-node {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 	width: var(--node-size);
 	height: var(--node-size);
 	flex-shrink: 0;
@@ -593,8 +597,6 @@ body.home-page[data-theme="dark"] .install-spotlight-btn-secondary:hover{
 	cursor: pointer;
 	padding: 0 4px;
 	font: inherit;
-	transition: border-color 0.3s, box-shadow 0.3s;
-	/* 用 scale 属性做悬停放大，不和 animation 的 transform 冲突 */
 	scale: 1;
 	transition: scale 0.3s cubic-bezier(0.175,0.885,0.32,1.275), border-color 0.3s, box-shadow 0.3s;
 }
