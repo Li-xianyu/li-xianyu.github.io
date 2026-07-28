@@ -154,9 +154,45 @@
 			};
 		};
 
+		let rafId = null;
+
+		const startPositionTracking = () => {
+			if (!document.getElementById("intro-tracking-smooth-style")) {
+				const styleNode = document.createElement("style");
+				styleNode.id = "intro-tracking-smooth-style";
+				styleNode.textContent = `
+					.introjs-helperLayer, .introjs-tooltipReferenceLayer {
+						transition: all 0.04s ease-out !important;
+					}
+				`;
+				document.head.appendChild(styleNode);
+			}
+
+			const updatePosition = () => {
+				if (!introRunning || finalized) return;
+				try {
+					if (typeof intro.refresh === "function") {
+						intro.refresh();
+					}
+				} catch (err) {}
+				rafId = requestAnimationFrame(updatePosition);
+			};
+			rafId = requestAnimationFrame(updatePosition);
+		};
+
+		const stopPositionTracking = () => {
+			if (rafId) {
+				cancelAnimationFrame(rafId);
+				rafId = null;
+			}
+			const styleNode = document.getElementById("intro-tracking-smooth-style");
+			if (styleNode) styleNode.remove();
+		};
+
 		const finalize = (state, eventName) => {
 			if (finalized) return;
 			finalized = true;
+			stopPositionTracking();
 			if (detachOverlayShake) detachOverlayShake();
 			setState(state);
 			emitFinished(state);
@@ -197,6 +233,7 @@
 
 		try {
 			intro.start();
+			startPositionTracking();
 			bindOverlayShake();
 		} catch (err) {
 			console.warn("[Onboarding] intro start failed", err);
