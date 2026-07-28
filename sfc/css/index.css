@@ -214,16 +214,90 @@ body.home-page[data-theme="dark"] .hero-chip{
 }
 
 .install-spotlight{
-	margin-top:18px;
-	padding:16px 16px 18px;
-	border-radius:24px;
+	margin-top:14px;
+	padding:16px;
+	border-radius:20px;
 	text-align:left;
 	position:relative;
 	overflow:hidden;
 	background:
 		linear-gradient(135deg, rgba(106,69,184,.14) 0%, rgba(255,107,154,.10) 58%, rgba(255,255,255,.86) 100%);
 	border:1px solid rgba(127,71,255,.16);
-	box-shadow:0 18px 36px rgba(59,40,112,.12);
+	box-shadow:0 12px 28px rgba(59,40,112,.10);
+	transition: all 0.3s cubic-bezier(0.22,0.61,0.36,1);
+}
+
+.install-spotlight.is-collapsed{
+	padding:8px 12px;
+	border-radius:999px;
+	box-shadow:0 6px 16px rgba(59,40,112,.06);
+}
+
+.install-spotlight-bar{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+}
+
+.install-spotlight-bar-info{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	min-width:0;
+}
+
+.install-spotlight-bar-text{
+	font-size:13px;
+	font-weight:600;
+	color:var(--text-color);
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+.install-spotlight-bar-actions{
+	display:flex;
+	align-items:center;
+	gap:6px;
+	flex-shrink:0;
+}
+
+.install-spotlight-toggle-btn{
+	display:inline-flex;
+	align-items:center;
+	gap:4px;
+	min-height:28px;
+	padding:0 10px;
+	border-radius:999px;
+	font-size:12px;
+	font-weight:700;
+	color:var(--current-color);
+	background:rgba(255,255,255,.72);
+	border:1px solid rgba(127,71,255,.16);
+	cursor:pointer;
+	transition:transform var(--transition-speed), background var(--transition-speed);
+}
+
+.install-spotlight-toggle-btn:hover{
+	background:rgba(255,255,255,.92);
+}
+
+.install-spotlight-toggle-btn .toggle-icon{
+	font-size:11px;
+	transition:transform 0.3s ease;
+}
+
+.install-spotlight:not(.is-collapsed) .install-spotlight-toggle-btn .toggle-icon{
+	transform:rotate(180deg);
+}
+
+.install-spotlight-body{
+	margin-top:12px;
+}
+
+.install-spotlight.is-collapsed .install-spotlight-body{
+	display:none;
 }
 
 .install-spotlight::before{
@@ -235,14 +309,6 @@ body.home-page[data-theme="dark"] .hero-chip{
 	border-radius:50%;
 	background:radial-gradient(circle, rgba(255,255,255,.46) 0%, rgba(255,255,255,0) 72%);
 	pointer-events:none;
-}
-
-.install-spotlight-head{
-	display:flex;
-	align-items:center;
-	justify-content:space-between;
-	gap:12px;
-	margin-bottom:10px;
 }
 
 .install-spotlight-badge,
@@ -365,13 +431,15 @@ body.home-page[data-theme="dark"] .install-spotlight{
 	box-shadow:0 20px 40px rgba(0,0,0,.24);
 }
 
-body.home-page[data-theme="dark"] .install-spotlight-dismiss{
+body.home-page[data-theme="dark"] .install-spotlight-dismiss,
+body.home-page[data-theme="dark"] .install-spotlight-toggle-btn{
 	color:#f0eaff;
 	background:rgba(255,255,255,.08);
 	border-color:rgba(255,255,255,.12);
 }
 
-body.home-page[data-theme="dark"] .install-spotlight-dismiss:hover{
+body.home-page[data-theme="dark"] .install-spotlight-dismiss:hover,
+body.home-page[data-theme="dark"] .install-spotlight-toggle-btn:hover{
 	background:rgba(255,255,255,.14);
 	border-color:rgba(255,255,255,.18);
 }
@@ -463,50 +531,36 @@ body.home-page[data-theme="dark"] .install-spotlight-btn-secondary:hover{
 		inset 0 1px 4px rgba(255,255,255,0.3);
 }
 
-/* 霓虹爱心 */
-.heart-shape {
+/* 核心中央图案 (为主视觉 Icon) */
+.core-icon-shape {
 	position: absolute;
-	width: 60px;
-	height: 60px;
+	width: 52px;
+	height: 52px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	opacity: 0.18;
+	opacity: 0.88;
 	pointer-events: none;
-	animation: heart-beat 1.8s infinite ease-in-out;
-	z-index: 1;
+	animation: core-icon-pulse 2.2s infinite ease-in-out;
+	z-index: 2;
+	transition: opacity 0.3s ease;
 }
 
-.heart-svg {
+.core-icon-img {
 	width: 100%;
 	height: 100%;
-	fill: #fff;
-	filter: drop-shadow(0 0 6px var(--passive-color));
+	object-fit: contain;
+	filter: drop-shadow(0 2px 8px rgba(255,255,255,0.45)) drop-shadow(0 0 10px var(--passive-color));
 }
 
-.central-core:hover .heart-shape {
-	opacity: 0.4;
-	animation-duration: 1s;
+.central-core:hover .core-icon-shape {
+	opacity: 1;
+	animation-duration: 1.1s;
 }
 
-.core-inner {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 6px;
-	text-align: center;
-	color: white;
-	z-index: 2;
-}
-
-.central-core .game-title {
-	font-size: 13px;
-	font-weight: 900;
-	line-height: 1.1;
-	color: #fff;
-	text-shadow: 0 0 10px rgba(255,255,255,0.5);
-	margin: 0;
-	letter-spacing: 0.02em;
+@keyframes core-icon-pulse {
+	0%, 100% { transform: scale(0.95); filter: brightness(0.95); }
+	50%      { transform: scale(1.06); filter: brightness(1.15); }
 }
 
 /* --- 轨道环容器 (旋转载体) --- */
@@ -524,8 +578,9 @@ body.home-page[data-theme="dark"] .install-spotlight-btn-secondary:hover{
 
 /* 悬停暂停 */
 .galaxy-container:hover .orbit-ring,
-.galaxy-container:hover .orbit-uprighter {
-	animation-play-state: paused;
+.galaxy-container:hover .orbit-uprighter,
+.galaxy-container:hover [id^="slot-"] .orbit-uprighter {
+	animation-play-state: paused !important;
 }
 
 /* --- 轨道槽位 (静态定位到圆周上) --- */

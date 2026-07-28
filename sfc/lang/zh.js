@@ -173,6 +173,9 @@ window.__I18N_DICTIONARIES.zh = {
 		installSpotlight: {
 			badge: "App",
 			dismiss: "不再提示",
+			barText: "安装为应用，启动更快体验更佳",
+			expand: "展开",
+			collapse: "收起",
 			title: "右上角菜单支持安装",
 			desc: "右上角固定悬浮菜单里有安装入口。装到桌面后，打开更快，也更像本地 App。",
 			action: "立即安装",

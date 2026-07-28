@@ -36,15 +36,9 @@
 				</svg>
 
 				<!-- 核心心跳圆 -->
-				<div class="central-core">
-					<div class="heart-shape" aria-hidden="true">
-						<svg viewBox="0 0 32 29.6" class="heart-svg">
-							<path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2
-							c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/>
-						</svg>
-					</div>
-					<div class="core-inner">
-						<h1 class="game-title" data-i18n="common.appName">Dual Protocol</h1>
+				<div class="central-core" title="Dual Protocol">
+					<div class="core-icon-shape">
+						<img src="img/core-icon.png" alt="Dual Protocol" class="core-icon-img" />
 					</div>
 					<div class="core-pulse"></div>
 				</div>
@@ -92,19 +86,30 @@
 
 			<p class="hero-subtitle" data-i18n="home.hero.subtitle">Rules are yours, dice are destiny</p>
 
-			<div class="install-spotlight" id="installSpotlight" hidden>
-				<div class="install-spotlight-head">
-					<span class="install-spotlight-badge">
-						<i class="bi bi-phone-fill" aria-hidden="true"></i>
-						<span data-i18n="home.installSpotlight.badge">App</span>
-					</span>
-					<button class="install-spotlight-dismiss" id="installSpotlightDismiss" type="button" data-i18n="home.installSpotlight.dismiss">Hide this</button>
+			<div class="install-spotlight is-collapsed" id="installSpotlight" hidden>
+				<div class="install-spotlight-bar" id="installSpotlightBar">
+					<div class="install-spotlight-bar-info">
+						<span class="install-spotlight-badge">
+							<i class="bi bi-phone-fill" aria-hidden="true"></i>
+							<span data-i18n="home.installSpotlight.badge">App</span>
+						</span>
+						<span class="install-spotlight-bar-text" id="installSpotlightBarText" data-i18n="home.installSpotlight.barText">安装为应用，启动更快体验更佳</span>
+					</div>
+					<div class="install-spotlight-bar-actions">
+						<button class="install-spotlight-toggle-btn" id="installSpotlightToggle" type="button" aria-expanded="false">
+							<span class="toggle-text" data-i18n="home.installSpotlight.expand">展开</span>
+							<i class="bi bi-chevron-down toggle-icon" aria-hidden="true"></i>
+						</button>
+						<button class="install-spotlight-dismiss" id="installSpotlightDismiss" type="button" data-i18n="home.installSpotlight.dismiss">Hide this</button>
+					</div>
 				</div>
-				<h2 class="install-spotlight-title" data-i18n="home.installSpotlight.title">Install is available from the top-right menu</h2>
-				<p class="install-spotlight-desc" id="installSpotlightDesc" data-i18n="home.installSpotlight.desc">There is an install entry in the fixed floating menu at the top right. Once added to your desktop, it opens faster and feels more like a native app.</p>
-				<div class="install-spotlight-actions">
-					<button class="install-spotlight-btn install-spotlight-btn-primary" id="installSpotlightAction" type="button" data-i18n="home.installSpotlight.action">Install now</button>
-					<button class="install-spotlight-btn install-spotlight-btn-secondary" id="installSpotlightGuide" type="button" data-i18n="home.installSpotlight.guide">Browser advice</button>
+				<div class="install-spotlight-body" id="installSpotlightBody">
+					<h2 class="install-spotlight-title" data-i18n="home.installSpotlight.title">Install is available from the top-right menu</h2>
+					<p class="install-spotlight-desc" id="installSpotlightDesc" data-i18n="home.installSpotlight.desc">There is an install entry in the fixed floating menu at the top right. Once added to your desktop, it opens faster and feels more like a native app.</p>
+					<div class="install-spotlight-actions">
+						<button class="install-spotlight-btn install-spotlight-btn-primary" id="installSpotlightAction" type="button" data-i18n="home.installSpotlight.action">Install now</button>
+						<button class="install-spotlight-btn install-spotlight-btn-secondary" id="installSpotlightGuide" type="button" data-i18n="home.installSpotlight.guide">Browser advice</button>
+					</div>
 				</div>
 			</div>
 

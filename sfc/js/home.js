@@ -110,19 +110,38 @@ function initHeroSubtitleTicker(){
 	}, intervalDuration);
 }
 
+const SFC_HAS_PLAYED_GAME_KEY = "SFC_HAS_PLAYED_GAME_V1";
+
+function hasPlayedGame() {
+	try {
+		return localStorage.getItem(SFC_HAS_PLAYED_GAME_KEY) === "1" ||
+			!!localStorage.getItem("GAME_SESSION_STORAGE_KEY") ||
+			!!localStorage.getItem("GameData");
+	} catch (e) {
+		return false;
+	}
+}
+
+function markGamePlayed() {
+	try {
+		localStorage.setItem(SFC_HAS_PLAYED_GAME_KEY, "1");
+	} catch (e) {}
+}
+
 function initPwaInstallSpotlight(){
 	const spotlight = document.getElementById('installSpotlight');
 	const dismissBtn = document.getElementById('installSpotlightDismiss');
 	const descEl = document.getElementById('installSpotlightDesc');
 	const actionBtn = document.getElementById('installSpotlightAction');
 	const guideBtn = document.getElementById('installSpotlightGuide');
+	const toggleBtn = document.getElementById('installSpotlightToggle');
 
 	if (!spotlight || !dismissBtn || !descEl || !actionBtn || !guideBtn || !window.PWAInstall){
 		return;
 	}
 
 	function applyState(state){
-		if (!state || state.isStandalone || isInstallPromptDismissed() || !localStorage.getItem(MANUAL_AGREED_KEY) || isHomeOnboardingPending()){
+		if (!state || state.isStandalone || isInstallPromptDismissed() || !localStorage.getItem(MANUAL_AGREED_KEY) || !hasPlayedGame()){
 			spotlight.hidden = true;
 			return;
 		}
@@ -152,6 +171,17 @@ function initPwaInstallSpotlight(){
 		actionBtn.textContent = t("home.installSpotlight.actionHelp");
 	}
 
+	if (toggleBtn) {
+		toggleBtn.addEventListener('click', () => {
+			const isCollapsed = spotlight.classList.toggle('is-collapsed');
+			toggleBtn.setAttribute('aria-expanded', !isCollapsed);
+			const toggleText = toggleBtn.querySelector('.toggle-text');
+			if (toggleText) {
+				toggleText.textContent = isCollapsed ? t("home.installSpotlight.expand") : t("home.installSpotlight.collapse");
+			}
+		});
+	}
+
 	actionBtn.addEventListener('click', async () => {
 		track('pwa_hero_action_clicked');
 		const result = await window.PWAInstall.promptInstall('hero_spotlight');
@@ -176,18 +206,6 @@ function initPwaInstallSpotlight(){
 	});
 
 	window.PWAInstall.onChange(applyState);
-
-	window.addEventListener("home:onboardingFinished", () => {
-		if (window.PWAInstall && typeof window.PWAInstall.getState === "function") {
-			applyState(window.PWAInstall.getState());
-		}
-	});
-
-	window.addEventListener("home:manualAgreed", () => {
-		if (window.PWAInstall && typeof window.PWAInstall.getState === "function") {
-			applyState(window.PWAInstall.getState());
-		}
-	});
 }
 
 function isInstallPromptDismissed(){
@@ -685,6 +703,7 @@ function createModeDialog(boardToken){
 		`;
 
 		item.addEventListener('click', () => {
+			markGamePlayed();
 			track("mode_selected", {
 				mode: m.key,
 				board_type: boardType

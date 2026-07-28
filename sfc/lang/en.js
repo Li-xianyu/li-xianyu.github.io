@@ -173,6 +173,9 @@ window.__I18N_DICTIONARIES.en = {
 		installSpotlight: {
 			badge: "App",
 			dismiss: "Hide this",
+			barText: "Install app for faster loading & better experience",
+			expand: "Expand",
+			collapse: "Collapse",
 			title: "Install is available from the top-right menu",
 			desc: "There is an install entry in the fixed floating menu at the top right. Once added to your desktop, it opens faster and feels more like a native app.",
 			action: "Install now",
