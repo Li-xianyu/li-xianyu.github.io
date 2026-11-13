@@ -1,0 +1,21 @@
+@font-face {
+  font-family: "XY PingFang SC";
+  src: url("./PingFangSC-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "XY PingFang SC";
+  src: url("./PingFangSC-Medium.otf") format("opentype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "XY PingFang SC";
+  src: url("./PingFangSC-Semibold.otf") format("opentype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
